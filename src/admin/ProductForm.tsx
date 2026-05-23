@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ProductCard } from '../components/ProductCard';
 import { ImageUploader } from './ImageUploader';
 import { useStore } from '../store/useStore';
@@ -12,34 +12,66 @@ type UploadedImage = {
 };
 
 const CLOUD_STYLES = [
-  {
-    label: 'Blue',
-    image: '/product-card-cloud-blue.png',
-  },
-  {
-    label: 'Peach',
-    image: '/product-card-cloud-peach.png',
-  },
-  {
-    label: 'Mint',
-    image: '/product-card-cloud-mint.png',
-  },
+  { label: 'Blue', image: '/product-card-cloud-blue.png' },
+  { label: 'Peach', image: '/product-card-cloud-peach.png' },
+  { label: 'Mint', image: '/product-card-cloud-mint.png' },
 ];
 
 export const ProductForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
   const { addProduct } = useStore();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [status, setStatus] = useState<'active' | 'draft'>('active');
   const [bgImage, setBgImage] = useState('/product-card-cloud-blue.png');
   const [personalizationRequired, setPersonalizationRequired] = useState(true);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const loadProduct = async () => {
+      setIsLoading(true);
+
+      try {
+        const token = getAdminToken();
+        const response = await fetch(`/api/admin/products/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.details || data.error || 'Could not load product.');
+        }
+
+        setName(data.name || '');
+        setDescription(data.description || '');
+        setPrice(String(data.price || ''));
+        setStatus(data.status === 'draft' ? 'draft' : 'active');
+        setBgImage(data.bgImage || '/product-card-cloud-blue.png');
+        setPersonalizationRequired(Boolean(data.personalizationRequired));
+        setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
+      } catch (error) {
+        console.error(error);
+        alert((error as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [id]);
+
   const productPreview = images[0]
     ? {
-        id: 'new-product-preview',
+        id: id || 'new-product-preview',
         name: name.trim() || 'New personalized gift',
         description: description.trim() || 'Your uploaded product will appear inside the selected cloud card.',
         price: Number(price) || 0,
@@ -59,9 +91,8 @@ export const ProductForm = () => {
 
     try {
       const token = getAdminToken();
-
-      const response = await fetch('/api/admin/products', {
-        method: 'POST',
+      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -73,7 +104,7 @@ export const ProductForm = () => {
           imageUrl: images[0].url,
           publicId: images[0].publicId,
           bgImage,
-          status: 'active',
+          status,
           personalizationRequired,
         }),
       });
@@ -84,16 +115,10 @@ export const ProductForm = () => {
         throw new Error(data.details || data.error || 'Product save failed.');
       }
 
-      addProduct(data);
+      if (!isEditing) addProduct(data);
 
-      alert('Product saved to database successfully.');
-
-      setName('');
-      setDescription('');
-      setPrice('');
-      setBgImage('/product-card-cloud-blue.png');
-      setPersonalizationRequired(true);
-      setImages([]);
+      alert(isEditing ? 'Product updated successfully.' : 'Product saved to database successfully.');
+      navigate('/admin/products');
     } catch (error) {
       console.error(error);
       alert((error as Error).message);
@@ -102,12 +127,16 @@ export const ProductForm = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="text-gray-500 font-medium">Loading product...</div>;
+  }
+
   return (
     <div className="max-w-4xl mx-auto pb-20">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add New Product</h1>
-          <p className="text-gray-500 text-sm mt-1">Create a new product for the storefront.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Product' : 'Add New Product'}</h1>
+          <p className="text-gray-500 text-sm mt-1">{isEditing ? 'Update this storefront product.' : 'Create a new product for the storefront.'}</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -121,47 +150,30 @@ export const ProductForm = () => {
             disabled={isSaving}
             className="bg-gray-900 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
           >
-            {isSaving ? 'Saving...' : 'Save Product'}
+            {isSaving ? 'Saving...' : isEditing ? 'Update Product' : 'Save Product'}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-8">
         <div className="col-span-2 space-y-8">
-
-          {/* Main Info */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  placeholder="e.g. Bespoke Heirloom Teddy"
-                />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="e.g. Bespoke Heirloom Teddy" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  placeholder="Emotional product description..."
-                />
+                <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="Emotional product description..." />
               </div>
             </div>
           </div>
 
-          {/* Media */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Media</h2>
             <ImageUploader images={images} onImagesChange={setImages} />
-
             {productPreview && (
               <div className="mt-6 border-t border-gray-100 pt-6">
                 <p className="mb-3 text-sm font-medium text-gray-700">Storefront card preview</p>
@@ -172,7 +184,6 @@ export const ProductForm = () => {
             )}
           </div>
 
-          {/* Pricing */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Pricing</h2>
             <div className="grid grid-cols-2 gap-4">
@@ -180,15 +191,7 @@ export const ProductForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Price (USD)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    placeholder="0.00"
-                  />
+                  <input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" placeholder="0.00" />
                 </div>
               </div>
               <div>
@@ -200,23 +203,18 @@ export const ProductForm = () => {
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-8">
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
             <h2 className="text-lg font-medium text-gray-900">Organization</h2>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
-                <option>Active</option>
-                <option>Draft</option>
+              <select value={status} onChange={(e) => setStatus(e.target.value as 'active' | 'draft')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
@@ -225,29 +223,15 @@ export const ProductForm = () => {
                 <option>Gift Sets</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Cloud Style</label>
               <div className="grid grid-cols-3 gap-2">
                 {CLOUD_STYLES.map((style) => {
                   const selected = style.image === bgImage;
-
                   return (
-                    <button
-                      key={style.image}
-                      type="button"
-                      onClick={() => setBgImage(style.image)}
-                      aria-pressed={selected}
-                      className={`rounded-lg border p-2 text-left transition-colors ${
-                        selected
-                          ? 'border-gray-900 bg-gray-50 ring-2 ring-gray-900/10'
-                          : 'border-gray-200 bg-white hover:border-gray-400'
-                      }`}
-                    >
+                    <button key={style.image} type="button" onClick={() => setBgImage(style.image)} aria-pressed={selected} className={`rounded-lg border p-2 text-left transition-colors ${selected ? 'border-gray-900 bg-gray-50 ring-2 ring-gray-900/10' : 'border-gray-200 bg-white hover:border-gray-400'}`}>
                       <img src={style.image} className="aspect-[1.6/1] w-full object-fill opacity-95" alt="" />
-                      <span className="mt-1 block text-center text-[11px] font-medium text-gray-700">
-                        {style.label}
-                      </span>
+                      <span className="mt-1 block text-center text-[11px] font-medium text-gray-700">{style.label}</span>
                     </button>
                   );
                 })}
@@ -261,16 +245,10 @@ export const ProductForm = () => {
                <p className="text-xs text-gray-500">Enable custom fields for this product.</p>
              </div>
              <label className="relative inline-flex items-center cursor-pointer">
-               <input
-                 type="checkbox"
-                 className="sr-only peer"
-                 checked={personalizationRequired}
-                 onChange={(e) => setPersonalizationRequired(e.target.checked)}
-               />
+               <input type="checkbox" className="sr-only peer" checked={personalizationRequired} onChange={(e) => setPersonalizationRequired(e.target.checked)} />
                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-900"></div>
              </label>
           </div>
-
         </div>
       </div>
     </div>

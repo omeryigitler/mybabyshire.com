@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import express from "express";
 import path from "path";
-import apiRoutes from "./server/api.js";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 async function startServer() {
+  const { default: apiRoutes } = await import("./server/api.js");
   const app = express();
   const PORT = 3000;
 

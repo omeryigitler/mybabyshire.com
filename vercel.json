@@ -1,1 +1,1 @@
-{"rewrites":[{"source":"/admin","destination":"/"},{"source":"/admin/(.*)","destination":"/"},{"source":"/products/(.*)","destination":"/"},{"source":"/checkout","destination":"/"}]}
+{"rewrites":[{"source":"/admin","destination":"/"},{"source":"/admin/(.*)","destination":"/"},{"source":"/products/(.*)","destination":"/"},{"source":"/checkout","destination":"/"},{"source":"/track-order","destination":"/"}]}

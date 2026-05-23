@@ -2,34 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Search, Edit, Trash } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
-
-const ADMIN_EMAIL = 'admin@boutique.com';
-const ADMIN_PASSWORD = 'admin';
-
-const getAdminToken = async () => {
-  const existingToken = localStorage.getItem('little-wonders-admin-token');
-
-  if (existingToken) {
-    return existingToken;
-  }
-
-  const response = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Admin login failed.');
-  }
-
-  const data = await response.json();
-  localStorage.setItem('little-wonders-admin-token', data.token);
-  return data.token;
-};
+import { getAdminToken } from './adminAuth';
 
 export const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -39,7 +12,7 @@ export const AdminProducts = () => {
     setIsLoading(true);
 
     try {
-      const token = await getAdminToken();
+      const token = getAdminToken();
       const response = await fetch('/api/admin/products', {
         headers: {
           Authorization: `Bearer ${token}`,

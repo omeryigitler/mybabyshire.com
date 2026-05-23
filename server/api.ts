@@ -2,6 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { v2 as cloudinary } from 'cloudinary';
+import {
+  createAdminToken,
+  isConfiguredAdminLogin,
+} from '../lib/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -88,13 +92,8 @@ router.post('/admin/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // MVP admin login. Change this before real launch.
-    if (email === 'admin@boutique.com' && password === 'admin') {
-      const token = jwt.sign(
-        { id: 'admin1', role: 'admin' },
-        JWT_SECRET,
-        { expiresIn: '1d' }
-      );
+    if (isConfiguredAdminLogin(email, password)) {
+      const token = createAdminToken(email);
 
       return res.json({
         token,

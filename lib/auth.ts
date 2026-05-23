@@ -2,8 +2,31 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-development';
 
-export const createAdminToken = () => {
-  return jwt.sign({ id: 'admin1', role: 'admin' }, JWT_SECRET, {
+export const getAdminCredentials = () => ({
+  email: process.env.ADMIN_EMAIL?.trim(),
+  password: process.env.ADMIN_PASSWORD,
+});
+
+export const hasConfiguredAdminCredentials = () => {
+  const { email, password } = getAdminCredentials();
+  return Boolean(email && password);
+};
+
+export const isConfiguredAdminLogin = (email?: string, password?: string) => {
+  const adminCredentials = getAdminCredentials();
+
+  if (!adminCredentials.email || !adminCredentials.password || !email || !password) {
+    return false;
+  }
+
+  return (
+    email.trim().toLowerCase() === adminCredentials.email.toLowerCase() &&
+    password === adminCredentials.password
+  );
+};
+
+export const createAdminToken = (email = getAdminCredentials().email || 'admin') => {
+  return jwt.sign({ id: 'admin1', email, role: 'admin' }, JWT_SECRET, {
     expiresIn: '1d',
   });
 };

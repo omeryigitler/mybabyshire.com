@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-development';
+import {
+  createAdminToken,
+  hasConfiguredAdminCredentials,
+  isConfiguredAdminLogin,
+} from '../../lib/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -10,12 +12,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { email, password } = req.body;
 
-  if (email === 'admin@boutique.com' && password === 'admin') {
-    const token = jwt.sign(
-      { id: 'admin1', role: 'admin' },
-      JWT_SECRET,
-      { expiresIn: '1d' }
-    );
+  if (!hasConfiguredAdminCredentials()) {
+    return res.status(500).json({ error: 'Admin credentials are not configured.' });
+  }
+
+  if (isConfiguredAdminLogin(email, password)) {
+    const token = createAdminToken(email);
 
     return res.status(200).json({
       token,

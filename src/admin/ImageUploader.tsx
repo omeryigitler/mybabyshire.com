@@ -1,38 +1,11 @@
 import React, { useState } from 'react';
 import { Upload, X } from 'lucide-react';
+import { getAdminToken } from './adminAuth';
 
 interface ImageUploaderProps {
   images: { url: string; id: string; publicId?: string }[];
   onImagesChange: (images: { url: string; id: string; publicId?: string }[]) => void;
 }
-
-const ADMIN_EMAIL = 'admin@boutique.com';
-const ADMIN_PASSWORD = 'admin';
-
-const getAdminToken = async () => {
-  const existingToken = localStorage.getItem('little-wonders-admin-token');
-
-  if (existingToken) {
-    return existingToken;
-  }
-
-  const response = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Admin login failed.');
-  }
-
-  const data = await response.json();
-  localStorage.setItem('little-wonders-admin-token', data.token);
-  return data.token;
-};
 
 const fileToDataUrl = (file: File) => {
   return new Promise<string>((resolve, reject) => {
@@ -60,7 +33,7 @@ export const ImageUploader = ({ images, onImagesChange }: ImageUploaderProps) =>
     setIsUploading(true);
 
     try {
-      const token = await getAdminToken();
+      const token = getAdminToken();
       const fileDataUrl = await fileToDataUrl(file);
 
       const response = await fetch('/api/admin/upload-image', {

@@ -2,6 +2,8 @@ node_modules/
 build/
 dist/
 coverage/
+test-results/
+tmp/
 .DS_Store
 *.log
 .env*

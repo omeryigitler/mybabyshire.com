@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createAdminToken } from '../../../../lib/auth';
+import {
+  createAdminToken,
+  hasConfiguredAdminCredentials,
+  isConfiguredAdminLogin,
+} from '../../../../lib/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -8,8 +12,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { email, password } = req.body;
 
-  if (email === 'admin@boutique.com' && password === 'admin') {
-    const token = createAdminToken();
+  if (!hasConfiguredAdminCredentials()) {
+    return res.status(500).json({ error: 'Admin credentials are not configured.' });
+  }
+
+  if (isConfiguredAdminLogin(email, password)) {
+    const token = createAdminToken(email);
 
     return res.status(200).json({
       token,

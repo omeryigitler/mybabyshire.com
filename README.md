@@ -46,14 +46,7 @@ Admin product form:
 http://localhost:3000/admin/products/new
 ```
 
-Current MVP admin login:
-
-```txt
-admin@boutique.com
-admin
-```
-
-Change this before real launch.
+Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment variables.
 
 ## Required Environment Variables
 
@@ -65,6 +58,8 @@ JWT_SECRET="change-this-secret"
 CLOUDINARY_CLOUD_NAME="your_cloud_name"
 CLOUDINARY_API_KEY="your_api_key"
 CLOUDINARY_API_SECRET="your_api_secret"
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="use-a-strong-password"
 ```
 
 Without `DATABASE_URL`, the storefront still shows demo fallback products, but `/api/products` cannot return saved database products.

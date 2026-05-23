@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,7 +12,11 @@ import {
   Wand2
 } from 'lucide-react';
 
-export const AdminSidebar = () => {
+interface AdminSidebarProps {
+  onSignOut: () => void;
+}
+
+export const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Products', path: '/admin/products', icon: Package },
@@ -51,7 +55,10 @@ export const AdminSidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-gray-200">
-        <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">
+        <button
+          onClick={onSignOut}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           Sign Out
         </button>

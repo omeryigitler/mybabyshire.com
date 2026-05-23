@@ -20,6 +20,7 @@ type AdminOrder = {
   currency: string;
   paymentStatus: string;
   orderStatus: string;
+  trackingReference?: string | null;
   createdAt: string;
   customer?: {
     address?: string;
@@ -35,8 +36,12 @@ type AdminOrder = {
 export const AdminOrders = () => {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [draftOrderStatus, setDraftOrderStatus] = useState('processing');
+  const [draftPaymentStatus, setDraftPaymentStatus] = useState('pending');
+  const [draftTrackingReference, setDraftTrackingReference] = useState('');
 
   const loadOrders = async () => {
     setIsLoading(true);
@@ -65,6 +70,57 @@ export const AdminOrders = () => {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  const openOrder = (order: AdminOrder) => {
+    setSelectedOrder(order);
+    setDraftOrderStatus(order.orderStatus || 'processing');
+    setDraftPaymentStatus(order.paymentStatus || 'pending');
+    setDraftTrackingReference(order.trackingReference || '');
+  };
+
+  const updateSelectedOrder = async () => {
+    if (!selectedOrder) return;
+
+    setIsUpdating(true);
+
+    try {
+      const token = getAdminToken();
+      const response = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderStatus: draftOrderStatus,
+          paymentStatus: draftPaymentStatus,
+          trackingReference: draftTrackingReference.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Could not update order.');
+      }
+
+      const updatedOrder = {
+        ...selectedOrder,
+        orderStatus: data.orderStatus,
+        paymentStatus: data.paymentStatus,
+        trackingReference: data.trackingReference,
+      };
+
+      setSelectedOrder(updatedOrder);
+      setOrders((currentOrders) => currentOrders.map((order) => order.id === selectedOrder.id ? updatedOrder : order));
+      alert('Order updated successfully.');
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -136,9 +192,9 @@ export const AdminOrders = () => {
                 <td className="px-6 py-4"><div className="font-semibold text-gray-900">{order.orderNumber}</div><div className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleString()}</div></td>
                 <td className="px-6 py-4"><div className="font-medium text-gray-900">{order.customerName}</div><div className="text-xs text-gray-500">{order.customerEmail}</div></td>
                 <td className="px-6 py-4"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{order.orderStatus}</span></td>
-                <td className="px-6 py-4"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">{order.paymentStatus}</span></td>
+                <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : order.paymentStatus === 'refunded' ? 'bg-gray-100 text-gray-700' : 'bg-amber-100 text-amber-800'}`}>{order.paymentStatus}</span></td>
                 <td className="px-6 py-4 font-semibold text-gray-900">${order.totalAmount.toFixed(2)}</td>
-                <td className="px-6 py-4 text-right"><button onClick={() => setSelectedOrder(order)} className="text-sm font-medium text-gray-900 hover:underline">View</button></td>
+                <td className="px-6 py-4 text-right"><button onClick={() => openOrder(order)} className="text-sm font-medium text-gray-900 hover:underline">View</button></td>
               </tr>
             ))}
           </tbody>
@@ -147,7 +203,7 @@ export const AdminOrders = () => {
 
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-gray-200">
+          <div className="w-full max-w-4xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-gray-200">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">{selectedOrder.orderNumber}</h2>
@@ -157,7 +213,7 @@ export const AdminOrders = () => {
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="rounded-xl bg-gray-50 p-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Customer</h3>
                   <p className="font-semibold text-gray-900">{selectedOrder.customerName}</p>
@@ -166,6 +222,24 @@ export const AdminOrders = () => {
                 <div className="rounded-xl bg-gray-50 p-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Shipping</h3>
                   {selectedOrder.customer ? <p className="text-sm text-gray-700">{selectedOrder.customer.address}<br />{selectedOrder.customer.city}, {selectedOrder.customer.state} {selectedOrder.customer.zip}</p> : <p className="text-sm text-gray-500">No address snapshot</p>}
+                </div>
+                <div className="rounded-xl bg-gray-50 p-4 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Manage Status</h3>
+                  <select value={draftOrderStatus} onChange={(event) => setDraftOrderStatus(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+                    <option value="processing">processing</option>
+                    <option value="shipped">shipped</option>
+                    <option value="delivered">delivered</option>
+                    <option value="cancelled">cancelled</option>
+                  </select>
+                  <select value={draftPaymentStatus} onChange={(event) => setDraftPaymentStatus(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+                    <option value="pending">pending</option>
+                    <option value="paid">paid</option>
+                    <option value="refunded">refunded</option>
+                  </select>
+                  <input value={draftTrackingReference} onChange={(event) => setDraftTrackingReference(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" placeholder="Tracking reference" />
+                  <button onClick={updateSelectedOrder} disabled={isUpdating} className="w-full rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:bg-gray-400">
+                    {isUpdating ? 'Saving...' : 'Save Status'}
+                  </button>
                 </div>
               </div>
 
@@ -191,6 +265,7 @@ export const AdminOrders = () => {
               <div className="rounded-xl bg-gray-50 p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${Number(selectedOrder.subtotal || 0).toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>${Number(selectedOrder.shipping || 0).toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Tracking</span><span>{selectedOrder.trackingReference || 'Not added yet'}</span></div>
                 <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold"><span>Total</span><span>${selectedOrder.totalAmount.toFixed(2)}</span></div>
               </div>
             </div>

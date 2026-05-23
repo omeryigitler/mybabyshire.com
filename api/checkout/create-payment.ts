@@ -105,6 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      locale: 'en',
       customer_email: customer.email,
       line_items: lineItems,
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.order_number)}`,

@@ -3,7 +3,7 @@ import {
   createAdminToken,
   hasConfiguredAdminCredentials,
   isConfiguredAdminLogin,
-} from '../../../../lib/auth';
+} from '../../../../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

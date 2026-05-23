@@ -5,7 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import {
   createAdminToken,
   isConfiguredAdminLogin,
-} from '../lib/auth';
+} from '../lib/auth.js';
 
 const router = Router();
 const prisma = new PrismaClient();

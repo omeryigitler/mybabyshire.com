@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Edit, Trash } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
@@ -7,6 +7,7 @@ import { getAdminToken } from './adminAuth';
 export const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const loadProducts = async () => {
     setIsLoading(true);
@@ -34,6 +35,47 @@ export const AdminProducts = () => {
     }
   };
 
+  const handleDelete = async (product: Product) => {
+    const confirmed = window.confirm(`Delete ${product.name}? This action cannot be undone.`);
+
+    if (!confirmed) return;
+
+    try {
+      const token = getAdminToken();
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Could not delete product.');
+      }
+
+      setProducts((currentProducts) => currentProducts.filter((item) => item.id !== product.id));
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    if (!query) return products;
+
+    return products.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query) ||
+        String(product.status || '').toLowerCase().includes(query)
+      );
+    });
+  }, [products, searchTerm]);
+
   useEffect(() => {
     loadProducts();
   }, []);
@@ -54,8 +96,10 @@ export const AdminProducts = () => {
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="relative">
             <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
+            <input
               type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search products..."
               className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all w-64"
             />
@@ -82,13 +126,13 @@ export const AdminProducts = () => {
               </tr>
             )}
 
-            {!isLoading && products.length === 0 && (
+            {!isLoading && filteredProducts.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No products yet.</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No products found.</td>
               </tr>
             )}
 
-            {!isLoading && products.map((product) => (
+            {!isLoading && filteredProducts.map((product) => (
               <tr key={product.id} className="hover:bg-gray-50 group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-4">
@@ -97,12 +141,12 @@ export const AdminProducts = () => {
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900">{product.name}</h3>
-                      <p className="text-gray-500 text-xs">{product.description}</p>
+                      <p className="text-gray-500 text-xs line-clamp-1">{product.description}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'draft' ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-800'}`}>
                     {product.status || 'active'}
                   </span>
                 </td>
@@ -112,15 +156,18 @@ export const AdminProducts = () => {
                 <td className="px-6 py-4 text-gray-600">${product.price.toFixed(2)}</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 text-gray-400 hover:text-gray-900 rounded"><Edit className="w-4 h-4" /></button>
-                    <button className="p-1.5 text-gray-400 hover:text-red-600 rounded"><Trash className="w-4 h-4" /></button>
+                    <Link to={`/admin/products/${product.id}/edit`} className="p-1.5 text-gray-400 hover:text-gray-900 rounded" aria-label={`Edit ${product.name}`}>
+                      <Edit className="w-4 h-4" />
+                    </Link>
+                    <button onClick={() => handleDelete(product)} className="p-1.5 text-gray-400 hover:text-red-600 rounded" aria-label={`Delete ${product.name}`}>
+                      <Trash className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
       </div>
     </div>
   );

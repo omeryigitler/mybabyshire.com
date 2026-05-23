@@ -1,0 +1,6 @@
+{
+  "name": "Little Wonders",
+  "description": "A magical nursery boutique for personalized baby gifts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

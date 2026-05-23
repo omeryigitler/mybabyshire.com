@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-boutique-bg: #fcfaf6;
+  --color-boutique-brown: #3a251a;
+  --color-boutique-brown-light: #5a4234;
+  --color-boutique-wood: #d4b497;
+  --color-boutique-wood-light: #f7ede3;
+  
+  --color-pastel-pink: #fdf0f0;
+  --color-pastel-blue: #ebf5f7;
+  --color-pastel-mint: #eef6f2;
+  --color-pastel-yellow: #fffdf5;
+
+  --shadow-soft-subtle: 0 4px 20px -2px rgba(58, 37, 26, 0.05);
+  --shadow-cloud-float: 0 10px 40px -10px rgba(58, 37, 26, 0.08);
+  --shadow-modal: 0 25px 50px -12px rgba(58, 37, 26, 0.15);
+}
+
+.bg-pattern {
+  background-image: url("/arka_plan.png");
+  background-size: 800px;
+  background-repeat: repeat;
+}
+
+body {
+  background-color: var(--color-brand-cream);
+  color: var(--color-brand-brown);
+  font-family: var(--font-sans);
+}
+
+/* Custom styles for 3d button effect */
+.btn-wood {
+  background: linear-gradient(180deg, #dfc1a1 0%, #d0a57e 100%);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.4), 0 8px 0 #b38257;
+  border-radius: 9999px;
+  color: #4a3328;
+  transition: all 0.1s;
+}
+.btn-wood:active {
+  transform: translateY(4px);
+  box-shadow: 0 0px 2px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.4), 0 4px 0 #b38257;
+}
+
+.btn-bone {
+  background: linear-gradient(180deg, #fdfbfa 0%, #f3ede2 100%);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05), inset 0 2px 4px rgba(255,255,255,1), 0 8px 0 #dccfb9;
+  border-radius: 9999px;
+  color: #4a3328;
+  transition: all 0.1s;
+}
+.btn-bone:active {
+  transform: translateY(4px);
+  box-shadow: 0 0px 2px rgba(0,0,0,0.05), inset 0 1px 2px rgba(255,255,255,1), 0 4px 0 #dccfb9;
+}
+
+/* Clould like container */
+.cloud-card {
+  position: relative;
+  border-radius: 40px;
+  background-color: white;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05), inset 0 0 0 2px rgba(255,255,255,0.8);
+}
+/* A subtle wavy cloud shape using border radius variations would be nice, but simple rounded is safer and looks great */
+.cloud-card.blue { background: linear-gradient(135deg, #eaf4f7 0%, #d8eaf1 100%); }
+.cloud-card.pink { background: linear-gradient(135deg, #fef4ee 0%, #fadbd0 100%); }
+.cloud-card.green { background: linear-gradient(135deg, #f0f4ea 0%, #e1ebd6 100%); }

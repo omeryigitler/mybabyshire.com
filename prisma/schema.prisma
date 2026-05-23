@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          String   @default("admin")
+  created_at    DateTime @default(now())
+}
+
+model products {
+  id                       String   @id @default(uuid())
+  name                     String
+  slug                     String   @unique
+  description              String?
+  price                    Decimal
+  sale_price               Decimal?
+  sku                      String?
+  card_bg_image            String?
+  category_id              String?
+  stock_quantity           Int      @default(0)
+  status                   String   @default("draft") // draft, active, archived
+  featured                 Boolean  @default(false)
+  new_arrival              Boolean  @default(false)
+  bestseller               Boolean  @default(false)
+  gender_tag               String?  // boy, girl, neutral
+  age_range                String?
+  material                 String?
+  care_instructions        String?
+  preparation_time         String?
+  personalization_required Boolean  @default(false)
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  images                 product_images[]
+  category               categories?              @relation(fields: [category_id], references: [id])
+  personalization_fields personalization_fields[]
+  cart_items             cart_items[]
+  order_items            order_items[]
+}
+
+model product_images {
+  id         String   @id @default(uuid())
+  product_id String
+  image_url  String
+  public_id  String?
+  alt_text   String?
+  sort_order Int      @default(0)
+  is_primary Boolean  @default(false)
+  product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model categories {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  image_url   String?
+  products    products[]
+}
+
+model personalization_fields {
+  id            String   @id @default(uuid())
+  product_id    String?
+  template_id   String?
+  label         String
+  field_key     String
+  field_type    String   // text, textarea, select, color, image, date, etc.
+  required      Boolean  @default(false)
+  placeholder   String?
+  help_text     String?
+  max_length    Int?
+  options_json  String?  // JSON string array for select/radio
+  default_value String?
+  sort_order    Int      @default(0)
+
+  product  products?                 @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  template personalization_templates? @relation(fields: [template_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, field_key])
+}
+
+model personalization_templates {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  fields personalization_fields[]
+}
+
+model carts {
+  id         String       @id @default(uuid())
+  session_id String       @unique
+  user_id    String?
+  created_at DateTime     @default(now())
+  items      cart_items[]
+}
+
+model cart_items {
+  id                        String   @id @default(uuid())
+  cart_id                   String
+  product_id                String
+  quantity                  Int      @default(1)
+  personalization_data_json String?  // Stores user's personalization input
+  price_snapshot            Decimal
+
+  cart    carts    @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product products @relation(fields: [product_id], references: [id])
+}
+
+model orders {
+  id                        String   @id @default(uuid())
+  order_number              String   @unique
+  customer_name             String
+  customer_email            String
+  total_amount              Decimal
+  currency                  String   @default("USD")
+  payment_status            String   @default("pending")
+  order_status              String   @default("processing")
+  payment_reference         String?
+  tracking_reference        String?
+  personalization_data_json String?
+  created_at                DateTime @default(now())
+
+  items order_items[]
+}
+
+model order_items {
+  id                        String   @id @default(uuid())
+  order_id                  String
+  product_id                String
+  product_name_snapshot     String
+  quantity                  Int
+  price_snapshot            Decimal
+  personalization_data_json String?
+
+  order   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product products @relation(fields: [product_id], references: [id])
+}

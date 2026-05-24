@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { customer, items, subtotal, shipping, total, currency = 'USD' } = req.body;
+    const { customer, items, subtotal, shipping, total, currency = 'USD', shippingMethod } = req.body;
 
     if (!customer?.name || !customer?.email || !customer?.address || !customer?.city || !customer?.state || !customer?.zip) {
       return res.status(400).json({ error: 'Missing customer shipping details.' });
@@ -69,12 +69,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Your gift bag is empty.' });
     }
 
+    const selectedShippingMethod = shippingMethod || {
+      id: 'us-standard',
+      label: 'Standard Shipping',
+      carrier: 'USPS',
+      service: 'Ground Advantage',
+      estimatedDelivery: '3-5 business days',
+      amount: Number(shipping) || 0,
+    };
+
     const orderNumber = createOrderNumber();
     const baseUrl = getBaseUrl(req);
     const customerSnapshot = {
       customer,
       subtotal: Number(subtotal) || 0,
       shipping: Number(shipping) || 0,
+      shippingMethod: selectedShippingMethod,
       total: Number(total) || 0,
       currency,
       provider: 'paypal',
@@ -121,23 +131,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               currency_code: String(currency).toUpperCase(),
               value: Number(total || 0).toFixed(2),
               breakdown: {
-                item_total: {
-                  currency_code: String(currency).toUpperCase(),
-                  value: Number(subtotal || 0).toFixed(2),
-                },
-                shipping: {
-                  currency_code: String(currency).toUpperCase(),
-                  value: Number(shipping || 0).toFixed(2),
-                },
+                item_total: { currency_code: String(currency).toUpperCase(), value: Number(subtotal || 0).toFixed(2) },
+                shipping: { currency_code: String(currency).toUpperCase(), value: Number(shipping || 0).toFixed(2) },
               },
             },
             items: items.map((item: any) => ({
               name: String(item.name).slice(0, 127),
               quantity: String(Number(item.quantity) || 1),
-              unit_amount: {
-                currency_code: String(currency).toUpperCase(),
-                value: Number(item.price || 0).toFixed(2),
-              },
+              unit_amount: { currency_code: String(currency).toUpperCase(), value: Number(item.price || 0).toFixed(2) },
             })),
           },
         ],
@@ -164,22 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const approvalUrl = data.links?.find((link: any) => link.rel === 'payer-action' || link.rel === 'approve')?.href;
 
-    await prisma.orders.update({
-      where: { id: order.id },
-      data: { payment_reference: data.id },
-    });
+    await prisma.orders.update({ where: { id: order.id }, data: { payment_reference: data.id } });
 
-    return res.status(200).json({
-      success: true,
-      orderId: order.order_number,
-      databaseId: order.id,
-      paypalOrderId: data.id,
-      approvalUrl,
-    });
+    return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl, shippingMethod: selectedShippingMethod });
   } catch (error) {
-    return res.status(500).json({
-      error: 'PayPal checkout failed',
-      details: (error as Error).message,
-    });
+    return res.status(500).json({ error: 'PayPal checkout failed', details: (error as Error).message });
   }
 }

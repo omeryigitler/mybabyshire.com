@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 import { Buffer } from 'node:buffer';
+import { sendPaymentConfirmedEmail } from '../_lib/email';
 
 const prisma = new PrismaClient();
 
@@ -38,6 +39,21 @@ const getPayPalAccessToken = async () => {
   return data.access_token as string;
 };
 
+const sendPayPalConfirmationEmail = async (order: any) => {
+  await sendPaymentConfirmedEmail({
+    to: order.customer_email,
+    customerName: order.customer_name,
+    orderNumber: order.order_number,
+    total: Number(order.total_amount) || 0,
+    paymentProvider: 'PayPal',
+    items: order.items?.map((item: any) => ({
+      productName: item.product_name_snapshot,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.price_snapshot) || 0,
+    })) || [],
+  });
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -68,14 +84,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const isCompleted = data.status === 'COMPLETED';
 
-    await prisma.orders.update({
+    const updatedOrder = await prisma.orders.update({
       where: { order_number: orderNumber },
       data: {
         payment_status: isCompleted ? 'paid' : 'pending',
         order_status: 'processing',
         payment_reference: data.id || token,
       },
+      include: { items: true },
     });
+
+    if (isCompleted) {
+      await sendPayPalConfirmationEmail(updatedOrder);
+    }
 
     return res.status(200).json({
       success: true,

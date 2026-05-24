@@ -23,8 +23,17 @@ const parseJson = (value?: string | null) => {
   }
 };
 
+const getPaymentProvider = (snapshot: any, paymentReference?: string | null) => {
+  if (snapshot?.provider === 'paypal') return 'PayPal';
+  if (snapshot?.provider === 'stripe') return 'Stripe';
+  if (paymentReference?.startsWith('cs_') || paymentReference?.startsWith('pi_')) return 'Stripe';
+  if (paymentReference) return 'PayPal';
+  return 'Not selected';
+};
+
 const mapOrder = (order: any) => {
   const snapshot = parseJson(order.personalization_data_json);
+  const paymentProvider = getPaymentProvider(snapshot, order.payment_reference);
 
   return {
     id: order.id,
@@ -34,6 +43,7 @@ const mapOrder = (order: any) => {
     totalAmount: Number(order.total_amount),
     currency: order.currency,
     paymentStatus: order.payment_status,
+    paymentProvider,
     orderStatus: order.order_status,
     paymentReference: order.payment_reference,
     trackingReference: order.tracking_reference,

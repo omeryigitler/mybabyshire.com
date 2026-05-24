@@ -6,6 +6,7 @@ import { useStore } from './store/useStore';
 export default function CheckoutPage() {
   const { cartItems } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPayPalSubmitting, setIsPayPalSubmitting] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
@@ -17,18 +18,39 @@ export default function CheckoutPage() {
   const shipping = subtotal > 0 ? 6.95 : 0;
   const total = subtotal + shipping;
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
+  const validateCheckout = () => {
     if (cartItems.length === 0) {
       alert('Your gift bag is empty.');
-      return;
+      return false;
     }
 
     if (!customerName.trim() || !email.trim() || !address.trim() || !city.trim() || !state.trim() || !zip.trim()) {
       alert('Please fill in all checkout fields.');
-      return;
+      return false;
     }
+
+    return true;
+  };
+
+  const checkoutPayload = {
+    customer: { name: customerName, email, address, city, state, zip },
+    items: cartItems.map((item) => ({
+      productId: item.product.id,
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.product.price,
+      personalizationData: item.personalizationData,
+    })),
+    subtotal,
+    shipping,
+    total,
+    currency: 'USD',
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!validateCheckout()) return;
 
     setIsSubmitting(true);
 
@@ -36,20 +58,7 @@ export default function CheckoutPage() {
       const response = await fetch('/api/checkout/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer: { name: customerName, email, address, city, state, zip },
-          items: cartItems.map((item) => ({
-            productId: item.product.id,
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.product.price,
-            personalizationData: item.personalizationData,
-          })),
-          subtotal,
-          shipping,
-          total,
-          currency: 'USD',
-        }),
+        body: JSON.stringify(checkoutPayload),
       });
 
       const data = await response.json();
@@ -60,6 +69,29 @@ export default function CheckoutPage() {
       console.error(error);
       alert((error as Error).message);
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePayPalCheckout = async () => {
+    if (!validateCheckout()) return;
+
+    setIsPayPalSubmitting(true);
+
+    try {
+      const response = await fetch('/api/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkoutPayload),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.error || 'PayPal checkout could not be created.');
+      if (!data.approvalUrl) throw new Error('PayPal approval URL was not returned.');
+      window.location.href = data.approvalUrl;
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+      setIsPayPalSubmitting(false);
     }
   };
 
@@ -79,9 +111,11 @@ export default function CheckoutPage() {
           <section className="space-y-4"><h2 className="text-sm font-bold uppercase tracking-wider text-boutique-brown">Contact</h2><div className="grid gap-4 md:grid-cols-2"><input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="Full name" /><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" className="rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="Email address" /></div></section>
           <section className="space-y-4"><h2 className="text-sm font-bold uppercase tracking-wider text-boutique-brown">Shipping address</h2><input value={address} onChange={(event) => setAddress(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="Street address" /><div className="grid gap-4 md:grid-cols-3"><input value={city} onChange={(event) => setCity(event.target.value)} className="rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="City" /><input value={state} onChange={(event) => setState(event.target.value)} className="rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="State" /><input value={zip} onChange={(event) => setZip(event.target.value)} className="rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40" placeholder="ZIP code" /></div></section>
           <div className="rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] p-4 text-xs text-boutique-brown-light">
-            Card payments, Apple Pay, Google Pay, and Link are handled by Stripe when available.
+            Card payments, Apple Pay, Google Pay, and Link are handled by Stripe when available. PayPal is available as a secondary checkout option.
           </div>
-          <button disabled={isSubmitting || cartItems.length === 0} className="w-full rounded-full bg-boutique-brown px-6 py-4 text-base font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? 'Opening secure payment...' : 'Continue to Secure Payment'}</button>
+          <button disabled={isSubmitting || isPayPalSubmitting || cartItems.length === 0} className="w-full rounded-full bg-boutique-brown px-6 py-4 text-base font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? 'Opening secure payment...' : 'Continue to Secure Payment'}</button>
+          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-boutique-brown/45"><span className="h-px flex-1 bg-boutique-brown/10"></span>or<span className="h-px flex-1 bg-boutique-brown/10"></span></div>
+          <button type="button" onClick={handlePayPalCheckout} disabled={isSubmitting || isPayPalSubmitting || cartItems.length === 0} className="w-full rounded-full border border-[#003087]/20 bg-[#ffc439] px-6 py-4 text-base font-black text-[#003087] shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#f7b820] disabled:cursor-not-allowed disabled:opacity-50">{isPayPalSubmitting ? 'Opening PayPal...' : 'Pay with PayPal'}</button>
         </form>
 
         <aside className="rounded-[2rem] border border-boutique-brown/10 bg-white/75 p-6 shadow-sm md:p-8 h-fit">

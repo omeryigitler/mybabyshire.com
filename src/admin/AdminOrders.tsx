@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Mail, PackageCheck, RefreshCcw, Search, ShoppingCart } from 'lucide-react';
+import { Mail, MapPin, PackageCheck, RefreshCcw, Search, ShoppingCart, Sparkles, Truck } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
 
 type OrderItem = {
@@ -35,9 +35,9 @@ type AdminOrder = {
 };
 
 const getPaymentBadgeClass = (status: string) => {
-  if (status === 'paid') return 'bg-green-100 text-green-800';
-  if (status === 'refunded') return 'bg-gray-100 text-gray-700';
-  return 'bg-amber-100 text-amber-800';
+  if (status === 'paid') return 'bg-green-100 text-green-800 border-green-200';
+  if (status === 'refunded') return 'bg-gray-100 text-gray-700 border-gray-200';
+  return 'bg-amber-100 text-amber-800 border-amber-200';
 };
 
 const getProviderBadgeClass = (provider?: string) => {
@@ -45,6 +45,20 @@ const getProviderBadgeClass = (provider?: string) => {
   if (provider === 'Stripe') return 'bg-[#f3f0ff] text-[#635bff] border-[#e2ddff]';
   return 'bg-gray-50 text-gray-500 border-gray-200';
 };
+
+const StatCard = ({ title, value, icon: Icon, note }: { title: string; value: string | number; icon: React.ComponentType<{ className?: string }>; note: string }) => (
+  <div className="relative overflow-hidden rounded-[1.7rem] border border-boutique-brown/10 bg-white/80 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
+    <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-10 w-32 opacity-25 mix-blend-multiply" alt="" />
+    <div className="relative z-10 flex items-start justify-between gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">{title}</p>
+        <p className="mt-4 font-serif text-4xl leading-none text-boutique-brown">{value}</p>
+        <p className="mt-2 text-xs text-boutique-brown-light">{note}</p>
+      </div>
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm"><Icon className="h-5 w-5" /></div>
+    </div>
+  </div>
+);
 
 export const AdminOrders = () => {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -153,67 +167,65 @@ export const AdminOrders = () => {
   const pendingOrders = orders.filter((order) => order.paymentStatus === 'pending').length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-500 text-sm mt-1">Review customer gift requests and personalization details.</p>
-        </div>
-        <button onClick={loadOrders} disabled={isLoading} className="border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 disabled:opacity-50 text-sm font-medium flex items-center gap-2">
-          <RefreshCcw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-500">Total Orders</span><ShoppingCart className="w-5 h-5 text-gray-400" /></div>
-          <p className="text-3xl font-bold text-gray-900 mt-4">{isLoading ? '—' : orders.length}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-500">Pending Payment</span><PackageCheck className="w-5 h-5 text-amber-500" /></div>
-          <p className="text-3xl font-bold text-gray-900 mt-4">{isLoading ? '—' : pendingOrders}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-500">Recorded Value</span><Mail className="w-5 h-5 text-gray-400" /></div>
-          <p className="text-3xl font-bold text-gray-900 mt-4">${totalRevenue.toFixed(2)}</p>
+    <div className="space-y-8">
+      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
+        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
+        <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute right-10 bottom-6 w-10 rotate-12 opacity-35 mix-blend-multiply" alt="" />
+        <div className="relative z-10 flex items-center justify-between gap-6">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light">
+              <Sparkles className="h-4 w-4" /> Gift requests
+            </div>
+            <h1 className="font-serif text-5xl leading-none text-boutique-brown">Orders</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">Review customer gift requests, personalization details, payment providers, and shipping progress.</p>
+          </div>
+          <button onClick={loadOrders} disabled={isLoading} className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:opacity-50">
+            <RefreshCcw className="h-4 w-4" /> Refresh
+          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <div className="relative">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search orders..." className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all w-72" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard title="Total Orders" value={isLoading ? '—' : orders.length} icon={ShoppingCart} note="All recorded gift orders" />
+        <StatCard title="Pending Payment" value={isLoading ? '—' : pendingOrders} icon={PackageCheck} note="Orders still awaiting payment" />
+        <StatCard title="Recorded Value" value={`$${totalRevenue.toFixed(2)}`} icon={Mail} note="Total order value recorded" />
+      </div>
+
+      <div className="overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/82 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
+        <div className="border-b border-boutique-brown/10 p-5">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-boutique-brown/35" />
+            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search orders..." className="w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] py-3 pl-12 pr-4 text-sm text-boutique-brown outline-none transition-all placeholder:text-boutique-brown/45 focus:ring-2 focus:ring-boutique-wood/25" />
           </div>
         </div>
 
-        <table className="w-full text-left border-collapse">
+        <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-              <th className="px-6 py-3 font-medium">Order</th>
-              <th className="px-6 py-3 font-medium">Customer</th>
-              <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium">Payment</th>
-              <th className="px-6 py-3 font-medium">Total</th>
-              <th className="px-6 py-3 font-medium text-right">Actions</th>
+            <tr className="border-b border-boutique-brown/10 bg-[#fffaf3]/70 text-xs uppercase tracking-[0.14em] text-boutique-brown/55">
+              <th className="px-6 py-4 font-bold">Order</th>
+              <th className="px-6 py-4 font-bold">Customer</th>
+              <th className="px-6 py-4 font-bold">Status</th>
+              <th className="px-6 py-4 font-bold">Payment</th>
+              <th className="px-6 py-4 font-bold">Total</th>
+              <th className="px-6 py-4 text-right font-bold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 text-sm">
-            {isLoading && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading orders...</td></tr>}
-            {!isLoading && filteredOrders.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No orders found.</td></tr>}
+          <tbody className="divide-y divide-boutique-brown/10 text-sm">
+            {isLoading && <tr><td colSpan={6} className="px-6 py-10 text-center text-boutique-brown-light">Loading orders...</td></tr>}
+            {!isLoading && filteredOrders.length === 0 && <tr><td colSpan={6} className="px-6 py-10 text-center text-boutique-brown-light">No orders found.</td></tr>}
             {!isLoading && filteredOrders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4"><div className="font-semibold text-gray-900">{order.orderNumber}</div><div className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleString()}</div></td>
-                <td className="px-6 py-4"><div className="font-medium text-gray-900">{order.customerName}</div><div className="text-xs text-gray-500">{order.customerEmail}</div></td>
-                <td className="px-6 py-4"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{order.orderStatus}</span></td>
+              <tr key={order.id} className="transition-colors hover:bg-[#fffaf3]/70">
+                <td className="px-6 py-4"><div className="font-bold text-boutique-brown">{order.orderNumber}</div><div className="mt-1 text-xs text-boutique-brown-light">{new Date(order.createdAt).toLocaleString()}</div></td>
+                <td className="px-6 py-4"><div className="font-semibold text-boutique-brown">{order.customerName}</div><div className="mt-1 text-xs text-boutique-brown-light">{order.customerEmail}</div></td>
+                <td className="px-6 py-4"><span className="inline-flex items-center rounded-full bg-[#f3f0ea] px-3 py-1 text-xs font-bold text-boutique-brown-light">{order.orderStatus}</span></td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col items-start gap-1.5">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentBadgeClass(order.paymentStatus)}`}>{order.paymentStatus}</span>
-                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${getProviderBadgeClass(order.paymentProvider)}`}>via {order.paymentProvider || 'Not selected'}</span>
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${getPaymentBadgeClass(order.paymentStatus)}`}>{order.paymentStatus}</span>
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-black ${getProviderBadgeClass(order.paymentProvider)}`}>via {order.paymentProvider || 'Not selected'}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 font-semibold text-gray-900">${order.totalAmount.toFixed(2)}</td>
-                <td className="px-6 py-4 text-right"><button onClick={() => openOrder(order)} className="text-sm font-medium text-gray-900 hover:underline">View</button></td>
+                <td className="px-6 py-4 font-bold text-boutique-brown">${order.totalAmount.toFixed(2)}</td>
+                <td className="px-6 py-4 text-right"><button onClick={() => openOrder(order)} className="rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df]">View</button></td>
               </tr>
             ))}
           </tbody>
@@ -221,59 +233,65 @@ export const AdminOrders = () => {
       </div>
 
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-gray-200">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedOrder.orderNumber}</h2>
-                <p className="text-sm text-gray-500 mt-1">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boutique-brown/35 px-4 backdrop-blur-sm">
+          <div className="max-h-[88vh] w-full max-w-5xl overflow-y-auto rounded-[2rem] border border-boutique-brown/10 bg-white shadow-[0_30px_100px_rgba(58,37,26,0.28)]">
+            <div className="sticky top-0 z-10 overflow-hidden border-b border-boutique-brown/10 bg-[#fffaf3] p-6">
+              <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-10 -top-12 w-56 opacity-30 mix-blend-multiply" alt="" />
+              <div className="relative z-10 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Order Reference</p>
+                  <h2 className="mt-2 font-serif text-4xl text-boutique-brown">{selectedOrder.orderNumber}</h2>
+                  <p className="mt-2 text-sm text-boutique-brown-light">{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                </div>
+                <button onClick={() => setSelectedOrder(null)} className="rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-sm font-bold text-boutique-brown shadow-sm hover:bg-boutique-bg">Close</button>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">Close</button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Customer</h3>
-                  <p className="font-semibold text-gray-900">{selectedOrder.customerName}</p>
-                  <p className="text-sm text-gray-600">{selectedOrder.customerEmail}</p>
+            <div className="space-y-6 p-6">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] p-5 shadow-sm">
+                  <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55">Customer</h3>
+                  <p className="font-bold text-boutique-brown">{selectedOrder.customerName}</p>
+                  <p className="mt-1 text-sm text-boutique-brown-light">{selectedOrder.customerEmail}</p>
                 </div>
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Shipping</h3>
-                  {selectedOrder.customer ? <p className="text-sm text-gray-700">{selectedOrder.customer.address}<br />{selectedOrder.customer.city}, {selectedOrder.customer.state} {selectedOrder.customer.zip}</p> : <p className="text-sm text-gray-500">No address snapshot</p>}
+                <div className="rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] p-5 shadow-sm">
+                  <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55"><MapPin className="h-4 w-4" /> Shipping</h3>
+                  {selectedOrder.customer ? <p className="text-sm leading-relaxed text-boutique-brown-light">{selectedOrder.customer.address}<br />{selectedOrder.customer.city}, {selectedOrder.customer.state} {selectedOrder.customer.zip}</p> : <p className="text-sm text-boutique-brown-light">No address snapshot</p>}
                 </div>
-                <div className="rounded-xl bg-gray-50 p-4 space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Manage Status</h3>
-                  <select value={draftOrderStatus} onChange={(event) => setDraftOrderStatus(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-                    <option value="processing">processing</option>
-                    <option value="shipped">shipped</option>
-                    <option value="delivered">delivered</option>
-                    <option value="cancelled">cancelled</option>
-                  </select>
-                  <select value={draftPaymentStatus} onChange={(event) => setDraftPaymentStatus(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
-                    <option value="pending">pending</option>
-                    <option value="paid">paid</option>
-                    <option value="refunded">refunded</option>
-                  </select>
-                  <input value={draftTrackingReference} onChange={(event) => setDraftTrackingReference(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" placeholder="Tracking reference" />
-                  <button onClick={updateSelectedOrder} disabled={isUpdating} className="w-full rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:bg-gray-400">
-                    {isUpdating ? 'Saving...' : 'Save Status'}
-                  </button>
+                <div className="rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] p-5 shadow-sm">
+                  <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55"><Truck className="h-4 w-4" /> Manage Status</h3>
+                  <div className="space-y-3">
+                    <select value={draftOrderStatus} onChange={(event) => setDraftOrderStatus(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/10 bg-white px-3 py-2 text-sm text-boutique-brown">
+                      <option value="processing">processing</option>
+                      <option value="shipped">shipped</option>
+                      <option value="delivered">delivered</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                    <select value={draftPaymentStatus} onChange={(event) => setDraftPaymentStatus(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/10 bg-white px-3 py-2 text-sm text-boutique-brown">
+                      <option value="pending">pending</option>
+                      <option value="paid">paid</option>
+                      <option value="refunded">refunded</option>
+                    </select>
+                    <input value={draftTrackingReference} onChange={(event) => setDraftTrackingReference(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/10 bg-white px-3 py-2 text-sm text-boutique-brown" placeholder="Tracking reference" />
+                    <button onClick={updateSelectedOrder} disabled={isUpdating} className="w-full rounded-full bg-boutique-brown px-4 py-3 text-sm font-bold text-white hover:bg-boutique-wood disabled:opacity-50">
+                      {isUpdating ? 'Saving...' : 'Save Status'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">Items</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55">Items</h3>
                 <div className="space-y-3">
                   {selectedOrder.items.map((item) => (
-                    <div key={item.id} className="rounded-xl border border-gray-200 p-4">
+                    <div key={item.id} className="rounded-[1.5rem] border border-boutique-brown/10 bg-white p-5 shadow-sm">
                       <div className="flex justify-between gap-4">
-                        <div><p className="font-semibold text-gray-900">{item.productName}</p><p className="text-sm text-gray-500">Qty {item.quantity} × ${item.price.toFixed(2)}</p></div>
-                        <p className="font-semibold text-gray-900">${(item.quantity * item.price).toFixed(2)}</p>
+                        <div><p className="font-serif text-2xl text-boutique-brown">{item.productName}</p><p className="mt-1 text-sm text-boutique-brown-light">Qty {item.quantity} × ${item.price.toFixed(2)}</p></div>
+                        <p className="font-bold text-boutique-brown">${(item.quantity * item.price).toFixed(2)}</p>
                       </div>
                       {Object.keys(item.personalizationData).length > 0 && (
-                        <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
-                          {Object.entries(item.personalizationData).map(([key, value]) => <div key={key}><span className="font-semibold">{key}: </span>{String(value)}</div>)}
+                        <div className="mt-4 rounded-2xl bg-[#fffaf3] p-4 text-xs text-boutique-brown-light">
+                          {Object.entries(item.personalizationData).map(([key, value]) => <div key={key}><span className="font-bold text-boutique-brown">{key}: </span>{String(value)}</div>)}
                         </div>
                       )}
                     </div>
@@ -281,12 +299,12 @@ export const AdminOrders = () => {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-gray-50 p-4 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Payment provider</span><span>{selectedOrder.paymentProvider || 'Not selected'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${Number(selectedOrder.subtotal || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>${Number(selectedOrder.shipping || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Tracking</span><span>{selectedOrder.trackingReference || 'Not added yet'}</span></div>
-                <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold"><span>Total</span><span>${selectedOrder.totalAmount.toFixed(2)}</span></div>
+              <div className="rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] p-5 text-sm text-boutique-brown-light shadow-sm">
+                <div className="flex justify-between"><span>Payment provider</span><span className="font-bold text-boutique-brown">{selectedOrder.paymentProvider || 'Not selected'}</span></div>
+                <div className="mt-2 flex justify-between"><span>Subtotal</span><span>${Number(selectedOrder.subtotal || 0).toFixed(2)}</span></div>
+                <div className="mt-2 flex justify-between"><span>Shipping</span><span>${Number(selectedOrder.shipping || 0).toFixed(2)}</span></div>
+                <div className="mt-2 flex justify-between"><span>Tracking</span><span>{selectedOrder.trackingReference || 'Not added yet'}</span></div>
+                <div className="mt-3 flex justify-between border-t border-boutique-brown/10 pt-3 font-serif text-2xl text-boutique-brown"><span>Total</span><span>${selectedOrder.totalAmount.toFixed(2)}</span></div>
               </div>
             </div>
           </div>

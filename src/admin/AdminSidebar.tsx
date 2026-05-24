@@ -1,15 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Tags, 
-  Settings, 
+import {
   Image as ImageIcon,
+  LayoutDashboard,
   LogOut,
-  Users,
+  Package,
+  Settings,
   ShoppingCart,
-  Wand2
+  Sparkles,
+  Tags,
+  Users,
+  Wand2,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -29,37 +30,57 @@ export const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen fixed left-0 top-0">
-      <div className="h-16 flex items-center px-6 border-b border-gray-200">
-        <span className="font-serif text-xl text-gray-900 font-medium">Boutique Admin</span>
+    <aside className="fixed left-0 top-0 z-20 flex h-screen w-64 flex-col border-r border-boutique-brown/10 bg-white/78 shadow-[12px_0_40px_rgba(58,37,26,0.06)] backdrop-blur-xl">
+      <div className="relative overflow-hidden border-b border-boutique-brown/10 px-5 py-5">
+        <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-8 w-32 opacity-35 mix-blend-multiply" alt="" />
+        <img src="/decorative-moon-star.png" className="pointer-events-none absolute right-5 bottom-4 w-8 rotate-12 opacity-45" alt="" />
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-serif text-2xl leading-none text-boutique-brown">Little Wonders</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown/55">Back Office</p>
+          </div>
+        </div>
       </div>
-      
-      <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
+
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             end={item.path === '/admin'}
-            className={({ isActive }) => 
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive 
-                  ? 'bg-gray-100 text-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            className={({ isActive }) =>
+              `group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold transition-all ${
+                isActive
+                  ? 'bg-[#fff4df] text-boutique-brown shadow-sm ring-1 ring-boutique-brown/10'
+                  : 'text-boutique-brown-light hover:bg-white hover:text-boutique-brown hover:shadow-sm'
               }`
             }
           >
-            <item.icon className="w-5 h-5" />
-            {item.name}
+            {({ isActive }) => (
+              <>
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${isActive ? 'bg-boutique-brown text-white' : 'bg-boutique-bg text-boutique-brown-light group-hover:bg-[#fff4df] group-hover:text-boutique-brown'}`}>
+                  <item.icon className="h-4.5 w-4.5" />
+                </span>
+                <span>{item.name}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="border-t border-boutique-brown/10 p-4">
+        <div className="mb-3 rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] p-3 text-xs leading-relaxed text-boutique-brown-light">
+          <span className="font-bold text-boutique-brown">Gift studio mode</span><br />
+          Manage orders, products and personalization with care.
+        </div>
         <button
           onClick={onSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-boutique-brown-light transition-colors hover:bg-red-50 hover:text-red-700"
         >
-          <LogOut className="w-5 h-5" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm"><LogOut className="h-4.5 w-4.5" /></span>
           Sign Out
         </button>
       </div>

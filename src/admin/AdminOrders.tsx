@@ -19,6 +19,7 @@ type AdminOrder = {
   totalAmount: number;
   currency: string;
   paymentStatus: string;
+  paymentProvider?: string;
   orderStatus: string;
   trackingReference?: string | null;
   createdAt: string;
@@ -31,6 +32,18 @@ type AdminOrder = {
   subtotal?: number | null;
   shipping?: number | null;
   items: OrderItem[];
+};
+
+const getPaymentBadgeClass = (status: string) => {
+  if (status === 'paid') return 'bg-green-100 text-green-800';
+  if (status === 'refunded') return 'bg-gray-100 text-gray-700';
+  return 'bg-amber-100 text-amber-800';
+};
+
+const getProviderBadgeClass = (provider?: string) => {
+  if (provider === 'PayPal') return 'bg-[#eef5ff] text-[#003087] border-[#d7e7ff]';
+  if (provider === 'Stripe') return 'bg-[#f3f0ff] text-[#635bff] border-[#e2ddff]';
+  return 'bg-gray-50 text-gray-500 border-gray-200';
 };
 
 export const AdminOrders = () => {
@@ -131,7 +144,8 @@ export const AdminOrders = () => {
       order.customerName.toLowerCase().includes(query) ||
       order.customerEmail.toLowerCase().includes(query) ||
       order.orderStatus.toLowerCase().includes(query) ||
-      order.paymentStatus.toLowerCase().includes(query)
+      order.paymentStatus.toLowerCase().includes(query) ||
+      (order.paymentProvider || '').toLowerCase().includes(query)
     );
   }, [orders, searchTerm]);
 
@@ -192,7 +206,12 @@ export const AdminOrders = () => {
                 <td className="px-6 py-4"><div className="font-semibold text-gray-900">{order.orderNumber}</div><div className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleString()}</div></td>
                 <td className="px-6 py-4"><div className="font-medium text-gray-900">{order.customerName}</div><div className="text-xs text-gray-500">{order.customerEmail}</div></td>
                 <td className="px-6 py-4"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{order.orderStatus}</span></td>
-                <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : order.paymentStatus === 'refunded' ? 'bg-gray-100 text-gray-700' : 'bg-amber-100 text-amber-800'}`}>{order.paymentStatus}</span></td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-col items-start gap-1.5">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentBadgeClass(order.paymentStatus)}`}>{order.paymentStatus}</span>
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${getProviderBadgeClass(order.paymentProvider)}`}>via {order.paymentProvider || 'Not selected'}</span>
+                  </div>
+                </td>
                 <td className="px-6 py-4 font-semibold text-gray-900">${order.totalAmount.toFixed(2)}</td>
                 <td className="px-6 py-4 text-right"><button onClick={() => openOrder(order)} className="text-sm font-medium text-gray-900 hover:underline">View</button></td>
               </tr>
@@ -263,6 +282,7 @@ export const AdminOrders = () => {
               </div>
 
               <div className="rounded-xl bg-gray-50 p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">Payment provider</span><span>{selectedOrder.paymentProvider || 'Not selected'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${Number(selectedOrder.subtotal || 0).toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>${Number(selectedOrder.shipping || 0).toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Tracking</span><span>{selectedOrder.trackingReference || 'Not added yet'}</span></div>

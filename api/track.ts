@@ -9,7 +9,7 @@ import {
   getTrackingProviderType,
   mapOrderStatusToShipmentStatus,
   normalizeCarrierKey,
-} from '../src/utils/carriers';
+} from '../src/utils/carriers.js';
 
 const prisma = new PrismaClient();
 

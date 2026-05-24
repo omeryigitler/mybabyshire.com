@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 import { Buffer } from 'node:buffer';
-import { sendPaymentConfirmedEmail } from '../_lib/email';
+import { sendPaymentConfirmedEmail } from '../_lib/email.js';
 
 const prisma = new PrismaClient();
 

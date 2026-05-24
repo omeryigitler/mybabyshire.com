@@ -47,6 +47,17 @@ export default function CheckoutPage() {
     currency: 'USD',
   };
 
+  const readJsonResponse = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(text.includes('<!doctype') || text.includes('<html') ? 'Payment endpoint returned a website page instead of JSON. Please redeploy and try again.' : text);
+    }
+
+    return response.json();
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -61,7 +72,7 @@ export default function CheckoutPage() {
         body: JSON.stringify(checkoutPayload),
       });
 
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (!response.ok) throw new Error(data.details || data.error || 'Checkout could not be created.');
       if (!data.checkoutUrl) throw new Error('Checkout URL was not returned.');
       window.location.href = data.checkoutUrl;
@@ -78,13 +89,13 @@ export default function CheckoutPage() {
     setIsPayPalSubmitting(true);
 
     try {
-      const response = await fetch('/api/paypal/create-order', {
+      const response = await fetch('/api/paypal-create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(checkoutPayload),
       });
 
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (!response.ok) throw new Error(data.details || data.error || 'PayPal checkout could not be created.');
       if (!data.approvalUrl) throw new Error('PayPal approval URL was not returned.');
       window.location.href = data.approvalUrl;

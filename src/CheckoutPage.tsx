@@ -120,7 +120,7 @@ export default function CheckoutPage() {
   };
 
   const handlePayPalCheckout = async () => {
-    const response = await fetch('/api/paypal/create-order', {
+    const response = await fetch('/api/paypal-create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload),

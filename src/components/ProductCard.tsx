@@ -37,7 +37,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         </div>
         {product.badge && <div className="absolute -bottom-2 right-0 rounded-full border border-[#d4b497]/30 bg-[#fdfaf6] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#3a251a] shadow-sm">{product.badge}</div>}
       </div>
-      <div className="relative z-10 flex h-[220px] w-full max-w-[260px] flex-col justify-start self-start px-2 pt-1 md:h-[206px] md:max-w-[270px] md:self-center md:pl-3 md:pr-3 md:pt-0">
+      <div className="relative z-10 flex h-[220px] w-full max-w-[260px] translate-y-2 flex-col justify-start self-start px-2 pt-1 md:h-[206px] md:max-w-[270px] md:translate-y-3 md:self-center md:pl-3 md:pr-3 md:pt-0">
         <h3 className="mb-2 min-h-[2.55em] overflow-hidden font-serif text-[1.35rem] font-medium leading-tight text-[#3a251a] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:text-[1.08rem] xl:text-[1.18rem]">{product.name}</h3>
         <p className="mb-3 min-h-[4.2em] overflow-hidden text-sm font-medium leading-relaxed text-[#5a4234] opacity-90 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] md:text-[12px] xl:text-[13px]">{product.description}</p>
         <p className="mb-3 font-sans text-lg font-bold text-[#3a251a] md:text-[1.05rem] xl:text-lg">${product.price.toFixed(2)}</p>

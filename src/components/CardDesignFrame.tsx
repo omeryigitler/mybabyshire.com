@@ -60,7 +60,7 @@ export const CardDesignFrame = ({
 
   return (
     <svg
-      viewBox="-28 32 633 364"
+      viewBox="-28 46 633 350"
       preserveAspectRatio="none"
       className={className}
       role={title ? 'img' : undefined}

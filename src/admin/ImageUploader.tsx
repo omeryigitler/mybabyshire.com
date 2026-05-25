@@ -5,6 +5,7 @@ import { getAdminToken } from './adminAuth';
 interface ImageUploaderProps {
   images: { url: string; id: string; publicId?: string }[];
   onImagesChange: (images: { url: string; id: string; publicId?: string }[]) => void;
+  maxImages?: number;
 }
 
 const fileToDataUrl = (file: File) => {
@@ -19,12 +20,28 @@ const fileToDataUrl = (file: File) => {
   });
 };
 
-export const ImageUploader = ({ images, onImagesChange }: ImageUploaderProps) => {
+export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [cleanImage, setCleanImage] = useState(false);
+  const canUploadMore = images.length < maxImages;
 
   const handleUpload = async (file: File) => {
+    if (!canUploadMore) {
+      alert(`You can upload up to ${maxImages} image${maxImages === 1 ? '' : 's'} here.`);
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Please upload an image smaller than 8MB.');
+      return;
+    }
+
     setIsUploading(true);
     try {
       const token = getAdminToken();
@@ -37,7 +54,8 @@ export const ImageUploader = ({ images, onImagesChange }: ImageUploaderProps) =>
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Image upload failed.');
-      onImagesChange([...images, { url: data.imageUrl, publicId: data.publicId, id: crypto.randomUUID() }]);
+      const nextImage = { url: data.imageUrl, publicId: data.publicId, id: crypto.randomUUID() };
+      onImagesChange(maxImages === 1 ? [nextImage] : [...images, nextImage]);
     } catch (error) {
       console.error('Upload failed', error);
       alert((error as Error).message);
@@ -75,12 +93,14 @@ export const ImageUploader = ({ images, onImagesChange }: ImageUploaderProps) =>
             {idx === 0 && <div className="absolute top-2 left-2 bg-white/90 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-900 border border-gray-200">Primary</div>}
           </div>
         ))}
-        <label className={`relative aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${dragActive ? 'border-gray-900 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'}`} onDragOver={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
-          <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) handleUpload(e.target.files[0]); e.currentTarget.value = ''; }} />
-          {isUploading ? <div className="text-gray-400 text-sm font-medium animate-pulse">Uploading...</div> : <><Upload className="w-6 h-6 text-gray-400 mb-2" /><span className="text-xs text-gray-500 font-medium text-center px-4">{cleanImage ? 'Clean Upload' : 'Normal Upload'}</span></>}
-        </label>
+        {canUploadMore && (
+          <label className={`relative aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${dragActive ? 'border-gray-900 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'}`} onDragOver={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
+            <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) handleUpload(e.target.files[0]); e.currentTarget.value = ''; }} />
+            {isUploading ? <div className="text-gray-400 text-sm font-medium animate-pulse">Uploading...</div> : <><Upload className="w-6 h-6 text-gray-400 mb-2" /><span className="text-xs text-gray-500 font-medium text-center px-4">{cleanImage ? 'Clean Upload' : 'Normal Upload'}</span></>}
+          </label>
+        )}
       </div>
-      <p className="text-xs text-gray-400">Normal upload uses Cloudinary. Clean upload prepares the image first.</p>
+      <p className="text-xs text-gray-400">Normal upload uses Cloudinary. Clean upload prepares the image first. Max {maxImages} image{maxImages === 1 ? '' : 's'}.</p>
     </div>
   );
 };

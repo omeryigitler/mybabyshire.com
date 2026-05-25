@@ -48,7 +48,7 @@ const getPayPalAccessToken = async () => {
 
 const createPayPalOrderHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { customer, items, subtotal, shipping, total, currency = 'USD' } = req.body;
+    const { customer, items, subtotal, shipping, total, currency = 'USD', shippingMethod } = req.body;
 
     if (!customer?.name || !customer?.email || !customer?.address || !customer?.city || !customer?.state || !customer?.zip) {
       return res.status(400).json({ error: 'Missing customer shipping details.' });
@@ -60,6 +60,14 @@ const createPayPalOrderHandler = async (req: express.Request, res: express.Respo
 
     const orderNumber = createOrderNumber();
     const baseUrl = getBaseUrl(req);
+    const selectedShippingMethod = shippingMethod || {
+      id: 'us-standard',
+      label: 'Standard Shipping',
+      carrier: 'USPS',
+      service: 'Ground Advantage',
+      estimatedDelivery: '3-5 business days',
+      amount: Number(shipping) || 0,
+    };
 
     const order = await prisma.orders.create({
       data: {
@@ -70,7 +78,7 @@ const createPayPalOrderHandler = async (req: express.Request, res: express.Respo
         currency,
         payment_status: 'pending',
         order_status: 'processing',
-        personalization_data_json: JSON.stringify({ customer, subtotal, shipping, total, currency, provider: 'paypal' }),
+        personalization_data_json: JSON.stringify({ customer, subtotal, shipping, shippingMethod: selectedShippingMethod, total, currency, provider: 'paypal' }),
         items: {
           create: items.map((item: any) => ({
             product_id: item.productId,
@@ -128,7 +136,7 @@ const createPayPalOrderHandler = async (req: express.Request, res: express.Respo
     const approvalUrl = data.links?.find((link: any) => link.rel === 'payer-action' || link.rel === 'approve')?.href;
     await prisma.orders.update({ where: { id: order.id }, data: { payment_reference: data.id } });
 
-    return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl });
+    return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl, shippingMethod: selectedShippingMethod });
   } catch (error) {
     return res.status(500).json({ error: 'PayPal checkout failed', details: (error as Error).message });
   }

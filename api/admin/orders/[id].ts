@@ -13,6 +13,7 @@ import {
   getShipmentStatusLabel,
   mapOrderStatusToShipmentStatus,
   normalizeCarrierKey,
+  validateTrackingNumber,
 } from "../../../src/utils/carriers.js";
 
 const prisma = new PrismaClient();
@@ -142,6 +143,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       shipmentStatus ||
       previousSnapshot.shipmentStatus ||
       mapOrderStatusToShipmentStatus(nextOrderStatus, nextPaymentStatus);
+    const trackingValidation = validateTrackingNumber(
+      nextCarrier,
+      nextTrackingReference,
+    );
+
+    if (!trackingValidation.valid) {
+      return res.status(400).json({ error: trackingValidation.message });
+    }
+
+    if (
+      ["shipped", "in_transit", "out_for_delivery"].includes(
+        nextShipmentStatus,
+      ) &&
+      !nextTrackingReference
+    ) {
+      return res.status(400).json({
+        error: "Add a tracking reference before marking this shipment as moving.",
+      });
+    }
+
     const nextEstimatedDelivery =
       String(estimatedDelivery || "").trim() ||
       previousSnapshot.estimatedDelivery ||

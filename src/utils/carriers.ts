@@ -149,6 +149,60 @@ export function getCarrierCustomerNote(carrier?: string | null) {
   return CARRIER_CONFIGS[key]?.customerNote || 'Tracking updates are managed manually by the Little Wonders team.';
 }
 
+export function validateTrackingNumber(carrier?: string | null, trackingNumber?: string | null) {
+  const value = String(trackingNumber || '').trim().toUpperCase();
+
+  if (!value) {
+    return {
+      valid: true,
+      message: '',
+    };
+  }
+
+  if (!/^[A-Z0-9][A-Z0-9 -]{4,48}[A-Z0-9]$/.test(value)) {
+    return {
+      valid: false,
+      message: 'Tracking numbers can only contain letters, numbers, spaces and hyphens.',
+    };
+  }
+
+  const compactValue = value.replace(/[^A-Z0-9]/g, '');
+  const key = normalizeCarrierKey(carrier);
+
+  if (compactValue.length < 6 || compactValue.length > 40) {
+    return {
+      valid: false,
+      message: 'Tracking number should be between 6 and 40 characters.',
+    };
+  }
+
+  if (key === 'ups' && compactValue.startsWith('1Z') && compactValue.length !== 18) {
+    return {
+      valid: false,
+      message: 'UPS 1Z tracking numbers should be 18 characters.',
+    };
+  }
+
+  if (key === 'fedex' && !/^\d{12,22}$/.test(compactValue)) {
+    return {
+      valid: false,
+      message: 'FedEx tracking numbers are usually 12 to 22 digits.',
+    };
+  }
+
+  if (key === 'dhl' && !/^[A-Z0-9]{10,39}$/.test(compactValue)) {
+    return {
+      valid: false,
+      message: 'DHL tracking numbers should be 10 to 39 letters or digits.',
+    };
+  }
+
+  return {
+    valid: true,
+    message: '',
+  };
+}
+
 export function mapOrderStatusToShipmentStatus(orderStatus?: string | null, paymentStatus?: string | null): ShipmentStatus {
   if (paymentStatus !== 'paid') return 'pending_payment';
   if (orderStatus === 'delivered') return 'delivered';

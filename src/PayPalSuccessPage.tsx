@@ -23,7 +23,7 @@ export default function PayPalSuccessPage() {
   useEffect(() => {
     const capturePayment = async () => {
       try {
-        const response = await fetch('/api/paypal-capture-order', {
+        const response = await fetch('/api/paypal/capture-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, orderNumber: orderReference }),

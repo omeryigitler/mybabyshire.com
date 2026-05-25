@@ -37,7 +37,7 @@ export const AdminImageLibrary = () => {
     });
 
     const designImages: LibraryImage[] = [
-      { key: 'pattern', label: 'Storefront pattern', url: '/toy-pattern.png', type: 'Decor' },
+      { key: 'pattern', label: 'Storefront pattern', url: '/arka_plan.png', type: 'Decor' },
       { key: 'blue-cloud', label: 'Blue watercolor cloud', url: '/cloud-watercolor-blue-light.png', type: 'Decor' },
       { key: 'pink-cloud', label: 'Pink watercolor cloud', url: '/cloud-watercolor-pink.png', type: 'Decor' },
       { key: 'blocks', label: 'Toy blocks', url: '/toy-abc-blocks.png', type: 'Decor' },

@@ -32,6 +32,9 @@ export const mapProductForStorefront = (product: any) => {
     slug: product.slug,
     description: product.description || '',
     price: Number(product.price),
+    salePrice: product.sale_price ? Number(product.sale_price) : null,
+    sku: product.sku || '',
+    stockQuantity: product.stock_quantity || 0,
     imageUrl: primaryImage?.image_url || '',
     bgImage:
       product.card_bg_image ||
@@ -44,5 +47,13 @@ export const mapProductForStorefront = (product: any) => {
         : undefined,
     personalizationRequired: product.personalization_required,
     status: product.status,
+    featured: product.featured,
+    newArrival: product.new_arrival,
+    bestseller: product.bestseller,
+    genderTag: product.gender_tag || '',
+    ageRange: product.age_range || '',
+    material: product.material || '',
+    careInstructions: product.care_instructions || '',
+    preparationTime: product.preparation_time || '',
   };
 };

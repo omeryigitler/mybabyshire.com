@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
+import Stripe from "stripe";
 import { createAdminToken, isConfiguredAdminLogin } from "../lib/auth.js";
 import {
   SHIPMENT_STATUS_OPTIONS,
@@ -13,17 +14,28 @@ import {
   getTrackingProviderType,
   mapOrderStatusToShipmentStatus,
   normalizeCarrierKey,
+  validateTrackingNumber,
 } from "../src/utils/carriers.js";
 
 const router = Router();
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-development";
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, { apiVersion: "2024-12-18.acacia" })
+  : null;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+const DEFAULT_CLOUD_VARIANTS = [
+  { label: "Blue", image: "/product-card-cloud-blue.png" },
+  { label: "Peach", image: "/product-card-cloud-peach.png" },
+  { label: "Mint", image: "/product-card-cloud-mint.png" },
+];
 
 // ---------------------------------------------------------
 // Helpers
@@ -60,7 +72,12 @@ const mapProductForStorefront = (product: any) => {
     slug: product.slug,
     description: product.description || "",
     price: Number(product.price),
+    salePrice: product.sale_price ? Number(product.sale_price) : null,
+    sku: product.sku || "",
+    categoryId: product.category_id || "",
+    stockQuantity: product.stock_quantity || 0,
     imageUrl: primaryImage?.image_url || "",
+    publicId: primaryImage?.public_id || "",
     bgImage:
       product.card_bg_image || product.sku || "/product-card-cloud-blue.png",
     badge: product.bestseller
@@ -69,8 +86,112 @@ const mapProductForStorefront = (product: any) => {
         ? "New"
         : undefined,
     personalizationRequired: product.personalization_required,
+    personalizationEnabled: product.personalization_required,
     status: product.status,
+    featured: product.featured,
+    newArrival: product.new_arrival,
+    isNewArrival: product.new_arrival,
+    bestseller: product.bestseller,
+    isBestseller: product.bestseller,
+    genderTag: product.gender_tag || "",
+    ageRange: product.age_range || "",
+    material: product.material || "",
+    careInstructions: product.care_instructions || "",
+    preparationTime: product.preparation_time || "",
   };
+};
+
+const normalizePrice = (value: unknown) => {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? price : null;
+};
+
+const normalizeCloudVariants = (body: any) => {
+  if (Array.isArray(body.cloudVariants) && body.cloudVariants.length > 1) {
+    return body.cloudVariants
+      .map((variant: any) => ({
+        label: String(variant.label || "").trim(),
+        image: String(variant.image || "").trim(),
+      }))
+      .filter((variant: any) => variant.label && variant.image)
+      .slice(0, 6);
+  }
+
+  if (body.createCloudVariants) return DEFAULT_CLOUD_VARIANTS;
+
+  return [
+    {
+      label: "",
+      image: String(body.bgImage || "/product-card-cloud-blue.png"),
+    },
+  ];
+};
+
+const createOrderNumber = () => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 7).toUpperCase();
+  return `LW-${timestamp}-${random}`;
+};
+
+const toCents = (amount: number) => Math.round(Number(amount || 0) * 100);
+
+const getBaseUrl = (req: Request) => {
+  const configuredUrl = process.env.PUBLIC_SITE_URL?.replace(/\/$/, "");
+  if (configuredUrl) return configuredUrl;
+
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const protocol = req.headers["x-forwarded-proto"] || "http";
+  return `${protocol}://${host}`;
+};
+
+const getAbsoluteImageUrl = (
+  imageUrl: string | undefined,
+  baseUrl: string,
+) => {
+  if (!imageUrl) return undefined;
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))
+    return imageUrl;
+  if (imageUrl.startsWith("/")) return `${baseUrl}${imageUrl}`;
+  return undefined;
+};
+
+const getPayPalBaseUrl = () =>
+  process.env.PAYPAL_ENV === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+
+const getPayPalAccessToken = async () => {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "PayPal is not configured. Add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to Vercel.",
+    );
+  }
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+    "base64",
+  );
+  const response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      data.error_description ||
+        data.error ||
+        "PayPal access token could not be created.",
+    );
+  }
+
+  return data.access_token as string;
 };
 
 const parseJson = (value?: string | null) => {
@@ -435,36 +556,163 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
       name,
       description,
       price,
+      salePrice,
       imageUrl,
       publicId,
       bgImage,
+      sku,
       status = "active",
       personalizationRequired = true,
       stockQuantity = 0,
       categoryId,
+      featured = false,
+      newArrival = false,
+      bestseller = false,
+      genderTag,
+      ageRange,
+      material,
+      careInstructions,
+      preparationTime,
     } = req.body;
 
-    if (!name || !price || !imageUrl) {
+    const normalizedPrice = normalizePrice(price);
+    const variants = normalizeCloudVariants(req.body);
+
+    if (!name || !normalizedPrice || !imageUrl) {
       return res.status(400).json({
-        error: "name, price and imageUrl are required.",
+        error: "name, positive price and imageUrl are required.",
       });
     }
 
-    const slug = await uniqueSlug(name);
+    if (variants.length === 0) {
+      return res.status(400).json({ error: "Select at least one cloud color." });
+    }
 
-    const product = await prisma.products.create({
+    const createdProducts = [];
+
+    for (const variant of variants) {
+      const productName =
+        variants.length > 1 ? `${name} - ${variant.label}` : name;
+      const variantSku =
+        sku && variants.length > 1 ? `${sku}-${variant.label.toUpperCase()}` : sku;
+      const slug = await uniqueSlug(productName);
+
+      const product = await prisma.products.create({
+        data: {
+          name: productName,
+          slug,
+          description,
+          price: normalizedPrice,
+          sale_price: salePrice ? Number(salePrice) : null,
+          sku: variantSku || null,
+          card_bg_image: variant.image || bgImage || "/product-card-cloud-blue.png",
+          category_id: categoryId || null,
+          stock_quantity: Number(stockQuantity) || 0,
+          status,
+          featured: Boolean(featured),
+          new_arrival: Boolean(newArrival),
+          bestseller: Boolean(bestseller),
+          gender_tag: genderTag || null,
+          age_range: ageRange || null,
+          material: material || null,
+          care_instructions: careInstructions || null,
+          preparation_time: preparationTime || null,
+          personalization_required: Boolean(personalizationRequired),
+          images: {
+            create: [
+              {
+                image_url: imageUrl,
+                public_id: publicId || null,
+                alt_text: productName,
+                is_primary: true,
+                sort_order: 0,
+              },
+            ],
+          },
+        },
+        include: {
+          images: true,
+          category: true,
+        },
+      });
+
+      createdProducts.push(product);
+    }
+
+    const mappedProducts = createdProducts.map(mapProductForStorefront);
+
+    if (mappedProducts.length > 1) {
+      return res.status(201).json({
+        products: mappedProducts,
+        primaryProduct: mappedProducts[0],
+        createdCount: mappedProducts.length,
+      });
+    }
+
+    res.status(201).json(mappedProducts[0]);
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to create product",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.put("/admin/products/:id", requireAdmin, async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      price,
+      salePrice,
+      imageUrl,
+      publicId,
+      bgImage,
+      sku,
+      status = "active",
+      personalizationRequired = true,
+      stockQuantity = 0,
+      categoryId,
+      featured = false,
+      newArrival = false,
+      bestseller = false,
+      genderTag,
+      ageRange,
+      material,
+      careInstructions,
+      preparationTime,
+    } = req.body;
+    const normalizedPrice = normalizePrice(price);
+
+    if (!name || !normalizedPrice || !imageUrl) {
+      return res.status(400).json({
+        error: "name, positive price and imageUrl are required.",
+      });
+    }
+
+    const product = await prisma.products.update({
+      where: { id: req.params.id },
       data: {
         name,
-        slug,
         description,
-        price,
-        sku: bgImage || "/product-card-cloud-blue.png",
+        price: normalizedPrice,
+        sale_price: salePrice ? Number(salePrice) : null,
+        sku: sku || null,
         card_bg_image: bgImage || "/product-card-cloud-blue.png",
         category_id: categoryId || null,
         stock_quantity: Number(stockQuantity) || 0,
         status,
+        featured: Boolean(featured),
+        new_arrival: Boolean(newArrival),
+        bestseller: Boolean(bestseller),
+        gender_tag: genderTag || null,
+        age_range: ageRange || null,
+        material: material || null,
+        care_instructions: careInstructions || null,
+        preparation_time: preparationTime || null,
         personalization_required: Boolean(personalizationRequired),
         images: {
+          deleteMany: {},
           create: [
             {
               image_url: imageUrl,
@@ -476,31 +724,15 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
           ],
         },
       },
-      include: {
-        images: true,
-        category: true,
-      },
+      include: { images: true, category: true },
     });
 
-    res.status(201).json(mapProductForStorefront(product));
+    res.json(mapProductForStorefront(product));
   } catch (error) {
     res.status(400).json({
-      error: "Failed to create product",
+      error: "Failed to update product",
       details: (error as Error).message,
     });
-  }
-});
-
-router.put("/admin/products/:id", requireAdmin, async (req, res) => {
-  try {
-    const product = await prisma.products.update({
-      where: { id: req.params.id },
-      data: req.body,
-    });
-
-    res.json(product);
-  } catch (error) {
-    res.status(400).json({ error: "Failed to update product" });
   }
 });
 
@@ -583,6 +815,26 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       shipmentStatus ||
       previousSnapshot.shipmentStatus ||
       mapOrderStatusToShipmentStatus(nextOrderStatus, nextPaymentStatus);
+    const trackingValidation = validateTrackingNumber(
+      nextCarrier,
+      nextTrackingReference,
+    );
+
+    if (!trackingValidation.valid) {
+      return res.status(400).json({ error: trackingValidation.message });
+    }
+
+    if (
+      ["shipped", "in_transit", "out_for_delivery"].includes(
+        nextShipmentStatus,
+      ) &&
+      !nextTrackingReference
+    ) {
+      return res.status(400).json({
+        error: "Add a tracking reference before marking this shipment as moving.",
+      });
+    }
+
     const nextEstimatedDelivery =
       String(estimatedDelivery || "").trim() ||
       previousSnapshot.estimatedDelivery ||
@@ -753,20 +1005,393 @@ router.post("/cart/sync", async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// Payment Placeholder
+// Payment
 // ---------------------------------------------------------
 router.post("/checkout/create-payment", async (req, res) => {
+  if (!stripe) {
+    return res
+      .status(500)
+      .json({ error: "Stripe is not configured. Add STRIPE_SECRET_KEY." });
+  }
+
   try {
+    const {
+      customer,
+      items,
+      subtotal,
+      shipping,
+      total,
+      currency = "USD",
+      shippingMethod,
+    } = req.body;
+
+    if (
+      !customer?.name ||
+      !customer?.email ||
+      !customer?.address ||
+      !customer?.city ||
+      !customer?.state ||
+      !customer?.zip
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Missing customer shipping details." });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Your gift bag is empty." });
+    }
+
+    const selectedShippingMethod = shippingMethod || {
+      id: "us-standard",
+      label: "Standard Shipping",
+      carrier: "USPS",
+      service: "Ground Advantage",
+      estimatedDelivery: "3-5 business days",
+      amount: Number(shipping) || 0,
+    };
+    const orderNumber = createOrderNumber();
+    const customerSnapshot = {
+      customer,
+      subtotal: Number(subtotal) || 0,
+      shipping: Number(shipping) || 0,
+      shippingMethod: selectedShippingMethod,
+      total: Number(total) || 0,
+      currency,
+      provider: "stripe",
+    };
+
+    const order = await prisma.orders.create({
+      data: {
+        order_number: orderNumber,
+        customer_name: customer.name,
+        customer_email: customer.email,
+        total_amount: Number(total) || 0,
+        currency,
+        payment_status: "pending",
+        order_status: "processing",
+        personalization_data_json: JSON.stringify(customerSnapshot),
+        items: {
+          create: items.map((item: any) => ({
+            product_id: item.productId,
+            product_name_snapshot: item.name,
+            quantity: Number(item.quantity) || 1,
+            price_snapshot: Number(item.price) || 0,
+            personalization_data_json: JSON.stringify(
+              item.personalizationData || {},
+            ),
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    const baseUrl = getBaseUrl(req);
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
+      (item: any) => {
+        const productImage = getAbsoluteImageUrl(item.imageUrl, baseUrl);
+        return {
+          quantity: Number(item.quantity) || 1,
+          price_data: {
+            currency: String(currency).toLowerCase(),
+            unit_amount: toCents(Number(item.price) || 0),
+            product_data: {
+              name: item.name,
+              description: item.description || "Personalized Little Wonders gift",
+              images: productImage ? [productImage] : undefined,
+              metadata: { productId: item.productId || "" },
+            },
+          },
+        };
+      },
+    );
+
+    if (Number(shipping) > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: String(currency).toLowerCase(),
+          unit_amount: toCents(Number(shipping) || 0),
+          product_data: {
+            name: selectedShippingMethod.label || "Gift-ready shipping",
+            description: `${selectedShippingMethod.carrier || "Carrier"} · ${selectedShippingMethod.service || "Shipping service"} · ${selectedShippingMethod.estimatedDelivery || "Delivery estimate"}`,
+          },
+        },
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      locale: "en",
+      customer_email: customer.email,
+      line_items: lineItems,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.order_number)}`,
+      cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
+      payment_method_types: ["card"],
+      custom_text: {
+        submit: {
+          message:
+            "Your personalized gift order will be prepared after payment confirmation.",
+        },
+        shipping_address: {
+          message:
+            "Please enter the delivery address for your Little Wonders gift.",
+        },
+      },
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        shippingMethod: selectedShippingMethod.id || "us-standard",
+      },
+      payment_intent_data: {
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.order_number,
+          shippingMethod: selectedShippingMethod.id || "us-standard",
+        },
+      },
+    });
+
+    await prisma.orders.update({
+      where: { id: order.id },
+      data: { payment_reference: session.id },
+    });
+
     res.json({
       success: true,
-      clientSecret: "pi_placeholder_secret_12345",
-      orderId: "ORDER-" + Math.random().toString(36).substring(7).toUpperCase(),
-      message: "Payment intent created (Placeholder)",
+      orderId: order.order_number,
+      databaseId: order.id,
+      checkoutUrl: session.url,
+      sessionId: session.id,
+      currency: order.currency,
+      subtotal: Number(subtotal) || 0,
+      shipping: Number(shipping) || 0,
+      shippingMethod: selectedShippingMethod,
+      total: Number(order.total_amount) || 0,
+      message: "Stripe Checkout session created.",
     });
   } catch (error) {
-    res.status(500).json({ error: "Payment setup failed" });
+    res.status(500).json({
+      error: "Checkout setup failed",
+      details: (error as Error).message,
+    });
   }
 });
+
+const createPayPalOrderHandler = async (req: Request, res: Response) => {
+  try {
+    const {
+      customer,
+      items,
+      subtotal,
+      shipping,
+      total,
+      currency = "USD",
+      shippingMethod,
+    } = req.body;
+
+    if (
+      !customer?.name ||
+      !customer?.email ||
+      !customer?.address ||
+      !customer?.city ||
+      !customer?.state ||
+      !customer?.zip
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Missing customer shipping details." });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Your gift bag is empty." });
+    }
+
+    const selectedShippingMethod = shippingMethod || {
+      id: "us-standard",
+      label: "Standard Shipping",
+      carrier: "USPS",
+      service: "Ground Advantage",
+      estimatedDelivery: "3-5 business days",
+      amount: Number(shipping) || 0,
+    };
+    const orderNumber = createOrderNumber();
+    const baseUrl = getBaseUrl(req);
+    const customerSnapshot = {
+      customer,
+      subtotal: Number(subtotal) || 0,
+      shipping: Number(shipping) || 0,
+      shippingMethod: selectedShippingMethod,
+      total: Number(total) || 0,
+      currency,
+      provider: "paypal",
+    };
+
+    const order = await prisma.orders.create({
+      data: {
+        order_number: orderNumber,
+        customer_name: customer.name,
+        customer_email: customer.email,
+        total_amount: Number(total) || 0,
+        currency,
+        payment_status: "pending",
+        order_status: "processing",
+        personalization_data_json: JSON.stringify(customerSnapshot),
+        items: {
+          create: items.map((item: any) => ({
+            product_id: item.productId,
+            product_name_snapshot: item.name,
+            quantity: Number(item.quantity) || 1,
+            price_snapshot: Number(item.price) || 0,
+            personalization_data_json: JSON.stringify(
+              item.personalizationData || {},
+            ),
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: order.order_number,
+            description: `Little Wonders order ${order.order_number}`,
+            amount: {
+              currency_code: String(currency).toUpperCase(),
+              value: Number(total || 0).toFixed(2),
+              breakdown: {
+                item_total: {
+                  currency_code: String(currency).toUpperCase(),
+                  value: Number(subtotal || 0).toFixed(2),
+                },
+                shipping: {
+                  currency_code: String(currency).toUpperCase(),
+                  value: Number(shipping || 0).toFixed(2),
+                },
+              },
+            },
+            items: items.map((item: any) => ({
+              name: String(item.name).slice(0, 127),
+              quantity: String(Number(item.quantity) || 1),
+              unit_amount: {
+                currency_code: String(currency).toUpperCase(),
+                value: Number(item.price || 0).toFixed(2),
+              },
+            })),
+          },
+        ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: "Little Wonders",
+              locale: "en-US",
+              shipping_preference: "NO_SHIPPING",
+              user_action: "PAY_NOW",
+              return_url: `${baseUrl}/paypal-success?order=${encodeURIComponent(order.order_number)}`,
+              cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
+            },
+          },
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data.message || data.name || "PayPal order could not be created.",
+      );
+    }
+
+    const approvalUrl = data.links?.find(
+      (link: any) => link.rel === "payer-action" || link.rel === "approve",
+    )?.href;
+    await prisma.orders.update({
+      where: { id: order.id },
+      data: { payment_reference: data.id },
+    });
+
+    return res.json({
+      success: true,
+      orderId: order.order_number,
+      databaseId: order.id,
+      paypalOrderId: data.id,
+      approvalUrl,
+      shippingMethod: selectedShippingMethod,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "PayPal checkout failed",
+      details: (error as Error).message,
+    });
+  }
+};
+
+const capturePayPalOrderHandler = async (req: Request, res: Response) => {
+  try {
+    const { token, orderNumber } = req.body;
+
+    if (!token || !orderNumber) {
+      return res
+        .status(400)
+        .json({ error: "Missing PayPal token or order reference." });
+    }
+
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(
+      `${getPayPalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(token)}/capture`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        data.message || data.name || "PayPal payment could not be captured.",
+      );
+    }
+
+    const isCompleted = data.status === "COMPLETED";
+    await prisma.orders.update({
+      where: { order_number: orderNumber },
+      data: {
+        payment_status: isCompleted ? "paid" : "pending",
+        order_status: "processing",
+        payment_reference: data.id || token,
+      },
+    });
+
+    return res.json({
+      success: true,
+      status: data.status,
+      orderNumber,
+      paypalOrderId: data.id || token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "PayPal capture failed",
+      details: (error as Error).message,
+    });
+  }
+};
+
+router.post("/paypal/create-order", createPayPalOrderHandler);
+router.post("/paypal-create-order", createPayPalOrderHandler);
+router.post("/paypal/capture-order", capturePayPalOrderHandler);
+router.post("/paypal-capture-order", capturePayPalOrderHandler);
 
 // ---------------------------------------------------------
 // Public Tracking

@@ -27,15 +27,19 @@ const mapProductForAdmin = (product: any) => {
     price: Number(product.price),
     salePrice: product.sale_price ? Number(product.sale_price) : null,
     sku: product.sku || '',
+    categoryId: product.category_id || '',
     stockQuantity: product.stock_quantity || 0,
     imageUrl: primaryImage?.image_url || '',
     publicId: primaryImage?.public_id || '',
     bgImage: product.card_bg_image || '/product-card-cloud-blue.png',
     personalizationRequired: product.personalization_required,
+    personalizationEnabled: product.personalization_required,
     status: product.status,
     featured: product.featured,
     newArrival: product.new_arrival,
+    isNewArrival: product.new_arrival,
     bestseller: product.bestseller,
+    isBestseller: product.bestseller,
     genderTag: product.gender_tag || '',
     ageRange: product.age_range || '',
     material: product.material || '',
@@ -91,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status = 'active',
         personalizationRequired = true,
         stockQuantity = 0,
+        categoryId,
         featured = false,
         newArrival = false,
         bestseller = false,
@@ -101,9 +106,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         preparationTime,
       } = req.body;
 
-      if (!name || !price || !imageUrl) {
+      const normalizedPrice = Number(price);
+
+      if (!name || !Number.isFinite(normalizedPrice) || normalizedPrice <= 0 || !imageUrl) {
         return res.status(400).json({
-          error: 'name, price and imageUrl are required.',
+          error: 'name, positive price and imageUrl are required.',
         });
       }
 
@@ -112,10 +119,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data: {
           name,
           description,
-          price,
+          price: normalizedPrice,
           sale_price: salePrice ? Number(salePrice) : null,
           sku: sku || null,
           card_bg_image: bgImage || '/product-card-cloud-blue.png',
+          category_id: categoryId || null,
           stock_quantity: Number(stockQuantity) || 0,
           status,
           featured: Boolean(featured),

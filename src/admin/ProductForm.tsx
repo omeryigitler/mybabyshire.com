@@ -8,8 +8,9 @@ import { getAdminToken } from './adminAuth';
 
 type UploadedImage = { url: string; id: string; publicId?: string; };
 type PromotionBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
+type CloudStyle = { label: string; image: string };
 
-const CLOUD_STYLES = [
+const CLOUD_STYLES: CloudStyle[] = [
   { label: 'Blue', image: '/product-card-cloud-blue.png' },
   { label: 'Peach', image: '/product-card-cloud-peach.png' },
   { label: 'Mint', image: '/product-card-cloud-mint.png' },
@@ -64,6 +65,7 @@ export const ProductForm = () => {
   const [careInstructions, setCareInstructions] = useState('');
   const [preparationTime, setPreparationTime] = useState('');
   const [bgImage, setBgImage] = useState('/product-card-cloud-blue.png');
+  const [createCloudVariants, setCreateCloudVariants] = useState(false);
   const [personalizationRequired, setPersonalizationRequired] = useState(true);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,7 +82,7 @@ export const ProductForm = () => {
         if (!response.ok) throw new Error(data.details || data.error || 'Could not load product.');
         setName(data.name || ''); setDescription(data.description || ''); setPrice(String(data.price || '')); setSalePrice(data.salePrice ? String(data.salePrice) : ''); setSku(data.sku || ''); setStockQuantity(String(data.stockQuantity ?? 0));
         setStatus(data.status === 'draft' ? 'draft' : 'active'); setPromotionBadge(data.bestseller ? 'bestseller' : data.newArrival ? 'newArrival' : data.featured ? 'featured' : 'none');
-        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setBgImage(data.bgImage || '/product-card-cloud-blue.png'); setPersonalizationRequired(Boolean(data.personalizationRequired)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
+        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setBgImage(data.bgImage || '/product-card-cloud-blue.png'); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
       } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsLoading(false); }
     };
     loadProduct();
@@ -93,8 +95,8 @@ export const ProductForm = () => {
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired }) });
-      const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); if (!isEditing) addProduct(data); alert(isEditing ? 'Product updated successfully.' : 'Product saved to database successfully.'); navigate('/admin/products');
+      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? CLOUD_STYLES : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); alert(isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.'); navigate('/admin/products');
     } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsSaving(false); }
   };
 
@@ -125,7 +127,7 @@ export const ProductForm = () => {
           </Panel>
 
           <Panel title="Media" icon={Cloud} note="Upload product imagery and preview how the storefront card will look.">
-            <ImageUploader images={images} onImagesChange={setImages} />
+            <ImageUploader images={images} onImagesChange={setImages} maxImages={1} />
             {productPreview && <div className="mt-6 border-t border-boutique-brown/10 pt-6"><p className="mb-3 text-sm font-bold text-boutique-brown">Storefront card preview</p><div className="overflow-hidden rounded-[1.3rem] border border-[#d4b497]/20 bg-boutique-bg bg-pattern bg-[length:280px_280px] px-3 py-5"><ProductCard product={productPreview} preview /></div></div>}
           </Panel>
 
@@ -140,7 +142,7 @@ export const ProductForm = () => {
 
         <aside className="space-y-8">
           <Panel title="Organization" icon={Sparkles} note="Set visibility, promotion badge and cloud style.">
-            <div className="space-y-5"><div><FieldLabel>Status</FieldLabel><div className="grid grid-cols-2 gap-2"><TogglePill active={status === 'active'} label="Active" onClick={() => setStatus('active')} /><TogglePill active={status === 'draft'} label="Draft" onClick={() => setStatus('draft')} /></div></div><div><FieldLabel>Promotion badge</FieldLabel><div className="space-y-2 rounded-[1.3rem] bg-[#fffaf3] p-3"><TogglePill active={promotionBadge === 'none'} label="None" onClick={() => setPromotionBadge('none')} /><TogglePill active={promotionBadge === 'featured'} label="Featured" onClick={() => setPromotionBadge('featured')} /><TogglePill active={promotionBadge === 'newArrival'} label="New arrival" onClick={() => setPromotionBadge('newArrival')} /><TogglePill active={promotionBadge === 'bestseller'} label="Bestseller" onClick={() => setPromotionBadge('bestseller')} /></div></div><div><FieldLabel>Cloud style</FieldLabel><div className="grid grid-cols-3 gap-2">{CLOUD_STYLES.map((style) => <button key={style.image} type="button" onClick={() => setBgImage(style.image)} className={`rounded-2xl border p-2 transition-all ${style.image === bgImage ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fff4df]'}`}><img src={style.image} className="aspect-[1.6/1] w-full object-fill" alt="" /><span className="mt-1 block text-center text-[11px] font-bold text-boutique-brown-light">{style.label}</span></button>)}</div></div></div>
+            <div className="space-y-5"><div><FieldLabel>Status</FieldLabel><div className="grid grid-cols-2 gap-2"><TogglePill active={status === 'active'} label="Active" onClick={() => setStatus('active')} /><TogglePill active={status === 'draft'} label="Draft" onClick={() => setStatus('draft')} /></div></div><div><FieldLabel>Promotion badge</FieldLabel><div className="space-y-2 rounded-[1.3rem] bg-[#fffaf3] p-3"><TogglePill active={promotionBadge === 'none'} label="None" onClick={() => setPromotionBadge('none')} /><TogglePill active={promotionBadge === 'featured'} label="Featured" onClick={() => setPromotionBadge('featured')} /><TogglePill active={promotionBadge === 'newArrival'} label="New arrival" onClick={() => setPromotionBadge('newArrival')} /><TogglePill active={promotionBadge === 'bestseller'} label="Bestseller" onClick={() => setPromotionBadge('bestseller')} /></div></div>{!isEditing && <div className="flex items-center justify-between rounded-[1.3rem] bg-[#fffaf3] p-4"><div><h3 className="text-sm font-bold text-boutique-brown">Create color set</h3><p className="mt-1 text-xs leading-relaxed text-boutique-brown-light">Save this image as Blue, Peach and Mint cloud products.</p></div><Switch checked={createCloudVariants} onClick={() => setCreateCloudVariants(!createCloudVariants)} /></div>}<div><FieldLabel>{createCloudVariants && !isEditing ? 'Cloud colors' : 'Cloud style'}</FieldLabel><div className="grid grid-cols-3 gap-2">{CLOUD_STYLES.map((style) => <button key={style.image} type="button" onClick={() => { setBgImage(style.image); if (isEditing) setCreateCloudVariants(false); }} className={`rounded-2xl border p-2 transition-all ${style.image === bgImage || (createCloudVariants && !isEditing) ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fff4df]'}`}><img src={style.image} className="aspect-[1.6/1] w-full object-fill" alt="" /><span className="mt-1 block text-center text-[11px] font-bold text-boutique-brown-light">{style.label}</span></button>)}</div>{createCloudVariants && !isEditing && <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">The storefront will receive three separate products using the same uploaded image.</p>}</div></div>
           </Panel>
 
           <Panel title="Personalization" icon={Wand2} note="Control whether this product can receive custom details.">
@@ -150,7 +152,7 @@ export const ProductForm = () => {
           <div className="relative overflow-hidden rounded-[1.8rem] border border-boutique-brown/10 bg-white/84 p-5 shadow-[0_18px_45px_rgba(58,37,26,0.07)] backdrop-blur-sm">
             <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-25 mix-blend-multiply" alt="" />
             <p className="relative z-10 text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Quick check</p>
-            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
+            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Cloud products</span><span className="font-bold text-boutique-brown">{createCloudVariants && !isEditing ? '3 colors' : '1 color'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
           </div>
         </aside>
       </div>

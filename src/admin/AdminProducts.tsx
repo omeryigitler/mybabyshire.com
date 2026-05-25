@@ -77,14 +77,14 @@ export const AdminProducts = () => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return products;
 
-    return products.filter((product) => product.name.toLowerCase().includes(query) || product.description.toLowerCase().includes(query) || String(product.status || '').toLowerCase().includes(query));
+    return products.filter((product) => product.name.toLowerCase().includes(query) || String(product.description || '').toLowerCase().includes(query) || String(product.status || '').toLowerCase().includes(query));
   }, [products, searchTerm]);
 
   useEffect(() => { loadProducts(); }, []);
 
   const activeProducts = products.filter((product) => (product.status || 'active') !== 'draft').length;
   const draftProducts = products.filter((product) => product.status === 'draft').length;
-  const personalizedProducts = products.filter((product: any) => product.personalizationEnabled || product.personalizationFields?.length > 0).length;
+  const personalizedProducts = products.filter((product: any) => product.personalizationRequired || product.personalizationEnabled || product.personalizationFields?.length > 0).length;
 
   return (
     <div className="space-y-8">
@@ -148,9 +148,9 @@ export const AdminProducts = () => {
                       <p className="mt-1 max-w-sm truncate text-xs text-boutique-brown-light">{product.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {(product as any).featured && <FeatureBadge>Featured</FeatureBadge>}
-                        {(product as any).isNewArrival && <FeatureBadge>New arrival</FeatureBadge>}
-                        {(product as any).isBestseller && <FeatureBadge>Bestseller</FeatureBadge>}
-                        {((product as any).personalizationEnabled || (product as any).personalizationFields?.length > 0) && <FeatureBadge>Personalized</FeatureBadge>}
+                        {((product as any).newArrival || (product as any).isNewArrival) && <FeatureBadge>New arrival</FeatureBadge>}
+                        {((product as any).bestseller || (product as any).isBestseller) && <FeatureBadge>Bestseller</FeatureBadge>}
+                        {((product as any).personalizationRequired || (product as any).personalizationEnabled || (product as any).personalizationFields?.length > 0) && <FeatureBadge>Personalized</FeatureBadge>}
                       </div>
                     </div>
                   </div>

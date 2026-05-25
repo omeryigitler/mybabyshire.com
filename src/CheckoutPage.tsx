@@ -57,11 +57,28 @@ export default function CheckoutPage() {
       return false;
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      alert('Please enter a valid email address.');
+      return false;
+    }
+
+    if (!/^\d{5}(-\d{4})?$/.test(zip.trim())) {
+      alert('Please enter a valid US ZIP code.');
+      return false;
+    }
+
     return true;
   };
 
   const checkoutPayload = {
-    customer: { name: customerName, email, address, city, state, zip },
+    customer: {
+      name: customerName.trim(),
+      email: email.trim(),
+      address: address.trim(),
+      city: city.trim(),
+      state: state.trim().toUpperCase(),
+      zip: zip.trim(),
+    },
     items: cartItems.map((item) => ({
       productId: item.product.id,
       name: item.product.name,
@@ -103,7 +120,7 @@ export default function CheckoutPage() {
   };
 
   const handlePayPalCheckout = async () => {
-    const response = await fetch('/api/paypal-create-order', {
+    const response = await fetch('/api/paypal/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutPayload),

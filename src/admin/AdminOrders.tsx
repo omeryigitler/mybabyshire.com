@@ -23,6 +23,7 @@ import {
   getCarrierDisplayName,
   getCarrierTrackingUrl,
   getShipmentStatusLabel,
+  validateTrackingNumber,
 } from "../utils/carriers";
 
 type OrderItem = {
@@ -380,6 +381,18 @@ export const AdminOrders = () => {
         getCarrierTrackingUrl(draftCarrier, draftTrackingReference) ||
         selectedOrder.trackingUrl)) ||
     "";
+  const trackingValidation = validateTrackingNumber(
+    draftCarrier,
+    draftTrackingReference,
+  );
+  const shipmentNeedsTracking = [
+    "shipped",
+    "in_transit",
+    "out_for_delivery",
+  ].includes(draftShipmentStatus);
+  const shipmentSaveBlocked =
+    !trackingValidation.valid ||
+    (shipmentNeedsTracking && !draftTrackingReference.trim());
 
   return (
     <div className="space-y-8">
@@ -777,7 +790,11 @@ export const AdminOrders = () => {
                           shipmentStatus: "shipped",
                         })
                       }
-                      disabled={isUpdating}
+                      disabled={
+                        isUpdating ||
+                        !draftTrackingReference.trim() ||
+                        !trackingValidation.valid
+                      }
                       className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-3 text-xs font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50"
                     >
                       Mark shipped
@@ -904,6 +921,19 @@ export const AdminOrders = () => {
                         className="mt-2 w-full rounded-2xl border border-boutique-brown/10 bg-white px-3 py-3 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/35"
                         placeholder="Add tracking reference"
                       />
+                      {!trackingValidation.valid && (
+                        <p className="mt-2 text-xs font-bold text-red-600">
+                          {trackingValidation.message}
+                        </p>
+                      )}
+                      {shipmentNeedsTracking &&
+                        trackingValidation.valid &&
+                        !draftTrackingReference.trim() && (
+                          <p className="mt-2 text-xs font-bold text-amber-700">
+                            Add a tracking reference before marking this
+                            shipment as moving.
+                          </p>
+                        )}
                     </div>
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-[0.12em] text-boutique-brown/50">
@@ -944,7 +974,7 @@ export const AdminOrders = () => {
                     </div>
                     <button
                       onClick={() => updateSelectedOrder()}
-                      disabled={isUpdating}
+                      disabled={isUpdating || shipmentSaveBlocked}
                       className="mt-2 w-full rounded-full bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-wood disabled:opacity-50"
                     >
                       {isUpdating ? "Saving..." : "Save shipment details"}

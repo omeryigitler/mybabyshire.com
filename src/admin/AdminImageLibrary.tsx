@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Package, RefreshCcw, Search, Sparkles } from 'lucide-react';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import { CardDesignFrame } from '../components/CardDesignFrame';
+import { isCardDesignValue } from '../utils/cardDesign';
 
 type LibraryImage = { key: string; label: string; url: string; productName?: string; type: 'Product' | 'Cloud' | 'Decor'; };
 
@@ -79,8 +81,10 @@ export const AdminImageLibrary = () => {
           {isLoading && <div className="text-sm text-boutique-brown-light">Loading image library...</div>}
           {!isLoading && filteredImages.map((image) => (
             <div key={image.key} className="overflow-hidden rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] shadow-sm">
-              <div className="flex h-40 items-center justify-center bg-white/70 p-4"><img src={image.url} className="max-h-full max-w-full object-contain" alt="" /></div>
-              <div className="p-4"><div className="flex items-center justify-between gap-2"><p className="truncate font-bold text-boutique-brown">{image.label}</p><span className="rounded-full border border-boutique-brown/10 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-boutique-brown-light">{image.type}</span></div>{image.productName && <p className="mt-1 truncate text-xs text-boutique-brown-light">{image.productName}</p>}<button onClick={() => navigator.clipboard?.writeText(image.url)} className="mt-3 rounded-full border border-boutique-brown/10 bg-white px-3 py-2 text-xs font-bold text-boutique-brown hover:bg-[#fff4df]">Copy URL</button></div>
+              <div className="flex h-40 items-center justify-center bg-white/70 p-4">
+                {isCardDesignValue(image.url) ? <CardDesignFrame value={image.url} className="h-full w-full" /> : <img src={image.url} className="max-h-full max-w-full object-contain" alt="" />}
+              </div>
+              <div className="p-4"><div className="flex items-center justify-between gap-2"><p className="truncate font-bold text-boutique-brown">{image.label}</p><span className="rounded-full border border-boutique-brown/10 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-boutique-brown-light">{image.type}</span></div>{image.productName && <p className="mt-1 truncate text-xs text-boutique-brown-light">{image.productName}</p>}<button onClick={() => navigator.clipboard?.writeText(image.url)} className="mt-3 rounded-full border border-boutique-brown/10 bg-white px-3 py-2 text-xs font-bold text-boutique-brown hover:bg-[#fff4df]">Copy value</button></div>
             </div>
           ))}
           {!isLoading && filteredImages.length === 0 && <div className="text-sm text-boutique-brown-light">No images found.</div>}

@@ -2,22 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BadgeDollarSign, Box, Check, Cloud, Gift, PackageCheck, Save, Sparkles, Wand2 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
+import { CardDesignFrame } from '../components/CardDesignFrame';
 import { ImageUploader } from './ImageUploader';
 import { useStore } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import {
+  CARD_CLOUD_SHAPES,
+  CARD_COLORS,
+  CARD_PANEL_SHAPES,
+  CardCloudShapeId,
+  CardColorId,
+  CardPanelShapeId,
+  DEFAULT_CARD_DESIGN,
+  buildCardColorVariants,
+  encodeCardDesign,
+  parseCardDesign,
+} from '../utils/cardDesign';
 
 type UploadedImage = { url: string; id: string; publicId?: string; };
 type PromotionBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
-type CloudStyle = { label: string; image: string };
-
-const CLOUD_STYLES: CloudStyle[] = [
-  { label: 'Blue', image: '/product-card-cloud-blue.png' },
-  { label: 'Peach', image: '/product-card-cloud-peach.png' },
-  { label: 'Mint', image: '/product-card-cloud-mint.png' },
-  { label: 'Lavender', image: '/product-card-cloud-lavender.svg' },
-  { label: 'Butter', image: '/product-card-cloud-butter.svg' },
-  { label: 'Rose', image: '/product-card-cloud-rose.svg' },
-];
 
 const Panel = ({ title, icon: Icon, children, note }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; note?: string }) => (
   <section className="relative overflow-hidden rounded-[1.8rem] border border-boutique-brown/10 bg-white/84 p-6 shadow-[0_18px_45px_rgba(58,37,26,0.07)] backdrop-blur-sm">
@@ -49,6 +52,19 @@ const Switch = ({ checked, onClick }: { checked: boolean; onClick: () => void })
   </button>
 );
 
+type DesignOptionButtonProps = React.PropsWithChildren<{
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}>;
+
+const DesignOptionButton: React.FC<DesignOptionButtonProps> = ({ active, label, onClick, children }) => (
+  <button type="button" onClick={onClick} className={`rounded-2xl border p-2 transition-all ${active ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fff4df]'}`}>
+    {children}
+    <span className="mt-1 block text-center text-[11px] font-bold text-boutique-brown-light">{label}</span>
+  </button>
+);
+
 export const ProductForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -67,7 +83,9 @@ export const ProductForm = () => {
   const [material, setMaterial] = useState('');
   const [careInstructions, setCareInstructions] = useState('');
   const [preparationTime, setPreparationTime] = useState('');
-  const [bgImage, setBgImage] = useState('/product-card-cloud-blue.png');
+  const [cloudShape, setCloudShape] = useState<CardCloudShapeId>(DEFAULT_CARD_DESIGN.cloud);
+  const [panelShape, setPanelShape] = useState<CardPanelShapeId>(DEFAULT_CARD_DESIGN.panel);
+  const [cardColor, setCardColor] = useState<CardColorId>(DEFAULT_CARD_DESIGN.color);
   const [createCloudVariants, setCreateCloudVariants] = useState(false);
   const [personalizationRequired, setPersonalizationRequired] = useState(true);
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -85,20 +103,24 @@ export const ProductForm = () => {
         if (!response.ok) throw new Error(data.details || data.error || 'Could not load product.');
         setName(data.name || ''); setDescription(data.description || ''); setPrice(String(data.price || '')); setSalePrice(data.salePrice ? String(data.salePrice) : ''); setSku(data.sku || ''); setStockQuantity(String(data.stockQuantity ?? 0));
         setStatus(data.status === 'draft' ? 'draft' : 'active'); setPromotionBadge(data.bestseller ? 'bestseller' : data.newArrival ? 'newArrival' : data.featured ? 'featured' : 'none');
-        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setBgImage(data.bgImage || '/product-card-cloud-blue.png'); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
+        const loadedDesign = parseCardDesign(data.bgImage);
+        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setCloudShape(loadedDesign.cloud); setPanelShape(loadedDesign.panel); setCardColor(loadedDesign.color); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
       } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsLoading(false); }
     };
     loadProduct();
   }, [id]);
 
-  const productPreview = images[0] ? { id: id || 'new-product-preview', name: name.trim() || 'New personalized gift', description: description.trim() || 'Your uploaded product will appear inside the selected cloud card.', price: Number(price) || 0, imageUrl: images[0].url, bgImage, badge: promotionBadge === 'bestseller' ? 'Bestseller' : promotionBadge === 'newArrival' ? 'New' : undefined, personalizationRequired } : null;
+  const selectedCardDesign = { cloud: cloudShape, panel: panelShape, color: cardColor };
+  const bgImage = encodeCardDesign(selectedCardDesign);
+  const colorVariants = buildCardColorVariants(cloudShape, panelShape);
+  const productPreview = images[0] ? { id: id || 'new-product-preview', name: name.trim() || 'New personalized gift', description: description.trim() || 'Your uploaded product will appear inside the selected card design.', price: Number(price) || 0, imageUrl: images[0].url, bgImage, badge: promotionBadge === 'bestseller' ? 'Bestseller' : promotionBadge === 'newArrival' ? 'New' : undefined, personalizationRequired } : null;
 
   const handleSave = async () => {
     if (!name.trim() || !description.trim() || !price || images.length === 0) { alert('Please fill product name, description, price and upload one image.'); return; }
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? CLOUD_STYLES : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired }) });
+      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); alert(isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.'); navigate('/admin/products');
     } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsSaving(false); }
   };
@@ -144,8 +166,70 @@ export const ProductForm = () => {
         </div>
 
         <aside className="space-y-8">
-          <Panel title="Organization" icon={Sparkles} note="Set visibility, promotion badge and cloud style.">
-            <div className="space-y-5"><div><FieldLabel>Status</FieldLabel><div className="grid grid-cols-2 gap-2"><TogglePill active={status === 'active'} label="Active" onClick={() => setStatus('active')} /><TogglePill active={status === 'draft'} label="Draft" onClick={() => setStatus('draft')} /></div></div><div><FieldLabel>Promotion badge</FieldLabel><div className="space-y-2 rounded-[1.3rem] bg-[#fffaf3] p-3"><TogglePill active={promotionBadge === 'none'} label="None" onClick={() => setPromotionBadge('none')} /><TogglePill active={promotionBadge === 'featured'} label="Featured" onClick={() => setPromotionBadge('featured')} /><TogglePill active={promotionBadge === 'newArrival'} label="New arrival" onClick={() => setPromotionBadge('newArrival')} /><TogglePill active={promotionBadge === 'bestseller'} label="Bestseller" onClick={() => setPromotionBadge('bestseller')} /></div></div>{!isEditing && <div className="flex items-center justify-between rounded-[1.3rem] bg-[#fffaf3] p-4"><div><h3 className="text-sm font-bold text-boutique-brown">Create color set</h3><p className="mt-1 text-xs leading-relaxed text-boutique-brown-light">Save this image as six cloud color products.</p></div><Switch checked={createCloudVariants} onClick={() => setCreateCloudVariants(!createCloudVariants)} /></div>}<div><FieldLabel>{createCloudVariants && !isEditing ? 'Cloud colors' : 'Cloud style'}</FieldLabel><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{CLOUD_STYLES.map((style) => <button key={style.image} type="button" onClick={() => { setBgImage(style.image); if (isEditing) setCreateCloudVariants(false); }} className={`rounded-2xl border p-2 transition-all ${style.image === bgImage || (createCloudVariants && !isEditing) ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fff4df]'}`}><img src={style.image} className="aspect-[1.6/1] w-full object-fill" alt="" /><span className="mt-1 block text-center text-[11px] font-bold text-boutique-brown-light">{style.label}</span></button>)}</div>{createCloudVariants && !isEditing && <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">The storefront will receive six separate products using the same uploaded image.</p>}</div></div>
+          <Panel title="Organization" icon={Sparkles} note="Set visibility, promotion badge and card design.">
+            <div className="space-y-5">
+              <div>
+                <FieldLabel>Status</FieldLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  <TogglePill active={status === 'active'} label="Active" onClick={() => setStatus('active')} />
+                  <TogglePill active={status === 'draft'} label="Draft" onClick={() => setStatus('draft')} />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Promotion badge</FieldLabel>
+                <div className="space-y-2 rounded-[1.3rem] bg-[#fffaf3] p-3">
+                  <TogglePill active={promotionBadge === 'none'} label="None" onClick={() => setPromotionBadge('none')} />
+                  <TogglePill active={promotionBadge === 'featured'} label="Featured" onClick={() => setPromotionBadge('featured')} />
+                  <TogglePill active={promotionBadge === 'newArrival'} label="New arrival" onClick={() => setPromotionBadge('newArrival')} />
+                  <TogglePill active={promotionBadge === 'bestseller'} label="Bestseller" onClick={() => setPromotionBadge('bestseller')} />
+                </div>
+              </div>
+
+              {!isEditing && (
+                <div className="flex items-center justify-between rounded-[1.3rem] bg-[#fffaf3] p-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-boutique-brown">Create color set</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-boutique-brown-light">Save six products using the selected cloud and panel.</p>
+                  </div>
+                  <Switch checked={createCloudVariants} onClick={() => setCreateCloudVariants(!createCloudVariants)} />
+                </div>
+              )}
+
+              <div>
+                <FieldLabel>Cloud shape</FieldLabel>
+                <div className="grid grid-cols-3 gap-2">
+                  {CARD_CLOUD_SHAPES.map((shape) => (
+                    <DesignOptionButton key={shape.id} active={cloudShape === shape.id} label={shape.label} onClick={() => setCloudShape(shape.id)}>
+                      <CardDesignFrame design={{ cloud: shape.id, panel: panelShape, color: cardColor }} className="aspect-[1.6/1] w-full" />
+                    </DesignOptionButton>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Inner panel</FieldLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  {CARD_PANEL_SHAPES.map((shape) => (
+                    <DesignOptionButton key={shape.id} active={panelShape === shape.id} label={shape.label} onClick={() => setPanelShape(shape.id)}>
+                      <CardDesignFrame design={{ cloud: cloudShape, panel: shape.id, color: cardColor }} className="aspect-[1.6/1] w-full" />
+                    </DesignOptionButton>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>{createCloudVariants && !isEditing ? 'Color preview' : 'Color'}</FieldLabel>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {CARD_COLORS.map((color) => (
+                    <DesignOptionButton key={color.id} active={cardColor === color.id} label={color.label} onClick={() => setCardColor(color.id)}>
+                      <CardDesignFrame design={{ cloud: cloudShape, panel: panelShape, color: color.id }} className="aspect-[1.6/1] w-full" />
+                    </DesignOptionButton>
+                  ))}
+                </div>
+                {createCloudVariants && !isEditing && <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">All six colors will be created with this cloud and inner panel shape.</p>}
+              </div>
+            </div>
           </Panel>
 
           <Panel title="Personalization" icon={Wand2} note="Control whether this product can receive custom details.">

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Gift, Heart, ShieldCheck, ShoppingBag, Sparkles, Truck, X } from 'lucide-react';
 import { CartDrawer } from './components/CartDrawer';
+import { CardDesignFrame } from './components/CardDesignFrame';
 import { PersonalizationModal } from './components/PersonalizationModal';
 import { useStore } from './store/useStore';
 
@@ -111,7 +112,7 @@ export default function ProductDetailPage() {
 
             <div className="relative z-10 rounded-[2.2rem] border border-boutique-brown/10 bg-white/55 p-5 shadow-[0_24px_70px_rgba(58,37,26,0.10)] backdrop-blur-sm md:p-8">
               <div className="absolute inset-3 rounded-[1.8rem] border border-dashed border-boutique-brown/10"></div>
-              <img src={product.bgImage || '/product-card-cloud-blue.png'} className="absolute left-1/2 top-1/2 h-[78%] w-[88%] -translate-x-1/2 -translate-y-1/2 object-fill opacity-55 drop-shadow-[0_16px_28px_rgba(58,37,26,0.10)]" alt="" />
+              <CardDesignFrame value={product.bgImage} className="absolute left-1/2 top-1/2 h-[78%] w-[88%] -translate-x-1/2 -translate-y-1/2 opacity-55 drop-shadow-[0_16px_28px_rgba(58,37,26,0.10)]" legacyClassName="absolute left-1/2 top-1/2 h-[78%] w-[88%] -translate-x-1/2 -translate-y-1/2 object-fill opacity-55 drop-shadow-[0_16px_28px_rgba(58,37,26,0.10)]" />
               <img src="/toy-wooden-star-solid.png" className="absolute left-8 top-8 w-10 rotate-12 opacity-55 mix-blend-multiply" alt="" />
               <img src="/cloud-watercolor-blue-light.png" className="absolute bottom-6 right-6 w-32 opacity-35 mix-blend-multiply" alt="" />
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { CardDesignFrame } from './CardDesignFrame';
 
 export const CartDrawer = () => {
   const { cartItems, isCartOpen, closeCart, removeFromCart, updateCartItemQuantity } = useStore();
@@ -33,7 +34,7 @@ export const CartDrawer = () => {
                   <div key={item.id} className="flex gap-4 p-4 bg-white rounded-2xl shadow-[var(--shadow-soft-subtle)] border border-[#d4b497]/10 relative group">
                     <button onClick={() => removeFromCart(item.id)} className="absolute top-2 right-2 p-1.5 text-[#5a4234]/50 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
                     <div className="w-24 h-24 bg-[#fcfaf6] rounded-xl flex items-center justify-center p-2 relative overflow-hidden flex-shrink-0">
-                      {item.product.bgImage && <img src={item.product.bgImage} className="absolute inset-0 w-full h-full object-cover" alt="" />}
+                      {item.product.bgImage && <CardDesignFrame value={item.product.bgImage} className="absolute inset-0 h-full w-full opacity-75" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-75" />}
                       <img src={item.product.imageUrl} className="w-full h-full object-contain relative z-10" alt={item.product.name} />
                     </div>
                     <div className="flex-1 flex flex-col justify-between">

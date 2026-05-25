@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowRight, CheckCircle2, Clock3, Gift, Package, Plus, RefreshCcw, ShoppingCart, Sparkles, Wand2 } from 'lucide-react';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import { CardDesignFrame } from '../components/CardDesignFrame';
 
 type DashboardOrder = {
   id: string;
@@ -171,7 +172,7 @@ export const AdminDashboard = () => {
           {!isLoading && recentProducts.map((product) => (
             <Link key={product.id} to={`/admin/products/${product.id}/edit`} className="group relative overflow-hidden rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] p-4 shadow-sm transition-transform hover:-translate-y-0.5">
               <div className="relative h-36 overflow-hidden rounded-[1.2rem] bg-white">
-                {product.bgImage && <img src={product.bgImage} className="absolute inset-0 h-full w-full object-cover opacity-40" alt="" />}
+                {product.bgImage && <CardDesignFrame value={product.bgImage} className="absolute inset-0 h-full w-full opacity-40" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-40" />}
                 {product.imageUrl ? <img src={product.imageUrl} className="relative z-10 h-full w-full object-contain p-3" alt="" /> : <div className="flex h-full w-full items-center justify-center text-boutique-brown/30"><Package className="h-8 w-8" /></div>}
               </div>
               <div className="mt-4"><h3 className="truncate font-serif text-xl text-boutique-brown">{product.name}</h3><p className="mt-1 truncate text-xs text-boutique-brown-light">{product.description}</p><div className="mt-3 flex items-center justify-between"><span className="font-bold text-boutique-brown">${product.price.toFixed(2)}</span><StatusPill type={product.status === 'draft' ? 'draft' : 'active'}>{product.status || 'active'}</StatusPill></div></div>

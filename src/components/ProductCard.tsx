@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStore, Product } from '../store/useStore';
+import { CardDesignFrame } from './CardDesignFrame';
 
 interface ProductCardProps {
   product: Product;
@@ -28,7 +29,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         preview ? '' : 'group hover:-translate-y-1'
       }`}
     >
-      <img src={backgroundImage} className="absolute inset-0 -z-10 h-full w-full object-fill opacity-95 drop-shadow-[var(--shadow-cloud-float)]" alt="" />
+      <CardDesignFrame value={backgroundImage} className="absolute inset-0 -z-10 h-full w-full opacity-95 drop-shadow-[var(--shadow-cloud-float)]" legacyClassName="absolute inset-0 -z-10 h-full w-full object-fill opacity-95 drop-shadow-[var(--shadow-cloud-float)]" />
       <div className="relative z-10 flex h-[184px] w-[184px] items-center justify-center self-end md:h-[190px] md:w-full md:max-w-[205px] md:self-center">
         <div className="absolute inset-2 rounded-[44%_56%_47%_53%/38%_40%_60%_62%] border border-white/55 bg-white/35 shadow-[inset_0_0_30px_rgba(255,255,255,0.55)]"></div>
         <div className={`relative z-10 h-[172px] w-[172px] drop-shadow-lg transition-transform duration-500 ease-out md:h-[178px] md:w-full ${preview ? '' : 'group-hover:scale-105'}`}>

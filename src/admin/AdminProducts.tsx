@@ -3,6 +3,7 @@ import { Edit, Package, Plus, RefreshCcw, Search, Sparkles, Star, Tags, Trash, W
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import { CardDesignFrame } from '../components/CardDesignFrame';
 
 const StatCard = ({ title, value, note, icon: Icon }: { title: string; value: string | number; note: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="relative overflow-hidden rounded-[1.7rem] border border-boutique-brown/10 bg-white/80 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
@@ -127,7 +128,7 @@ export const AdminProducts = () => {
             <tr className="border-b border-boutique-brown/10 bg-[#fffaf3]/70 text-xs uppercase tracking-[0.14em] text-boutique-brown/55">
               <th className="px-6 py-4 font-bold">Product</th>
               <th className="px-6 py-4 font-bold">Status</th>
-              <th className="px-6 py-4 font-bold">Design cloud</th>
+              <th className="px-6 py-4 font-bold">Card design</th>
               <th className="px-6 py-4 font-bold">Price</th>
               <th className="px-6 py-4 text-right font-bold">Actions</th>
             </tr>
@@ -140,7 +141,7 @@ export const AdminProducts = () => {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-4">
                     <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-[1.4rem] border border-boutique-brown/10 bg-[#fffaf3] shadow-sm">
-                      {product.bgImage && <img src={product.bgImage} className="absolute inset-0 h-full w-full object-cover opacity-40" alt="" />}
+                      {product.bgImage && <CardDesignFrame value={product.bgImage} className="absolute inset-0 h-full w-full opacity-40" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-40" />}
                       <img src={product.imageUrl} className="relative z-10 h-full w-full object-contain p-2" alt="" />
                     </div>
                     <div className="min-w-0">
@@ -158,7 +159,7 @@ export const AdminProducts = () => {
                 <td className="px-6 py-4"><StatusBadge status={product.status} /></td>
                 <td className="px-6 py-4">
                   <div className="relative h-12 w-28 overflow-hidden rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] shadow-sm">
-                    <img src={product.bgImage || '/product-card-cloud-blue.png'} className="h-full w-full object-cover opacity-80" alt="" />
+                    <CardDesignFrame value={product.bgImage} className="h-full w-full opacity-80" legacyClassName="h-full w-full object-cover opacity-80" />
                   </div>
                 </td>
                 <td className="px-6 py-4 font-bold text-boutique-brown">${product.price.toFixed(2)}</td>

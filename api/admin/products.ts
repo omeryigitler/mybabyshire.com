@@ -9,6 +9,9 @@ const DEFAULT_CLOUD_VARIANTS = [
   { label: 'Blue', image: '/product-card-cloud-blue.png' },
   { label: 'Peach', image: '/product-card-cloud-peach.png' },
   { label: 'Mint', image: '/product-card-cloud-mint.png' },
+  { label: 'Lavender', image: '/product-card-cloud-lavender.svg' },
+  { label: 'Butter', image: '/product-card-cloud-butter.svg' },
+  { label: 'Rose', image: '/product-card-cloud-rose.svg' },
 ];
 
 const requireAdmin = (authorization?: string) => {

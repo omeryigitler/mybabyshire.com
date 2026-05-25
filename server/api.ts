@@ -158,6 +158,48 @@ const getAbsoluteImageUrl = (
   return undefined;
 };
 
+const getGoogleRedirectUri = (req: Request) => {
+  const configuredRedirect = process.env.GOOGLE_REDIRECT_URI?.replace(/\/$/, "");
+  if (configuredRedirect) return configuredRedirect;
+  return `${getBaseUrl(req)}/api/admin-google-callback`;
+};
+
+const getAllowedGoogleAdminEmails = () => {
+  const configuredEmails = process.env.GOOGLE_ADMIN_EMAILS || process.env.ADMIN_EMAIL || "";
+
+  return configuredEmails
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const isGoogleOAuthConfigured = () => {
+  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+};
+
+const redirectAdminAuthError = (res: Response, message: string) => {
+  res.redirect(`/admin?auth_error=${encodeURIComponent(message)}`);
+};
+
+const createGoogleAuthSuccessHtml = (token: string) => {
+  const tokenJson = JSON.stringify(token);
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Little Wonders Admin</title>
+  </head>
+  <body>
+    <script>
+      localStorage.setItem('little-wonders-admin-token-v2', ${tokenJson});
+      window.location.replace('/admin');
+    </script>
+  </body>
+</html>`;
+};
+
 const getPayPalBaseUrl = () =>
   process.env.PAYPAL_ENV === "live"
     ? "https://api-m.paypal.com"
@@ -353,6 +395,116 @@ router.post("/admin/login", async (req, res) => {
 
 router.get("/admin/me", requireAdmin, (req: AdminRequest, res) => {
   res.json({ user: req.user });
+});
+
+// ---------------------------------------------------------
+// Admin Google OAuth
+// ---------------------------------------------------------
+router.get("/admin-google-start", (req, res) => {
+  if (!isGoogleOAuthConfigured()) {
+    return redirectAdminAuthError(
+      res,
+      "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel.",
+    );
+  }
+
+  const state = jwt.sign(
+    { provider: "google-admin", createdAt: Date.now() },
+    JWT_SECRET,
+    { expiresIn: "10m" },
+  );
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID || "",
+    redirect_uri: getGoogleRedirectUri(req),
+    response_type: "code",
+    scope: "openid email profile",
+    prompt: "select_account",
+    state,
+  });
+
+  return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+});
+
+router.get("/admin-google-callback", async (req, res) => {
+  try {
+    if (!isGoogleOAuthConfigured()) {
+      return redirectAdminAuthError(res, "Google sign-in is not configured yet.");
+    }
+
+    if (req.query.error) {
+      return redirectAdminAuthError(
+        res,
+        `Google sign-in was cancelled or failed: ${String(req.query.error)}`,
+      );
+    }
+
+    const code = String(req.query.code || "");
+    const state = String(req.query.state || "");
+
+    if (!code || !state) {
+      return redirectAdminAuthError(res, "Missing Google sign-in response.");
+    }
+
+    const decodedState = jwt.verify(state, JWT_SECRET) as { provider?: string };
+    if (decodedState.provider !== "google-admin") {
+      return redirectAdminAuthError(res, "Invalid Google sign-in state.");
+    }
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID || "",
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+        redirect_uri: getGoogleRedirectUri(req),
+        grant_type: "authorization_code",
+      }),
+    });
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok || !tokenData.id_token) {
+      return redirectAdminAuthError(
+        res,
+        tokenData.error_description ||
+          tokenData.error ||
+          "Google token exchange failed.",
+      );
+    }
+
+    const profileResponse = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(tokenData.id_token)}`,
+    );
+    const profile = await profileResponse.json();
+
+    if (!profileResponse.ok) {
+      return redirectAdminAuthError(res, "Google profile verification failed.");
+    }
+
+    const email = String(profile.email || "").trim().toLowerCase();
+    const emailVerified = profile.email_verified === true || profile.email_verified === "true";
+    const allowedEmails = getAllowedGoogleAdminEmails();
+
+    if (profile.aud !== process.env.GOOGLE_CLIENT_ID || !emailVerified || !email) {
+      return redirectAdminAuthError(res, "Google account could not be verified.");
+    }
+
+    if (!allowedEmails.includes(email)) {
+      return redirectAdminAuthError(
+        res,
+        "This Google account is not allowed to access the Little Wonders admin.",
+      );
+    }
+
+    const adminToken = createAdminToken(email);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).send(createGoogleAuthSuccessHtml(adminToken));
+  } catch (error) {
+    return redirectAdminAuthError(
+      res,
+      (error as Error).message || "Google sign-in failed.",
+    );
+  }
 });
 
 // ---------------------------------------------------------

@@ -47,6 +47,8 @@ http://localhost:3000/admin/products/new
 ```
 
 Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment variables.
+Google admin sign-in is also supported when Google OAuth credentials are added.
+Apple sign-in is shown as coming soon until an Apple Developer account is ready.
 
 ## Required Environment Variables
 
@@ -60,11 +62,18 @@ CLOUDINARY_API_KEY="your_api_key"
 CLOUDINARY_API_SECRET="your_api_secret"
 ADMIN_EMAIL="admin@example.com"
 ADMIN_PASSWORD="use-a-strong-password"
+GOOGLE_CLIENT_ID="your_google_oauth_client_id"
+GOOGLE_CLIENT_SECRET="your_google_oauth_client_secret"
+GOOGLE_REDIRECT_URI="https://your-domain.com/api/admin-google-callback"
+GOOGLE_ADMIN_EMAILS="admin@example.com"
 ```
 
 Without `DATABASE_URL`, the storefront still shows demo fallback products, but `/api/products` cannot return saved database products.
 
 Without the Cloudinary variables, admin image upload will not work.
+
+Without the Google variables, the Google button stays visible but redirects back
+to the admin screen with a setup message.
 
 ## Database Setup
 
@@ -85,6 +94,19 @@ This creates the tables from `prisma/schema.prisma`.
 5. Check the live storefront card preview.
 6. Save product.
 7. The product appears on the homepage through `/api/products`.
+
+## Google Admin Sign-In
+
+In Google Cloud Console, create an OAuth client for a web application and add
+this redirect URI:
+
+```txt
+https://little-wonders-phi.vercel.app/api/admin-google-callback
+```
+
+Then add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_ADMIN_EMAILS`
+in Vercel. If you later connect a real domain, add the new domain callback URL
+to Google and update `GOOGLE_REDIRECT_URI`.
 
 ## Vercel Setup
 

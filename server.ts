@@ -7,6 +7,7 @@ dotenv.config();
 
 async function startServer() {
   const { default: apiRoutes } = await import("./server/api.js");
+  const { default: accountRoutes } = await import("./server/accountApi.js");
   const app = express();
   const PORT = 3000;
 
@@ -14,6 +15,7 @@ async function startServer() {
 
   // Mount API paths
   app.use("/api", apiRoutes);
+  app.use("/api", accountRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

@@ -5,8 +5,15 @@ import {
   isConfiguredAdminLogin,
 } from '../../lib/auth.js';
 import { handleMemberAccountRequest } from '../../lib/memberAccount.js';
+import { handleAdminGoogleRequest } from '../../lib/adminGoogle.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const authMode = String(req.query.authMode || '');
+
+  if (req.method === 'GET' && authMode === 'admin-google') {
+    return handleAdminGoogleRequest(req, res);
+  }
+
   if (req.method === 'GET') {
     return handleMemberAccountRequest(req, res);
   }

@@ -32,7 +32,7 @@ export const clearMemberSession = () => {
 };
 
 export const startGoogleMemberLogin = () => {
-  window.location.assign('/api/account/google/start');
+  window.location.assign('/api/admin/login');
 };
 
 export const getMemberAuthErrorFromUrl = () => {
@@ -59,8 +59,14 @@ export const getMemberToken = () => {
   return token;
 };
 
+const accountApiPath = (path: string) => {
+  if (path.endsWith('/me')) return '/api/admin/login?accountRoute=me';
+  if (path.endsWith('/orders')) return '/api/admin/login?accountRoute=orders';
+  return path;
+};
+
 export const memberFetch = async <T>(path: string): Promise<T> => {
-  const response = await fetch(path, {
+  const response = await fetch(accountApiPath(path), {
     headers: {
       Authorization: `Bearer ${getMemberToken()}`,
     },

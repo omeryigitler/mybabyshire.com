@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
+import { ArrowLeft, Mail, ShieldCheck, Sparkles, UserRound, X } from 'lucide-react';
 import { getMemberAuthErrorFromUrl, startGoogleMemberLogin } from './memberAuth';
 
 export default function AccountLoginPage() {
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     const authError = getMemberAuthErrorFromUrl();
@@ -49,11 +50,11 @@ export default function AccountLoginPage() {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-base font-black text-[#4285f4] shadow-sm">G</span>
             Continue with Google
           </button>
-          <button type="button" disabled className="flex h-13 w-full items-center justify-center gap-3 rounded-2xl border border-boutique-brown/10 bg-[#f7f2ea] px-4 py-4 text-sm font-bold text-boutique-brown/45">
-            Continue with Email · Coming soon
+          <button type="button" onClick={() => setNotice({ title: 'Email sign in', message: 'Email sign in is being prepared. For now, please continue with Google to access your account securely.' })} className="flex h-13 w-full items-center justify-center gap-3 rounded-2xl border border-boutique-brown/10 bg-white px-4 py-4 text-sm font-bold text-boutique-brown shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#fffaf3]">
+            <Mail className="h-5 w-5" /> Continue with Email
           </button>
-          <button type="button" disabled className="flex h-13 w-full items-center justify-center gap-3 rounded-2xl border border-boutique-brown/10 bg-[#f7f2ea] px-4 py-4 text-sm font-bold text-boutique-brown/45">
-            Continue with Apple · Coming soon
+          <button type="button" onClick={() => setNotice({ title: 'Apple sign in', message: 'Apple sign in is coming soon. Please use Google sign in while we finish this option.' })} className="flex h-13 w-full items-center justify-center gap-3 rounded-2xl border border-boutique-brown/10 bg-white px-4 py-4 text-sm font-bold text-boutique-brown shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-[#fffaf3]">
+            <span className="text-lg leading-none"></span> Continue with Apple
           </button>
         </div>
 
@@ -64,6 +65,21 @@ export default function AccountLoginPage() {
           Your account helps us keep your order history and delivery details ready for your next gift.
         </div>
       </div>
+
+      {notice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boutique-brown/35 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[2rem] border border-boutique-brown/10 bg-white p-6 text-center shadow-[0_24px_70px_rgba(58,37,26,0.18)]">
+            <button onClick={() => setNotice(null)} className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-boutique-bg text-boutique-brown-light hover:text-boutique-brown" aria-label="Close">
+              <X className="h-4 w-4" />
+            </button>
+            <h2 className="mt-2 font-serif text-3xl text-boutique-brown">{notice.title}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-boutique-brown-light">{notice.message}</p>
+            <button onClick={() => setNotice(null)} className="mt-6 w-full rounded-2xl bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-brown-light">
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

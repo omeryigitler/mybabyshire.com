@@ -40,7 +40,7 @@ export default function AccountPage() {
   };
 
   if (signedOut) return <Navigate to="/" replace />;
-  if (!loading && !getStoredMemberToken()) return <Navigate to="/account/login" replace />;
+  if (!loading && !getStoredMemberToken()) return <Navigate to="/login" replace />;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-boutique-bg px-6 py-8 font-sans text-boutique-brown md:px-12">

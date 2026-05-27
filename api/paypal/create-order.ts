@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 import { Buffer } from 'node:buffer';
+import { calculateCheckoutTotals } from '../../lib/checkoutTotals.js';
 
 const prisma = new PrismaClient();
 
@@ -59,33 +60,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { customer, items, subtotal, shipping, total, currency = 'USD', shippingMethod } = req.body;
+    const { customer, items, currency = 'USD', shippingMethod } = req.body;
 
     if (!customer?.name || !customer?.email || !customer?.address || !customer?.city || !customer?.state || !customer?.zip) {
       return res.status(400).json({ error: 'Missing customer shipping details.' });
     }
 
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Your gift bag is empty.' });
-    }
-
-    const selectedShippingMethod = shippingMethod || {
-      id: 'us-standard',
-      label: 'Standard Shipping',
-      carrier: 'USPS',
-      service: 'Ground Advantage',
-      estimatedDelivery: '3-5 business days',
-      amount: Number(shipping) || 0,
-    };
-
+    const totals = await calculateCheckoutTotals(prisma, items, shippingMethod);
     const orderNumber = createOrderNumber();
     const baseUrl = getBaseUrl(req);
     const customerSnapshot = {
       customer,
-      subtotal: Number(subtotal) || 0,
-      shipping: Number(shipping) || 0,
-      shippingMethod: selectedShippingMethod,
-      total: Number(total) || 0,
+      subtotal: totals.subtotal,
+      shipping: totals.shipping,
+      shippingMethod: totals.shippingMethod,
+      total: totals.total,
       currency,
       provider: 'paypal',
     };
@@ -95,17 +84,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         order_number: orderNumber,
         customer_name: customer.name,
         customer_email: customer.email,
-        total_amount: Number(total) || 0,
+        total_amount: totals.total,
         currency,
         payment_status: 'pending',
         order_status: 'processing',
         personalization_data_json: JSON.stringify(customerSnapshot),
         items: {
-          create: items.map((item: any) => ({
+          create: totals.items.map((item) => ({
             product_id: item.productId,
             product_name_snapshot: item.name,
-            quantity: Number(item.quantity) || 1,
-            price_snapshot: Number(item.price) || 0,
+            quantity: item.quantity,
+            price_snapshot: item.unitPrice,
             personalization_data_json: JSON.stringify(item.personalizationData || {}),
           })),
         },
@@ -129,16 +118,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             description: `MY BABY SHIRE order ${order.order_number}`,
             amount: {
               currency_code: String(currency).toUpperCase(),
-              value: Number(total || 0).toFixed(2),
+              value: totals.total.toFixed(2),
               breakdown: {
-                item_total: { currency_code: String(currency).toUpperCase(), value: Number(subtotal || 0).toFixed(2) },
-                shipping: { currency_code: String(currency).toUpperCase(), value: Number(shipping || 0).toFixed(2) },
+                item_total: { currency_code: String(currency).toUpperCase(), value: totals.subtotal.toFixed(2) },
+                shipping: { currency_code: String(currency).toUpperCase(), value: totals.shipping.toFixed(2) },
               },
             },
-            items: items.map((item: any) => ({
+            items: totals.items.map((item) => ({
               name: String(item.name).slice(0, 127),
-              quantity: String(Number(item.quantity) || 1),
-              unit_amount: { currency_code: String(currency).toUpperCase(), value: Number(item.price || 0).toFixed(2) },
+              quantity: String(item.quantity),
+              unit_amount: { currency_code: String(currency).toUpperCase(), value: item.unitPrice.toFixed(2) },
             })),
           },
         ],
@@ -167,7 +156,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await prisma.orders.update({ where: { id: order.id }, data: { payment_reference: data.id } });
 
-    return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl, shippingMethod: selectedShippingMethod });
+    return res.status(200).json({
+      success: true,
+      orderId: order.order_number,
+      databaseId: order.id,
+      paypalOrderId: data.id,
+      approvalUrl,
+      subtotal: totals.subtotal,
+      shipping: totals.shipping,
+      total: totals.total,
+      shippingMethod: totals.shippingMethod,
+    });
   } catch (error) {
     return res.status(500).json({ error: 'PayPal checkout failed', details: (error as Error).message });
   }

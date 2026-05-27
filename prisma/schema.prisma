@@ -14,6 +14,55 @@ model users {
   password_hash String
   role          String   @default("admin")
   created_at    DateTime @default(now())
+
+  profile           user_profiles?
+  addresses         user_addresses[]
+  payment_methods   user_payment_methods[]
+}
+
+model user_profiles {
+  id                 String   @id @default(uuid())
+  user_id            String   @unique
+  phone              String?
+  stripe_customer_id String?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model user_addresses {
+  id             String   @id @default(uuid())
+  user_id        String
+  label          String   @default("Home")
+  full_name      String
+  phone          String?
+  address_line1  String
+  address_line2  String?
+  city           String
+  state          String?
+  postal_code    String
+  country        String   @default("US")
+  is_default     Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model user_payment_methods {
+  id                       String   @id @default(uuid())
+  user_id                  String
+  stripe_payment_method_id String   @unique
+  brand                    String?
+  last4                    String?
+  exp_month                Int?
+  exp_year                 Int?
+  is_default               Boolean  @default(false)
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model products {

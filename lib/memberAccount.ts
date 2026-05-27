@@ -1,9 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { createAdminToken } from './auth.js';
 
 const prisma = new PrismaClient();
-const TOKEN_KEY = 'mybabyshire-member-token-v1';
+const MEMBER_TOKEN_KEY = 'mybabyshire-member-token-v1';
+const ADMIN_TOKEN_KEY = 'mybabyshire-admin-token-v1';
 
 const baseUrl = (req: VercelRequest) => {
   const configured = process.env.PUBLIC_SITE_URL?.replace(/\/$/, '');
@@ -17,11 +19,25 @@ const redirectUri = (req: VercelRequest) => {
   return process.env.GOOGLE_MEMBER_REDIRECT_URI?.replace(/\/$/, '') || `${baseUrl(req)}/api/account/google/callback`;
 };
 
+const adminEmails = () => [process.env.ADMIN_EMAIL, process.env.GOOGLE_ADMIN_EMAILS]
+  .filter(Boolean)
+  .join(',')
+  .split(',')
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
+
+const isAdminEmail = (email: string) => adminEmails().includes(email.trim().toLowerCase());
+
 const fail = (res: VercelResponse, message: string) => {
-  return res.redirect(`/account/login?auth_error=${encodeURIComponent(message)}`);
+  return res.redirect(`/login?auth_error=${encodeURIComponent(message)}`);
 };
 
-const successHtml = (token: string) => `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body><script>localStorage.setItem('${TOKEN_KEY}', ${JSON.stringify(token)}); window.location.replace('/account');</script></body></html>`;
+const loginHtml = (token: string, role: 'member' | 'admin') => {
+  const tokenKey = role === 'admin' ? ADMIN_TOKEN_KEY : MEMBER_TOKEN_KEY;
+  const removeKey = role === 'admin' ? MEMBER_TOKEN_KEY : ADMIN_TOKEN_KEY;
+  const target = role === 'admin' ? '/admin' : '/account';
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body><script>localStorage.setItem('${tokenKey}', ${JSON.stringify(token)}); localStorage.removeItem('${removeKey}'); localStorage.removeItem('little-wonders-admin-token-v2'); window.location.replace('${target}');</script></body></html>`;
+};
 
 const memberFromRequest = (req: VercelRequest) => {
   if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is missing.');
@@ -32,6 +48,33 @@ const memberFromRequest = (req: VercelRequest) => {
   return decoded as { id: string; email: string; name?: string; role?: string };
 };
 
+const addressPayload = (body: any) => ({
+  label: String(body.label || 'Home').trim() || 'Home',
+  full_name: String(body.fullName || body.full_name || '').trim(),
+  phone: String(body.phone || '').trim() || null,
+  address_line1: String(body.addressLine1 || body.address_line1 || '').trim(),
+  address_line2: String(body.addressLine2 || body.address_line2 || '').trim() || null,
+  city: String(body.city || '').trim(),
+  state: String(body.state || '').trim() || null,
+  postal_code: String(body.postalCode || body.postal_code || '').trim(),
+  country: String(body.country || 'US').trim().toUpperCase() || 'US',
+  is_default: Boolean(body.isDefault || body.is_default),
+});
+
+const mapAddress = (address: any) => ({
+  id: address.id,
+  label: address.label,
+  fullName: address.full_name,
+  phone: address.phone,
+  addressLine1: address.address_line1,
+  addressLine2: address.address_line2,
+  city: address.city,
+  state: address.state,
+  postalCode: address.postal_code,
+  country: address.country,
+  isDefault: address.is_default,
+});
+
 export async function handleMemberAccountRequest(req: VercelRequest, res: VercelResponse) {
   const route = String(req.query.accountRoute || '');
 
@@ -39,11 +82,40 @@ export async function handleMemberAccountRequest(req: VercelRequest, res: Vercel
     try {
       const member = memberFromRequest(req);
       if (!member) return res.status(401).json({ error: 'Unauthorized' });
-      const user = await prisma.users.findUnique({ where: { id: member.id } });
+      const user = await prisma.users.findUnique({ where: { id: member.id }, include: { profile: true, addresses: { orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }] }, payment_methods: { orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }] } } });
       if (!user) return res.status(404).json({ error: 'Member not found' });
-      return res.status(200).json({ member: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at } });
+      return res.status(200).json({ member: { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.created_at, phone: user.profile?.phone || '', addresses: user.addresses.map(mapAddress), paymentMethods: user.payment_methods.map((method: any) => ({ id: method.id, brand: method.brand, last4: method.last4, expMonth: method.exp_month, expYear: method.exp_year, isDefault: method.is_default })) } });
     } catch (error) {
       return res.status(500).json({ error: 'Member profile could not be loaded', details: (error as Error).message });
+    }
+  }
+
+  if (route === 'profile' && req.method === 'POST') {
+    try {
+      const member = memberFromRequest(req);
+      if (!member) return res.status(401).json({ error: 'Unauthorized' });
+      const name = String(req.body.name || '').trim();
+      const phone = String(req.body.phone || '').trim();
+      if (!name) return res.status(400).json({ error: 'Name is required.' });
+      const user = await prisma.users.update({ where: { id: member.id }, data: { name } });
+      await prisma.user_profiles.upsert({ where: { user_id: member.id }, update: { phone }, create: { user_id: member.id, phone } });
+      return res.status(200).json({ member: { id: user.id, name: user.name, email: user.email, phone } });
+    } catch (error) {
+      return res.status(500).json({ error: 'Member profile could not be saved', details: (error as Error).message });
+    }
+  }
+
+  if (route === 'addresses' && req.method === 'POST') {
+    try {
+      const member = memberFromRequest(req);
+      if (!member) return res.status(401).json({ error: 'Unauthorized' });
+      const data = addressPayload(req.body);
+      if (!data.full_name || !data.address_line1 || !data.city || !data.postal_code || !data.country) return res.status(400).json({ error: 'Full name, address, city, postal code and country are required.' });
+      if (data.is_default) await prisma.user_addresses.updateMany({ where: { user_id: member.id }, data: { is_default: false } });
+      const address = await prisma.user_addresses.create({ data: { ...data, user_id: member.id } });
+      return res.status(200).json({ address: mapAddress(address) });
+    } catch (error) {
+      return res.status(500).json({ error: 'Address could not be saved', details: (error as Error).message });
     }
   }
 
@@ -85,12 +157,18 @@ export async function handleMemberAccountRequest(req: VercelRequest, res: Vercel
     const verified = profile.email_verified === true || profile.email_verified === 'true';
     if (!profileResponse.ok || profile.aud !== process.env.GOOGLE_CLIENT_ID || !verified || !email) return fail(res, 'Google account could not be verified.');
 
+    if (isAdminEmail(email)) {
+      const adminToken = createAdminToken(email);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(loginHtml(adminToken, 'admin'));
+    }
+
     const name = String(profile.name || email.split('@')[0] || 'Customer').trim();
     const existing = await prisma.users.findUnique({ where: { email } });
     const user = existing ? await prisma.users.update({ where: { email }, data: { name: existing.name || name, role: existing.role || 'customer' } }) : await prisma.users.create({ data: { name, email, password_hash: `google-oauth:${String(profile.sub || 'member')}`, role: 'customer' } });
     const memberToken = jwt.sign({ id: user.id, email: user.email, name: user.name, role: user.role || 'customer', type: 'member' }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.status(200).send(successHtml(memberToken));
+    return res.status(200).send(loginHtml(memberToken, 'member'));
   } catch (error) {
     return fail(res, (error as Error).message || 'Google member sign-in failed.');
   }

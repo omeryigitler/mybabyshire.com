@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
-import { sendPaymentConfirmedEmail } from '../_lib/email.js';
+import { sendPaymentConfirmedEmail } from '../../lib/email.js';
+import { prisma } from '../../lib/prisma.js';
 
 export const config = {
   api: {
@@ -9,7 +9,6 @@ export const config = {
   },
 };
 
-const prisma = new PrismaClient();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-12-18.acacia' }) : null;
@@ -24,17 +23,24 @@ const readRawBody = async (req: VercelRequest) => {
   return Buffer.concat(chunks);
 };
 
-const parseJson = (value?: string | null) => {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
+const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100;
+
+const assertStripeSessionMatchesOrder = (session: Stripe.Checkout.Session, order: any) => {
+  const paidAmount = Number(session.amount_total || 0) / 100;
+  const expectedAmount = Number(order.total_amount || 0);
+  const paidCurrency = String(session.currency || '').toUpperCase();
+  const expectedCurrency = String(order.currency || 'USD').toUpperCase();
+
+  if (roundMoney(paidAmount) !== roundMoney(expectedAmount)) {
+    throw new Error('Stripe session amount does not match order total.');
+  }
+
+  if (paidCurrency !== expectedCurrency) {
+    throw new Error('Stripe session currency does not match order currency.');
   }
 };
 
 const sendConfirmationForOrder = async (order: any) => {
-  const snapshot = parseJson(order.personalization_data_json);
   await sendPaymentConfirmedEmail({
     to: order.customer_email,
     customerName: order.customer_name,
@@ -73,29 +79,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const orderId = session.metadata?.orderId;
       const orderNumber = session.metadata?.orderNumber;
 
-      let updatedOrder = null;
+      let order = null;
 
       if (orderId) {
-        updatedOrder = await prisma.orders.update({
+        order = await prisma.orders.findUnique({
           where: { id: orderId },
-          data: {
-            payment_status: 'paid',
-            payment_reference: session.id,
-            order_status: 'processing',
-          },
           include: { items: true },
         });
       } else if (orderNumber) {
-        updatedOrder = await prisma.orders.update({
+        order = await prisma.orders.findUnique({
           where: { order_number: orderNumber },
-          data: {
-            payment_status: 'paid',
-            payment_reference: session.id,
-            order_status: 'processing',
-          },
           include: { items: true },
         });
       }
+
+      if (!order) {
+        throw new Error('Stripe order metadata did not match a local order.');
+      }
+
+      assertStripeSessionMatchesOrder(session, order);
+
+      const updatedOrder = await prisma.orders.update({
+        where: { id: order.id },
+        data: {
+          payment_status: 'paid',
+          payment_reference: session.id,
+          order_status: 'processing',
+        },
+        include: { items: true },
+      });
 
       if (updatedOrder) {
         await sendConfirmationForOrder(updatedOrder);
@@ -119,9 +131,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ received: true });
   } catch (error) {
+    console.error('Stripe webhook failed', error);
     return res.status(400).json({
       error: 'Webhook verification failed',
-      details: (error as Error).message,
     });
   }
 }

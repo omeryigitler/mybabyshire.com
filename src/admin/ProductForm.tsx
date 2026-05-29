@@ -4,6 +4,7 @@ import { ArrowLeft, BadgeDollarSign, Box, Check, Cloud, Gift, PackageCheck, Save
 import { ProductCard } from '../components/ProductCard';
 import { CardDesignFrame } from '../components/CardDesignFrame';
 import { ImageUploader } from './ImageUploader';
+import { DEFAULT_PRODUCT_FIELDS, PersonalizationFieldBuilder, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 import { useStore } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import {
@@ -65,6 +66,41 @@ const DesignOptionButton: React.FC<DesignOptionButtonProps> = ({ active, label, 
   </button>
 );
 
+const FIELD_TYPES: PersonalizationBuilderField['type'][] = ['text', 'color', 'select', 'date'];
+
+const getDefaultFields = () =>
+  DEFAULT_PRODUCT_FIELDS.map((field) => ({
+    ...field,
+    options: field.options ? [...field.options] : undefined,
+  }));
+
+const normalizeProductFields = (fields: any[]): PersonalizationBuilderField[] => {
+  if (!Array.isArray(fields) || fields.length === 0) return getDefaultFields();
+
+  const normalizedFields = fields
+    .map((field, index) => {
+      const type = FIELD_TYPES.includes(field?.type) ? field.type : 'text';
+      const label = String(field?.label || '').trim();
+      const fieldKey = String(field?.fieldKey || '').trim();
+      if (!label || !fieldKey) return null;
+
+      return {
+        id: String(field?.id || fieldKey || `field-${index}`),
+        fieldKey,
+        type,
+        label,
+        placeholder: field?.placeholder || '',
+        helpText: field?.helpText || '',
+        maxLength: field?.maxLength ?? null,
+        options: Array.isArray(field?.options) ? field.options.map(String).filter(Boolean) : [],
+        required: Boolean(field?.required),
+      };
+    })
+    .filter(Boolean) as PersonalizationBuilderField[];
+
+  return normalizedFields.length ? normalizedFields : getDefaultFields();
+};
+
 export const ProductForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -88,6 +124,7 @@ export const ProductForm = () => {
   const [cardColor, setCardColor] = useState<CardColorId>(DEFAULT_CARD_DESIGN.color);
   const [createCloudVariants, setCreateCloudVariants] = useState(false);
   const [personalizationRequired, setPersonalizationRequired] = useState(true);
+  const [personalizationFields, setPersonalizationFields] = useState<PersonalizationBuilderField[]>(getDefaultFields);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +141,7 @@ export const ProductForm = () => {
         setName(data.name || ''); setDescription(data.description || ''); setPrice(String(data.price || '')); setSalePrice(data.salePrice ? String(data.salePrice) : ''); setSku(data.sku || ''); setStockQuantity(String(data.stockQuantity ?? 0));
         setStatus(data.status === 'draft' ? 'draft' : 'active'); setPromotionBadge(data.bestseller ? 'bestseller' : data.newArrival ? 'newArrival' : data.featured ? 'featured' : 'none');
         const loadedDesign = parseCardDesign(data.bgImage);
-        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setCloudShape(loadedDesign.cloud); setPanelShape(loadedDesign.panel); setCardColor(loadedDesign.color); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
+        setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setCloudShape(loadedDesign.cloud); setPanelShape(loadedDesign.panel); setCardColor(loadedDesign.color); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setPersonalizationFields(normalizeProductFields(data.personalizationFields)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
       } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsLoading(false); }
     };
     loadProduct();
@@ -113,14 +150,14 @@ export const ProductForm = () => {
   const selectedCardDesign = { cloud: cloudShape, panel: panelShape, color: cardColor };
   const bgImage = encodeCardDesign(selectedCardDesign);
   const colorVariants = buildCardColorVariants(cloudShape, panelShape);
-  const productPreview = images[0] ? { id: id || 'new-product-preview', name: name.trim() || 'New personalized gift', description: description.trim() || 'Your uploaded product will appear inside the selected card design.', price: Number(price) || 0, imageUrl: images[0].url, bgImage, badge: promotionBadge === 'bestseller' ? 'Bestseller' : promotionBadge === 'newArrival' ? 'New' : undefined, personalizationRequired } : null;
+  const productPreview = images[0] ? { id: id || 'new-product-preview', name: name.trim() || 'New personalized gift', description: description.trim() || 'Your uploaded product will appear inside the selected card design.', price: Number(price) || 0, imageUrl: images[0].url, bgImage, badge: promotionBadge === 'bestseller' ? 'Bestseller' : promotionBadge === 'newArrival' ? 'New' : undefined, personalizationRequired, personalizationFields } : null;
 
   const handleSave = async () => {
     if (!name.trim() || !description.trim() || !price || images.length === 0) { alert('Please fill product name, description, price and upload one image.'); return; }
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired }) });
+      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired, personalizationFields: personalizationRequired ? personalizationFields : [] }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); alert(isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.'); navigate('/admin/products');
     } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsSaving(false); }
   };
@@ -234,12 +271,17 @@ export const ProductForm = () => {
 
           <Panel title="Personalization" icon={Wand2} note="Control whether this product can receive custom details.">
             <div className="flex items-center justify-between rounded-[1.3rem] bg-[#fffaf3] p-4"><div><h3 className="text-sm font-bold text-boutique-brown">Personalized gift</h3><p className="mt-1 text-xs leading-relaxed text-boutique-brown-light">Enable custom fields for this product.</p></div><Switch checked={personalizationRequired} onClick={() => setPersonalizationRequired(!personalizationRequired)} /></div>
+            {personalizationRequired && (
+              <div className="mt-5 border-t border-boutique-brown/10 pt-5">
+                <PersonalizationFieldBuilder fields={personalizationFields} onFieldsChange={setPersonalizationFields} />
+              </div>
+            )}
           </Panel>
 
           <div className="relative overflow-hidden rounded-[1.8rem] border border-boutique-brown/10 bg-white/84 p-5 shadow-[0_18px_45px_rgba(58,37,26,0.07)] backdrop-blur-sm">
             <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-25 mix-blend-multiply" alt="" />
             <p className="relative z-10 text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Quick check</p>
-            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Cloud products</span><span className="font-bold text-boutique-brown">{createCloudVariants && !isEditing ? '6 colors' : '1 color'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
+            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Cloud products</span><span className="font-bold text-boutique-brown">{createCloudVariants && !isEditing ? '6 colors' : '1 color'}</span></div><div className="flex justify-between"><span>Fields</span><span className="font-bold text-boutique-brown">{personalizationRequired ? personalizationFields.length : 'Off'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
           </div>
         </aside>
       </div>

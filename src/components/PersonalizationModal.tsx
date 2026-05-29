@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, ChevronRight, Check } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore, type PersonalizationField } from '../store/useStore';
+
+const DEFAULT_PERSONALIZATION_FIELDS: PersonalizationField[] = [
+  { id: 'default-name', fieldKey: 'babyName', label: "Baby's Name", type: 'text', placeholder: 'e.g. Liam', required: true, maxLength: 32 },
+  { id: 'default-thread', fieldKey: 'threadColor', label: 'Thread Color', type: 'color', required: true, options: ['#D4AF37', '#FFC0CB', '#ADD8E6', '#F5F5DC', '#98FF98'] },
+  { id: 'default-font', fieldKey: 'fontStyle', label: 'Font Style', type: 'select', required: false, options: ['Classic Script', 'Modern Serif', 'Soft Rounded'] },
+];
 
 export const PersonalizationModal = () => {
   const { isPersonalizationModalOpen, selectedProduct, closePersonalizationModal, addToCart } = useStore();
@@ -9,13 +15,8 @@ export const PersonalizationModal = () => {
   const [step, setStep] = useState(1);
   const [personalizationData, setPersonalizationData] = useState<Record<string, any>>({});
   
-  // Dummy fields for demonstration based on product types
   const getFieldsForProduct = () => {
-    return [
-      { key: 'babyName', label: 'Baby\'s Name', type: 'text', placeholder: 'e.g. Liam' },
-      { key: 'threadColor', label: 'Thread Color', type: 'color', options: ['#D4AF37', '#FFC0CB', '#ADD8E6', '#F5F5DC', '#98FF98'] },
-      { key: 'fontStyle', label: 'Font Style', type: 'select', options: ['Classic Script', 'Modern Serif', 'Soft Rounded'] }
-    ];
+    return selectedProduct?.personalizationFields?.length ? selectedProduct.personalizationFields : DEFAULT_PERSONALIZATION_FIELDS;
   };
 
   const handleClose = () => {
@@ -38,7 +39,91 @@ export const PersonalizationModal = () => {
   if (!selectedProduct) return null;
 
   const fields = getFieldsForProduct();
+  const firstField = fields[0];
+  const secondaryFields = fields.slice(1);
+  const fieldByKey = new Map(fields.map((field) => [field.fieldKey, field]));
+  const previewTextField = fields.find((field) => field.type === 'text') || firstField;
+  const previewColorField = fields.find((field) => field.type === 'color');
+  const previewText = previewTextField ? personalizationData[previewTextField.fieldKey] : '';
+  const previewColor = previewColorField ? personalizationData[previewColorField.fieldKey] : undefined;
   const isLastStep = step === 3;
+  const isFieldMissing = (field: PersonalizationField) => field.required && !String(personalizationData[field.fieldKey] || '').trim();
+  const isStepValid = step === 1
+    ? !firstField || !isFieldMissing(firstField)
+    : step === 2
+      ? !secondaryFields.some(isFieldMissing)
+      : true;
+
+  const updateFieldValue = (field: PersonalizationField, value: string) => {
+    setPersonalizationData({ ...personalizationData, [field.fieldKey]: value });
+  };
+
+  const renderField = (field: PersonalizationField) => {
+    const value = String(personalizationData[field.fieldKey] || field.defaultValue || '');
+    const options = field.options || [];
+
+    if (field.type === 'color') {
+      return (
+        <div className="flex flex-col gap-3">
+          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
+          <div className="flex flex-wrap gap-3 px-2">
+            {options.map((color) => (
+              <button
+                type="button"
+                key={color}
+                onClick={() => updateFieldValue(field, color)}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${value === color ? 'scale-110 border-[#3a251a]' : 'border-transparent shadow-sm hover:scale-105'}`}
+                style={{ backgroundColor: color }}
+                aria-label={`${field.label} ${color}`}
+              >
+                {value === color && <Check className="h-4 w-4 text-[#3a251a] mix-blend-difference" />}
+              </button>
+            ))}
+          </div>
+          {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
+        </div>
+      );
+    }
+
+    if (field.type === 'select') {
+      return (
+        <div className="flex flex-col gap-3">
+          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
+          <div className="flex flex-col gap-2">
+            {options.map((option) => (
+              <button
+                type="button"
+                key={option}
+                onClick={() => updateFieldValue(field, option)}
+                className={`rounded-2xl border px-5 py-4 text-left transition-all ${value === option ? 'border-[#d4b497] bg-[#f7ede3] text-[#3a251a]' : 'border-[#d4b497]/20 bg-[#fcfaf6] text-[#5a4234] hover:bg-[#f7ede3]/50'}`}
+              >
+                <span className="font-medium">{option}</span>
+              </button>
+            ))}
+          </div>
+          {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
+        </div>
+      );
+    }
+
+    const inputType = field.type === 'date' ? 'date' : 'text';
+
+    return (
+      <div className="flex flex-col gap-2">
+        <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
+        <input
+          type={inputType}
+          value={value}
+          maxLength={field.maxLength || undefined}
+          onChange={(event) => updateFieldValue(field, event.target.value)}
+          className="w-full rounded-2xl border border-[#d4b497]/30 bg-[#fcfaf6] px-5 py-4 text-lg font-medium text-[#3a251a] placeholder:text-[#d4b497] transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#d4b497]/50"
+          placeholder={field.placeholder || 'Enter custom text'}
+        />
+        {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
+        {isFieldMissing(field) && <p className="ml-2 mt-1 text-xs italic text-[#d4b497]">This field is required.</p>}
+      </div>
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -79,22 +164,22 @@ export const PersonalizationModal = () => {
                  animate={{ opacity: 1, y: 0 }}
                  className="relative z-10 w-full flex flex-col items-center mt-8 md:mt-0"
                >
-                 <img src={selectedProduct.imageUrl} className="w-64 h-64 object-contain drop-shadow-xl" alt={selectedProduct.name} />
-                 
+	                 <img src={selectedProduct.imageUrl} className="w-64 h-64 object-contain drop-shadow-xl" alt={selectedProduct.name} />
+
                  {/* Live Preview Text overlay if name is typed */}
-                 {personalizationData.babyName && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full mt-4">
-                      <span 
-                        className="text-2xl opacity-80"
-                        style={{ 
-                          color: personalizationData.threadColor || '#3a251a',
-                          fontFamily: personalizationData.fontStyle === 'Classic Script' ? 'cursive' : 'serif'
-                        }}
-                      >
-                        {personalizationData.babyName}
-                      </span>
-                    </div>
-                 )}
+	                 {previewText && (
+	                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full mt-4">
+		                      <span
+		                        className="text-2xl opacity-80"
+		                        style={{
+	                          color: previewColor || '#3a251a',
+	                          fontFamily: personalizationData.fontStyle === 'Classic Script' ? 'cursive' : 'serif'
+	                        }}
+	                      >
+	                        {previewText}
+	                      </span>
+	                    </div>
+	                 )}
 
                  <div className="text-center mt-8">
                    <h2 className="font-serif text-2xl text-[#3a251a] mb-2">{selectedProduct.name}</h2>
@@ -131,25 +216,13 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Who is this gift for?</h3>
-                        <p className="text-[#5a4234] text-sm opacity-80">Let's start by adding their beautiful name to make it truly theirs.</p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-[#5a4234] uppercase tracking-wider ml-2">Baby's Name</label>
-                        <input 
-                          type="text" 
-                          value={personalizationData.babyName || ''}
-                          onChange={(e) => setPersonalizationData({...personalizationData, babyName: e.target.value})}
-                          className="w-full bg-[#fcfaf6] border border-[#d4b497]/30 rounded-2xl px-5 py-4 text-[#3a251a] placeholder:text-[#d4b497] focus:outline-none focus:ring-2 focus:ring-[#d4b497]/50 focus:border-transparent transition-all font-medium text-lg"
-                          placeholder="e.g. Noah or Emma"
-                        />
-                        {!personalizationData.babyName && (
-                          <p className="text-xs text-[#d4b497] ml-2 mt-1 italic">Please add the baby's name so we can personalize this piece.</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+	                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Who is this gift for?</h3>
+	                        <p className="text-[#5a4234] text-sm opacity-80">Start with the first detail for this personalized gift.</p>
+	                      </div>
+
+	                      {firstField && renderField(firstField)}
+	                    </motion.div>
+	                  )}
 
                   {step === 2 && (
                     <motion.div
@@ -160,44 +233,15 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Choose your style</h3>
-                        <p className="text-[#5a4234] text-sm opacity-80">Select the perfect colors and fonts for {personalizationData.babyName || 'them'}.</p>
-                      </div>
+	                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Choose your style</h3>
+	                        <p className="text-[#5a4234] text-sm opacity-80">Complete the remaining details for {previewText || 'this gift'}.</p>
+	                      </div>
 
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-3">
-                          <label className="text-xs font-bold text-[#5a4234] uppercase tracking-wider ml-2">Thread Color</label>
-                          <div className="flex gap-3 px-2">
-                            {fields.find(f => f.key === 'threadColor')?.options?.map(color => (
-                              <button
-                                key={color}
-                                onClick={() => setPersonalizationData({...personalizationData, threadColor: color})}
-                                className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${personalizationData.threadColor === color ? 'border-[#3a251a] scale-110' : 'border-transparent hover:scale-105 shadow-sm'}`}
-                                style={{ backgroundColor: color }}
-                              >
-                                {personalizationData.threadColor === color && <Check className="w-4 h-4 text-[#3a251a] mix-blend-difference" />}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-3 mt-4">
-                          <label className="text-xs font-bold text-[#5a4234] uppercase tracking-wider ml-2">Font Style</label>
-                          <div className="flex flex-col gap-2">
-                            {fields.find(f => f.key === 'fontStyle')?.options?.map(font => (
-                              <button
-                                key={font}
-                                onClick={() => setPersonalizationData({...personalizationData, fontStyle: font})}
-                                className={`px-5 py-4 rounded-2xl border text-left transition-all ${personalizationData.fontStyle === font ? 'bg-[#f7ede3] border-[#d4b497] text-[#3a251a]' : 'bg-[#fcfaf6] border-[#d4b497]/20 text-[#5a4234] hover:bg-[#f7ede3]/50'}`}
-                              >
-                                <span className="font-medium">{font}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
+	                      <div className="flex flex-col gap-5">
+	                        {secondaryFields.length ? secondaryFields.map((field) => <div key={field.id}>{renderField(field)}</div>) : <p className="rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5 text-sm text-[#5a4234]">No extra details are needed for this gift.</p>}
+	                      </div>
+	                    </motion.div>
+	                  )}
 
                   {step === 3 && (
                     <motion.div
@@ -218,7 +262,7 @@ export const PersonalizationModal = () => {
                       <div className="bg-[#fcfaf6] rounded-2xl p-5 border border-[#d4b497]/20 flex flex-col gap-3">
                         {Object.entries(personalizationData).map(([key, val]) => (
                           <div key={key} className="flex justify-between items-center py-2 border-b border-[#d4b497]/10 last:border-0 last:pb-0">
-                            <span className="text-xs font-bold text-[#5a4234] uppercase tracking-wider capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+	                            <span className="text-xs font-bold text-[#5a4234] uppercase tracking-wider capitalize">{fieldByKey.get(key)?.label || key.replace(/([A-Z])/g, ' $1').trim()}</span>
                             <span className="font-serif font-medium text-[#3a251a]">{val as string}</span>
                           </div>
                         ))}
@@ -240,14 +284,14 @@ export const PersonalizationModal = () => {
                 
                 <button
                   onClick={() => {
-                    if (step === 1 && !personalizationData.babyName) return; // simple validation
+	                    if (!isStepValid) return;
                     if (isLastStep) {
                       handleAddToCart();
                     } else {
                       setStep(step + 1);
                     }
                   }}
-                  disabled={step === 1 && !personalizationData.babyName}
+	                  disabled={!isStepValid}
                   className="bg-[#3a251a] text-white px-8 py-3.5 rounded-full font-bold tracking-wide flex items-center gap-2 hover:bg-[#4a3328] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                 >
                   {isLastStep ? 'Add to Gift Bag' : 'Next Step'} <ChevronRight className="w-4 h-4" />

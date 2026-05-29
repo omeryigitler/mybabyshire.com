@@ -1,9 +1,36 @@
 import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
 import Stripe from "stripe";
-import { createAdminToken, isConfiguredAdminLogin } from "../lib/auth.js";
+import { prisma } from "../lib/prisma.js";
+import {
+  assertAdminLoginAllowed,
+  clearAdminLoginAttempts,
+  createAdminToken,
+  getJwtSecret,
+  getLoginRateLimitKey,
+  hasConfiguredAdminCredentials,
+  isConfiguredAdminLogin,
+  recordFailedAdminLogin,
+} from "../lib/auth.js";
+import {
+  buildVerifiedCheckout,
+  createPendingOrderFromCheckout,
+  getAbsoluteImageUrl as getCheckoutAbsoluteImageUrl,
+  isCheckoutValidationError,
+  toCents as checkoutToCents,
+  verifyPayPalCaptureForOrder,
+} from "../lib/checkout.js";
+import { sendPaymentConfirmedEmail } from "../lib/email.js";
+import {
+  CLOUDINARY_PRODUCT_FOLDER,
+  isUploadValidationError,
+  parseImageDataUrl,
+} from "../lib/upload.js";
+import {
+  mapProductPersonalizationFields,
+  normalizePersonalizationFieldCreateData,
+} from "../lib/products.js";
 import {
   SHIPMENT_STATUS_OPTIONS,
   buildManualTimeline,
@@ -18,8 +45,7 @@ import {
 } from "../src/utils/carriers.js";
 
 const router = Router();
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-development";
+const JWT_SECRET = getJwtSecret();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, { apiVersion: "2024-12-18.acacia" })
@@ -90,6 +116,7 @@ const mapProductForStorefront = (product: any) => {
         : undefined,
     personalizationRequired: product.personalization_required,
     personalizationEnabled: product.personalization_required,
+    personalizationFields: mapProductPersonalizationFields(product),
     status: product.status,
     featured: product.featured,
     newArrival: product.new_arrival,
@@ -355,9 +382,24 @@ const requireAdmin = (req: AdminRequest, res: Response, next: NextFunction) => {
 // ---------------------------------------------------------
 router.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const loginIp =
+    typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0]?.trim()
+      : req.ip;
+  const loginKey = getLoginRateLimitKey(email, loginIp);
 
   try {
+    assertAdminLoginAllowed(loginKey);
+
+    if (!hasConfiguredAdminCredentials()) {
+      return res
+        .status(500)
+        .json({ error: "Admin credentials are not configured." });
+    }
+
     if (isConfiguredAdminLogin(email, password)) {
+      clearAdminLoginAttempts(loginKey);
       const token = createAdminToken(email);
 
       return res.json({
@@ -366,29 +408,16 @@ router.post("/admin/login", async (req, res) => {
       });
     }
 
-    const user = await prisma.users.findUnique({ where: { email } });
-
-    if (!user || user.password_hash !== password) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    recordFailedAdminLogin(loginKey);
+    return res.status(401).json({ error: "Invalid credentials" });
   } catch (error) {
-    res.status(500).json({
-      error: "Login failed",
-      details: (error as Error).message,
+    const statusCode =
+      error instanceof Error && "statusCode" in error
+        ? Number((error as any).statusCode)
+        : 500;
+
+    res.status(statusCode || 500).json({
+      error: statusCode === 429 ? (error as Error).message : "Login failed",
     });
   }
 });
@@ -512,11 +541,8 @@ router.get("/admin-google-callback", async (req, res) => {
 // ---------------------------------------------------------
 router.post("/admin/upload-image", requireAdmin, async (req, res) => {
   try {
-    const { file, folder = "little-wonders/products" } = req.body;
-
-    if (!file || typeof file !== "string") {
-      return res.status(400).json({ error: "Missing image file." });
-    }
+    const { file } = req.body;
+    const image = parseImageDataUrl(file);
 
     if (
       !process.env.CLOUDINARY_CLOUD_NAME ||
@@ -528,8 +554,8 @@ router.post("/admin/upload-image", requireAdmin, async (req, res) => {
       });
     }
 
-    const result = await cloudinary.uploader.upload(file, {
-      folder,
+    const result = await cloudinary.uploader.upload(image.dataUrl, {
+      folder: CLOUDINARY_PRODUCT_FOLDER,
       resource_type: "image",
       transformation: [
         { width: 900, height: 900, crop: "limit" },
@@ -544,9 +570,13 @@ router.post("/admin/upload-image", requireAdmin, async (req, res) => {
       height: result.height,
     });
   } catch (error) {
+    if (isUploadValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    console.error("Cloudinary upload failed", error);
     res.status(500).json({
-      error: "Cloudinary upload failed",
-      details: (error as Error).message,
+      error: "Cloudinary upload failed. Please try again.",
     });
   }
 });
@@ -556,11 +586,8 @@ router.post("/admin/upload-image", requireAdmin, async (req, res) => {
 // ---------------------------------------------------------
 router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
   try {
-    const { file, folder = "little-wonders/products" } = req.body;
-
-    if (!file || typeof file !== "string") {
-      return res.status(400).json({ error: "Missing image file." });
-    }
+    const { file } = req.body;
+    const image = parseImageDataUrl(file);
 
     if (!process.env.REMOVE_BG_API_KEY) {
       return res.status(500).json({
@@ -578,18 +605,14 @@ router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
       });
     }
 
-    const base64Data = file.includes(",") ? file.split(",")[1] : file;
-
-    const imageBuffer = Buffer.from(base64Data, "base64");
-
-    const imageBlob = new Blob([imageBuffer], {
-      type: "image/png",
+    const imageBlob = new Blob([image.buffer], {
+      type: image.mimeType,
     });
 
     const formData = new FormData();
     formData.append("size", "auto");
     formData.append("format", "png");
-    formData.append("image_file", imageBlob, "image.png");
+    formData.append("image_file", imageBlob, "image");
 
     const removeBgResponse = await fetch(
       "https://api.remove.bg/v1.0/removebg",
@@ -604,10 +627,10 @@ router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
 
     if (!removeBgResponse.ok) {
       const errorText = await removeBgResponse.text();
+      console.error("remove.bg failed", errorText);
 
       return res.status(removeBgResponse.status).json({
         error: "remove.bg failed",
-        details: errorText,
       });
     }
 
@@ -618,7 +641,7 @@ router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
     const result = await cloudinary.uploader.upload(
       `data:image/png;base64,${transparentBase64}`,
       {
-        folder,
+        folder: CLOUDINARY_PRODUCT_FOLDER,
         resource_type: "image",
         transformation: [
           { width: 900, height: 900, crop: "limit" },
@@ -634,9 +657,13 @@ router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
       height: result.height,
     });
   } catch (error) {
+    if (isUploadValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    console.error("Background removal upload failed", error);
     res.status(500).json({
-      error: "Background removal upload failed",
-      details: (error as Error).message,
+      error: "Background removal upload failed. Please try again.",
     });
   }
 });
@@ -658,9 +685,9 @@ router.get("/products", async (req, res) => {
 
     res.json(products.map(mapProductForStorefront));
   } catch (error) {
+    console.error("Failed to fetch products", error);
     res.status(500).json({
       error: "Failed to fetch products",
-      details: (error as Error).message,
     });
   }
 });
@@ -692,6 +719,7 @@ router.get("/admin/products", requireAdmin, async (req, res) => {
       include: {
         images: true,
         category: true,
+        personalization_fields: true,
       },
       orderBy: { created_at: "desc" },
     });
@@ -718,6 +746,7 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
       sku,
       status = "active",
       personalizationRequired = true,
+      personalizationFields = [],
       stockQuantity = 0,
       categoryId,
       featured = false,
@@ -732,6 +761,9 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
 
     const normalizedPrice = normalizePrice(price);
     const variants = normalizeCloudVariants(req.body);
+    const fieldCreateData = Boolean(personalizationRequired)
+      ? normalizePersonalizationFieldCreateData(personalizationFields)
+      : [];
 
     if (!name || !normalizedPrice || !imageUrl) {
       return res.status(400).json({
@@ -773,6 +805,9 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
           care_instructions: careInstructions || null,
           preparation_time: preparationTime || null,
           personalization_required: Boolean(personalizationRequired),
+          personalization_fields: fieldCreateData.length
+            ? { create: fieldCreateData }
+            : undefined,
           images: {
             create: [
               {
@@ -788,6 +823,7 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
         include: {
           images: true,
           category: true,
+          personalization_fields: true,
         },
       });
 
@@ -826,6 +862,7 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
       sku,
       status = "active",
       personalizationRequired = true,
+      personalizationFields = [],
       stockQuantity = 0,
       categoryId,
       featured = false,
@@ -845,7 +882,11 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
       });
     }
 
-    const product = await prisma.products.update({
+    const fieldCreateData = Boolean(personalizationRequired)
+      ? normalizePersonalizationFieldCreateData(personalizationFields)
+      : [];
+
+    await prisma.products.update({
       where: { id: req.params.id },
       data: {
         name,
@@ -866,6 +907,12 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
         care_instructions: careInstructions || null,
         preparation_time: preparationTime || null,
         personalization_required: Boolean(personalizationRequired),
+        personalization_fields: Boolean(personalizationRequired)
+          ? {
+              deleteMany: {},
+              create: fieldCreateData,
+            }
+          : { deleteMany: {} },
         images: {
           deleteMany: {},
           create: [
@@ -879,8 +926,14 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
           ],
         },
       },
-      include: { images: true, category: true },
     });
+
+    const product = await prisma.products.findUnique({
+      where: { id: req.params.id },
+      include: { images: true, category: true, personalization_fields: true },
+    });
+
+    if (!product) return res.status(404).json({ error: "Product not found." });
 
     res.json(mapProductForStorefront(product));
   } catch (error) {
@@ -893,6 +946,24 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
 
 router.delete("/admin/products/:id", requireAdmin, async (req, res) => {
   try {
+    const orderItemCount = await prisma.order_items.count({
+      where: { product_id: req.params.id },
+    });
+
+    if (orderItemCount > 0) {
+      await prisma.products.update({
+        where: { id: req.params.id },
+        data: { status: "archived" },
+      });
+
+      return res.json({
+        success: true,
+        archived: true,
+        message:
+          "Product is linked to existing orders, so it was archived instead of deleted.",
+      });
+    }
+
     await prisma.products.delete({
       where: { id: req.params.id },
     });
@@ -1152,9 +1223,9 @@ router.post("/cart/sync", async (req, res) => {
       cartId: cart.id,
     });
   } catch (error) {
+    console.error("Cart sync failed", error);
     res.status(500).json({
       error: "Cart sync failed",
-      details: (error as Error).message,
     });
   }
 });
@@ -1169,107 +1240,40 @@ router.post("/checkout/create-payment", async (req, res) => {
       .json({ error: "Stripe is not configured. Add STRIPE_SECRET_KEY." });
   }
 
+  let pendingOrderId: string | null = null;
+
   try {
-    const {
-      customer,
-      items,
-      subtotal,
-      shipping,
-      total,
-      currency = "USD",
-      shippingMethod,
-    } = req.body;
-
-    if (
-      !customer?.name ||
-      !customer?.email ||
-      !customer?.address ||
-      !customer?.city ||
-      !customer?.state ||
-      !customer?.zip
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Missing customer shipping details." });
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Your gift bag is empty." });
-    }
-
-    const selectedShippingMethod = shippingMethod || {
-      id: "us-standard",
-      label: "Standard Shipping",
-      carrier: "USPS",
-      service: "Ground Advantage",
-      estimatedDelivery: "3-5 business days",
-      amount: Number(shipping) || 0,
-    };
-    const orderNumber = createOrderNumber();
-    const customerSnapshot = {
-      customer,
-      subtotal: Number(subtotal) || 0,
-      shipping: Number(shipping) || 0,
-      shippingMethod: selectedShippingMethod,
-      total: Number(total) || 0,
-      currency,
-      provider: "stripe",
-    };
-
-    const order = await prisma.orders.create({
-      data: {
-        order_number: orderNumber,
-        customer_name: customer.name,
-        customer_email: customer.email,
-        total_amount: Number(total) || 0,
-        currency,
-        payment_status: "pending",
-        order_status: "processing",
-        personalization_data_json: JSON.stringify(customerSnapshot),
-        items: {
-          create: items.map((item: any) => ({
-            product_id: item.productId,
-            product_name_snapshot: item.name,
-            quantity: Number(item.quantity) || 1,
-            price_snapshot: Number(item.price) || 0,
-            personalization_data_json: JSON.stringify(
-              item.personalizationData || {},
-            ),
-          })),
-        },
-      },
-      include: { items: true },
-    });
-
+    const checkout = await buildVerifiedCheckout(req.body);
+    const order = await createPendingOrderFromCheckout(checkout, "stripe");
+    pendingOrderId = order.id;
     const baseUrl = getBaseUrl(req);
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map(
-      (item: any) => {
-        const productImage = getAbsoluteImageUrl(item.imageUrl, baseUrl);
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
+      checkout.items.map((item) => {
+        const productImage = getCheckoutAbsoluteImageUrl(item.imageUrl, baseUrl);
         return {
-          quantity: Number(item.quantity) || 1,
+          quantity: item.quantity,
           price_data: {
-            currency: String(currency).toLowerCase(),
-            unit_amount: toCents(Number(item.price) || 0),
+            currency: checkout.currency.toLowerCase(),
+            unit_amount: checkoutToCents(item.price),
             product_data: {
               name: item.name,
               description: item.description || "Personalized MY BABY SHIRE gift",
               images: productImage ? [productImage] : undefined,
-              metadata: { productId: item.productId || "" },
+              metadata: { productId: item.productId },
             },
           },
         };
-      },
-    );
+      });
 
-    if (Number(shipping) > 0) {
+    if (checkout.shipping > 0) {
       lineItems.push({
         quantity: 1,
         price_data: {
-          currency: String(currency).toLowerCase(),
-          unit_amount: toCents(Number(shipping) || 0),
+          currency: checkout.currency.toLowerCase(),
+          unit_amount: checkoutToCents(checkout.shipping),
           product_data: {
-            name: selectedShippingMethod.label || "Gift-ready shipping",
-            description: `${selectedShippingMethod.carrier || "Carrier"} · ${selectedShippingMethod.service || "Shipping service"} · ${selectedShippingMethod.estimatedDelivery || "Delivery estimate"}`,
+            name: checkout.shippingMethod.label,
+            description: `${checkout.shippingMethod.carrier} · ${checkout.shippingMethod.service} · ${checkout.shippingMethod.estimatedDelivery}`,
           },
         },
       });
@@ -1278,7 +1282,7 @@ router.post("/checkout/create-payment", async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       locale: "en",
-      customer_email: customer.email,
+      customer_email: checkout.customer.email,
       line_items: lineItems,
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.order_number)}`,
       cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
@@ -1288,24 +1292,21 @@ router.post("/checkout/create-payment", async (req, res) => {
           message:
             "Your personalized gift order will be prepared after payment confirmation.",
         },
-        shipping_address: {
-          message:
-            "Please enter the delivery address for your MY BABY SHIRE gift.",
-        },
       },
       metadata: {
         orderId: order.id,
         orderNumber: order.order_number,
-        shippingMethod: selectedShippingMethod.id || "us-standard",
+        shippingMethod: checkout.shippingMethod.id,
       },
       payment_intent_data: {
         metadata: {
           orderId: order.id,
           orderNumber: order.order_number,
-          shippingMethod: selectedShippingMethod.id || "us-standard",
+          shippingMethod: checkout.shippingMethod.id,
         },
       },
     });
+    pendingOrderId = null;
 
     await prisma.orders.update({
       where: { id: order.id },
@@ -1319,93 +1320,40 @@ router.post("/checkout/create-payment", async (req, res) => {
       checkoutUrl: session.url,
       sessionId: session.id,
       currency: order.currency,
-      subtotal: Number(subtotal) || 0,
-      shipping: Number(shipping) || 0,
-      shippingMethod: selectedShippingMethod,
+      subtotal: checkout.subtotal,
+      shipping: checkout.shipping,
+      shippingMethod: checkout.shippingMethod,
       total: Number(order.total_amount) || 0,
       message: "Stripe Checkout session created.",
     });
   } catch (error) {
+    if (isCheckoutValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    if (pendingOrderId) {
+      await prisma.orders
+        .delete({ where: { id: pendingOrderId } })
+        .catch((cleanupError) =>
+          console.error("Failed to clean up pending Stripe order", cleanupError),
+        );
+    }
+
+    console.error("Checkout setup failed", error);
     res.status(500).json({
-      error: "Checkout setup failed",
-      details: (error as Error).message,
+      error: "Checkout setup failed. Please try again.",
     });
   }
 });
 
 const createPayPalOrderHandler = async (req: Request, res: Response) => {
+  let pendingOrderId: string | null = null;
+
   try {
-    const {
-      customer,
-      items,
-      subtotal,
-      shipping,
-      total,
-      currency = "USD",
-      shippingMethod,
-    } = req.body;
-
-    if (
-      !customer?.name ||
-      !customer?.email ||
-      !customer?.address ||
-      !customer?.city ||
-      !customer?.state ||
-      !customer?.zip
-    ) {
-      return res
-        .status(400)
-        .json({ error: "Missing customer shipping details." });
-    }
-
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Your gift bag is empty." });
-    }
-
-    const selectedShippingMethod = shippingMethod || {
-      id: "us-standard",
-      label: "Standard Shipping",
-      carrier: "USPS",
-      service: "Ground Advantage",
-      estimatedDelivery: "3-5 business days",
-      amount: Number(shipping) || 0,
-    };
-    const orderNumber = createOrderNumber();
+    const checkout = await buildVerifiedCheckout(req.body);
+    const order = await createPendingOrderFromCheckout(checkout, "paypal");
+    pendingOrderId = order.id;
     const baseUrl = getBaseUrl(req);
-    const customerSnapshot = {
-      customer,
-      subtotal: Number(subtotal) || 0,
-      shipping: Number(shipping) || 0,
-      shippingMethod: selectedShippingMethod,
-      total: Number(total) || 0,
-      currency,
-      provider: "paypal",
-    };
-
-    const order = await prisma.orders.create({
-      data: {
-        order_number: orderNumber,
-        customer_name: customer.name,
-        customer_email: customer.email,
-        total_amount: Number(total) || 0,
-        currency,
-        payment_status: "pending",
-        order_status: "processing",
-        personalization_data_json: JSON.stringify(customerSnapshot),
-        items: {
-          create: items.map((item: any) => ({
-            product_id: item.productId,
-            product_name_snapshot: item.name,
-            quantity: Number(item.quantity) || 1,
-            price_snapshot: Number(item.price) || 0,
-            personalization_data_json: JSON.stringify(
-              item.personalizationData || {},
-            ),
-          })),
-        },
-      },
-      include: { items: true },
-    });
 
     const accessToken = await getPayPalAccessToken();
     const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders`, {
@@ -1421,27 +1369,27 @@ const createPayPalOrderHandler = async (req: Request, res: Response) => {
             reference_id: order.order_number,
             description: `MY BABY SHIRE order ${order.order_number}`,
             amount: {
-              currency_code: String(currency).toUpperCase(),
-              value: Number(total || 0).toFixed(2),
+              currency_code: checkout.currency,
+              value: checkout.total.toFixed(2),
               breakdown: {
                 item_total: {
-                  currency_code: String(currency).toUpperCase(),
-                  value: Number(subtotal || 0).toFixed(2),
+                  currency_code: checkout.currency,
+                  value: checkout.subtotal.toFixed(2),
                 },
                 shipping: {
-                  currency_code: String(currency).toUpperCase(),
-                  value: Number(shipping || 0).toFixed(2),
+                  currency_code: checkout.currency,
+                  value: checkout.shipping.toFixed(2),
                 },
               },
             },
-            items: items.map((item: any) => ({
-              name: String(item.name).slice(0, 127),
-              quantity: String(Number(item.quantity) || 1),
-              unit_amount: {
-                currency_code: String(currency).toUpperCase(),
-                value: Number(item.price || 0).toFixed(2),
-              },
-            })),
+              items: checkout.items.map((item) => ({
+                name: String(item.name).slice(0, 127),
+                quantity: String(item.quantity),
+                unit_amount: {
+                  currency_code: checkout.currency,
+                  value: item.price.toFixed(2),
+                },
+              })),
           },
         ],
         payment_source: {
@@ -1465,6 +1413,7 @@ const createPayPalOrderHandler = async (req: Request, res: Response) => {
         data.message || data.name || "PayPal order could not be created.",
       );
     }
+    pendingOrderId = null;
 
     const approvalUrl = data.links?.find(
       (link: any) => link.rel === "payer-action" || link.rel === "approve",
@@ -1480,12 +1429,24 @@ const createPayPalOrderHandler = async (req: Request, res: Response) => {
       databaseId: order.id,
       paypalOrderId: data.id,
       approvalUrl,
-      shippingMethod: selectedShippingMethod,
+      shippingMethod: checkout.shippingMethod,
     });
   } catch (error) {
+    if (isCheckoutValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    if (pendingOrderId) {
+      await prisma.orders
+        .delete({ where: { id: pendingOrderId } })
+        .catch((cleanupError) =>
+          console.error("Failed to clean up pending PayPal order", cleanupError),
+        );
+    }
+
+    console.error("PayPal checkout failed", error);
     return res.status(500).json({
-      error: "PayPal checkout failed",
-      details: (error as Error).message,
+      error: "PayPal checkout failed. Please try again.",
     });
   }
 };
@@ -1501,6 +1462,15 @@ const capturePayPalOrderHandler = async (req: Request, res: Response) => {
     }
 
     const accessToken = await getPayPalAccessToken();
+    const existingOrder = await prisma.orders.findUnique({
+      where: { order_number: String(orderNumber) },
+      include: { items: true },
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
     const response = await fetch(
       `${getPayPalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(token)}/capture`,
       {
@@ -1519,26 +1489,51 @@ const capturePayPalOrderHandler = async (req: Request, res: Response) => {
       );
     }
 
-    const isCompleted = data.status === "COMPLETED";
-    await prisma.orders.update({
-      where: { order_number: orderNumber },
+    const { isCompleted, paypalOrderId } = verifyPayPalCaptureForOrder(
+      existingOrder,
+      data,
+      String(token),
+    );
+    const updatedOrder = await prisma.orders.update({
+      where: { order_number: existingOrder.order_number },
       data: {
         payment_status: isCompleted ? "paid" : "pending",
         order_status: "processing",
-        payment_reference: data.id || token,
+        payment_reference: paypalOrderId,
       },
+      include: { items: true },
     });
+
+    if (isCompleted) {
+      await sendPaymentConfirmedEmail({
+        to: updatedOrder.customer_email,
+        customerName: updatedOrder.customer_name,
+        orderNumber: updatedOrder.order_number,
+        total: Number(updatedOrder.total_amount) || 0,
+        paymentProvider: "PayPal",
+        items:
+          updatedOrder.items?.map((item: any) => ({
+            productName: item.product_name_snapshot,
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.price_snapshot) || 0,
+          })) || [],
+      });
+    }
 
     return res.json({
       success: true,
       status: data.status,
-      orderNumber,
-      paypalOrderId: data.id || token,
+      orderNumber: existingOrder.order_number,
+      paypalOrderId,
     });
   } catch (error) {
+    if (isCheckoutValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    console.error("PayPal capture failed", error);
     return res.status(500).json({
-      error: "PayPal capture failed",
-      details: (error as Error).message,
+      error: "PayPal capture failed. Please try again.",
     });
   }
 };
@@ -1557,11 +1552,23 @@ router.get("/track", async (req, res) => {
   )
     .trim()
     .slice(0, 80);
+  const verifier = String(
+    req.query.verify || req.query.email || req.query.zip || "",
+  )
+    .trim()
+    .toLowerCase()
+    .slice(0, 180);
 
   if (!query) {
     return res
       .status(400)
       .json({ error: "Missing order or tracking reference." });
+  }
+
+  if (!verifier) {
+    return res.status(400).json({
+      error: "Enter the order email or shipping ZIP code to view tracking.",
+    });
   }
 
   try {
@@ -1580,6 +1587,15 @@ router.get("/track", async (req, res) => {
     }
 
     const snapshot = parseJson(order.personalization_data_json) || {};
+    const orderEmail = String(order.customer_email || "").trim().toLowerCase();
+    const orderZip = String(snapshot?.customer?.zip || "").trim().toLowerCase();
+
+    if (verifier !== orderEmail && verifier !== orderZip) {
+      return res.status(403).json({
+        error: "Order verification failed. Check the email or ZIP code and try again.",
+      });
+    }
+
     const shippingMethod = snapshot.shippingMethod || null;
     const carrier = snapshot.carrier || shippingMethod?.carrier || "USPS";
     const trackingNumber =
@@ -1643,11 +1659,11 @@ router.get("/track", async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Tracking lookup failed", error);
     res
       .status(500)
       .json({
         error: "Tracking lookup failed",
-        details: (error as Error).message,
       });
   }
 });
@@ -1655,50 +1671,42 @@ router.get("/track", async (req, res) => {
 router.get("/orders/:orderNumber/tracking", async (req, res) => {
   try {
     const { orderNumber } = req.params;
+    const verifier = String(req.query.verify || req.query.email || req.query.zip || "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 180);
+
+    if (!verifier) {
+      return res.status(400).json({
+        error: "Enter the order email or shipping ZIP code to view tracking.",
+      });
+    }
 
     const order = await prisma.orders.findUnique({
       where: { order_number: orderNumber },
     });
 
-    if (order) {
-      res.json({
-        orderNumber,
-        status: order.order_status,
-        trackingReference: order.tracking_reference,
-        message: "Real order query successful",
-      });
-    } else {
-      res.json({
-        orderNumber,
-        status: "processing",
-        estimatedDelivery: "3-5 business days",
-        steps: [
-          {
-            id: 1,
-            label: "Order Placed",
-            completed: true,
-            date: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            label: "Personalization",
-            completed: true,
-            date: new Date().toISOString(),
-          },
-          {
-            id: 3,
-            label: "Packaging",
-            completed: false,
-          },
-          {
-            id: 4,
-            label: "Shipped",
-            completed: false,
-          },
-        ],
+    if (!order) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    const snapshot = parseJson(order.personalization_data_json) || {};
+    const orderEmail = String(order.customer_email || "").trim().toLowerCase();
+    const orderZip = String(snapshot?.customer?.zip || "").trim().toLowerCase();
+
+    if (verifier !== orderEmail && verifier !== orderZip) {
+      return res.status(403).json({
+        error: "Order verification failed. Check the email or ZIP code and try again.",
       });
     }
+
+    res.json({
+      orderNumber,
+      status: order.order_status,
+      trackingReference: order.tracking_reference,
+    });
   } catch (error) {
+    console.error("Tracking query failed", error);
     res.status(500).json({ error: "Tracking query failed" });
   }
 });

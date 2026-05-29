@@ -1,6 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type PersonalizationField = {
+  id: string;
+  label: string;
+  fieldKey: string;
+  type: string;
+  required: boolean;
+  placeholder?: string;
+  helpText?: string;
+  maxLength?: number | null;
+  options?: string[];
+  defaultValue?: string;
+  sortOrder?: number;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -23,6 +37,7 @@ export type Product = {
   material?: string;
   careInstructions?: string;
   preparationTime?: string;
+  personalizationFields?: PersonalizationField[];
 };
 
 export type CartItem = {

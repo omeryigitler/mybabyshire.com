@@ -96,6 +96,7 @@ function statusIcon(status: string, isLatest: boolean) {
 
 export default function TrackOrderPage() {
   const [orderReference, setOrderReference] = useState('');
+  const [verification, setVerification] = useState('');
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -125,10 +126,16 @@ export default function TrackOrderPage() {
       return;
     }
 
+    const verifier = verification.trim();
+    if (!verifier) {
+      setErrorMessage('Please enter the order email or shipping ZIP code.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/track?query=${encodeURIComponent(reference)}`);
+      const response = await fetch(`/api/track?query=${encodeURIComponent(reference)}&verify=${encodeURIComponent(verifier)}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Order could not be found.');
       setOrder(data);
@@ -160,14 +167,15 @@ export default function TrackOrderPage() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light shadow-sm"><Sparkles className="h-4 w-4" /> Follow your MY BABY SHIRE order</div>
           <h1 className="font-serif text-5xl leading-none text-boutique-brown md:text-7xl">Order Tracking</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-boutique-brown-light">Enter your MY BABY SHIRE order reference or tracking number to see the latest shipping progress.</p>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-boutique-brown-light">Enter your MY BABY SHIRE order reference or tracking number plus the order email or shipping ZIP code to see the latest shipping progress.</p>
         </div>
 
         <form onSubmit={handleTrack} className="relative mx-auto mt-8 max-w-3xl rounded-[2.2rem] border border-boutique-brown/10 bg-white/80 p-4 shadow-[0_20px_60px_rgba(58,37,26,0.10)] backdrop-blur-sm">
           <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -left-10 -top-8 w-32 opacity-30 mix-blend-multiply" alt="" />
           <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute right-8 top-4 w-8 rotate-12 opacity-35 mix-blend-multiply" alt="" />
-          <div className="relative z-10 flex flex-col gap-3 sm:flex-row">
-            <input value={orderReference} onChange={(event) => setOrderReference(event.target.value)} className="min-h-16 flex-1 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-6 text-sm font-semibold uppercase tracking-wide text-boutique-brown outline-none transition-all focus:ring-2 focus:ring-boutique-wood/35" placeholder="LW-XXXXXXXX-XXXXX or tracking number" />
+          <div className="relative z-10 grid gap-3 lg:grid-cols-[1.2fr_0.9fr_auto]">
+            <input value={orderReference} onChange={(event) => setOrderReference(event.target.value)} className="min-h-16 min-w-0 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-6 text-sm font-semibold uppercase tracking-wide text-boutique-brown outline-none transition-all focus:ring-2 focus:ring-boutique-wood/35" placeholder="LW-XXXXXXXX-XXXXX or tracking number" />
+            <input value={verification} onChange={(event) => setVerification(event.target.value)} className="min-h-16 min-w-0 rounded-full border border-boutique-brown/10 bg-white px-6 text-sm font-semibold text-boutique-brown outline-none transition-all focus:ring-2 focus:ring-boutique-wood/35" placeholder="Email or ZIP code" />
             <button disabled={isLoading} className="inline-flex min-h-16 items-center justify-center gap-2 rounded-full bg-boutique-brown px-7 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:opacity-50"><Search className="h-4 w-4" /> {isLoading ? 'Checking...' : 'Track Order'}</button>
           </div>
         </form>
@@ -176,7 +184,7 @@ export default function TrackOrderPage() {
 
         {!order && !isLoading && !errorMessage && (
           <div className="mx-auto mt-8 grid max-w-4xl gap-4 md:grid-cols-3">
-            <InfoCard icon={Package} title="Order reference" content={<p className="text-sm text-boutique-brown-light">Use the order reference shown after checkout.</p>} />
+            <InfoCard icon={Package} title="Order reference" content={<p className="text-sm text-boutique-brown-light">Use the order reference shown after checkout with the order email or ZIP.</p>} />
             <InfoCard icon={Truck} title="Carrier ready" content={<p className="text-sm text-boutique-brown-light">USPS, UPS, FedEx and DHL tracking links are supported.</p>} />
             <InfoCard icon={Clock3} title="Timeline" content={<p className="text-sm text-boutique-brown-light">Shipment milestones update as the team updates your order.</p>} />
           </div>

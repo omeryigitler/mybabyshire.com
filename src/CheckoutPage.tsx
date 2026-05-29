@@ -82,17 +82,10 @@ export default function CheckoutPage() {
     },
     items: cartItems.map((item) => ({
       productId: item.product.id,
-      name: item.product.name,
-      description: item.product.description,
-      imageUrl: item.product.imageUrl,
       quantity: item.quantity,
-      price: item.product.price,
       personalizationData: item.personalizationData,
     })),
-    shippingMethod: selectedShippingMethod,
-    subtotal,
-    shipping,
-    total,
+    shippingMethodId: selectedShippingMethod.id,
     currency: 'USD',
   };
 

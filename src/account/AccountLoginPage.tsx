@@ -155,6 +155,10 @@ export default function AccountLoginPage() {
     <div className="relative h-dvh overflow-hidden bg-[#fbf5ec] font-sans text-boutique-brown">
       <style>
         {`
+          .member-login-panel {
+            transform: scale(0.94);
+          }
+
           @media (min-width: 768px) and (max-height: 940px) {
             .member-login-main {
               align-items: flex-start;
@@ -215,11 +219,11 @@ export default function AccountLoginPage() {
         <div className="absolute bottom-[4.2rem] right-[7vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
         <div className="absolute bottom-[5rem] right-[16vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
         <div className="absolute bottom-[5.8rem] right-[25vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
-        <DecorativeCloud tone="peach" className="bottom-[-0.7rem] right-[25vw] h-16 w-40 opacity-90" />
-        <DecorativeCloud tone="blue" className="bottom-[1.4rem] right-[0.5vw] h-20 w-48 opacity-80" />
+        <DecorativeCloud tone="peach" className="bottom-[-0.7rem] right-[27vw] h-16 w-40 opacity-86" />
+        <DecorativeCloud tone="blue" className="bottom-[0.7rem] right-[-1.5vw] h-20 w-48 opacity-78" />
         <div className="absolute bottom-[0.5rem] right-[17vw] h-8 w-36 rotate-[-8deg] rounded-full bg-[#d6a977]/28 blur-md" />
-        <img {...decorativeImageProps} src={assets.train} className="absolute bottom-[0.6rem] right-[1.8vw] z-20 w-[clamp(23rem,34vw,35rem)] drop-shadow-[0_32px_44px_rgba(95,61,34,0.27)]" />
-        <img {...decorativeImageProps} src={assets.blocks} className="absolute bottom-[0.25rem] right-[1.5vw] z-10 w-[clamp(5rem,6vw,7rem)] rotate-[12deg] opacity-80 drop-shadow-[0_18px_24px_rgba(95,61,34,0.18)]" />
+        <img {...decorativeImageProps} src={assets.train} className="absolute bottom-[-0.25rem] right-[-0.4vw] z-20 w-[clamp(24rem,38vw,38rem)] drop-shadow-[0_34px_46px_rgba(95,61,34,0.29)]" />
+        <img {...decorativeImageProps} src={assets.blocks} className="absolute bottom-[-0.1rem] right-[0.4vw] z-10 w-[clamp(5rem,6vw,7rem)] rotate-[12deg] opacity-78 drop-shadow-[0_18px_24px_rgba(95,61,34,0.18)]" />
       </div>
 
       <DecorativeCloud tone="blue" className="left-[24vw] top-[18vh] hidden h-14 w-36 opacity-45 lg:block" />
@@ -232,10 +236,6 @@ export default function AccountLoginPage() {
       <FloatingStar className="bottom-[9vh] left-[34vw] hidden h-5 w-5 lg:block" />
 
       <main className="member-login-main relative z-10 flex h-full overflow-hidden items-center justify-center px-4 py-7 sm:px-6 lg:px-8">
-        <div className="absolute top-5 hidden w-[min(58rem,70vw)] rounded-[2rem] border border-[#e5d7c8] bg-white/72 px-8 py-5 text-center text-[12px] font-black uppercase tracking-[0.32em] text-boutique-brown-light shadow-[0_12px_35px_rgba(58,37,26,0.10)] backdrop-blur-sm lg:block">
-          Soft gifts, tiny smiles, magical keepsakes
-        </div>
-
         <section className="member-login-panel relative mt-0 w-full max-w-[42rem] origin-top overflow-visible rounded-[2.5rem] border border-[#decfbe] bg-white/86 px-6 py-7 shadow-[0_34px_90px_rgba(58,37,26,0.19),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-[3px] sm:px-8 md:mt-14 md:px-10 md:py-8 lg:mt-16">
           <DecorativeCloud tone="blue" className="-left-7 top-[8.6rem] hidden h-14 w-36 opacity-60 md:block" />
           <DecorativeCloud tone="peach" className="right-10 top-[5.9rem] hidden h-14 w-36 opacity-60 md:block" />

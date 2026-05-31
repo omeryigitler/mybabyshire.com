@@ -215,15 +215,8 @@ export default function AccountLoginPage() {
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] hidden h-[25rem] lg:block">
-        <div className="absolute bottom-[-4.8rem] right-[-4vw] h-64 w-[54rem] rotate-[-6deg] rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(137,91,49,0.22)_0%,rgba(214,169,119,0.14)_42%,rgba(255,255,255,0)_72%)] blur-sm" />
-        <div className="absolute bottom-[1.9rem] right-[2vw] h-28 w-[43rem] rotate-[-7deg] rounded-[100%] border-t-[10px] border-[#c99562]/45 shadow-[inset_0_-3px_0_rgba(255,255,255,0.75),0_-12px_22px_rgba(115,72,39,0.08)]" />
-        <div className="absolute bottom-[3.35rem] right-[3.5vw] h-24 w-[39rem] rotate-[-7deg] rounded-[100%] border-t-[4px] border-[#8f6a45]/24" />
-        <div className="absolute bottom-[4.2rem] right-[7vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
-        <div className="absolute bottom-[5rem] right-[16vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
-        <div className="absolute bottom-[5.8rem] right-[25vw] h-2 w-12 rotate-[-7deg] rounded-full bg-[#9c744c]/18" />
         <DecorativeCloud tone="peach" className="bottom-[-0.7rem] right-[27vw] h-16 w-40 opacity-86" />
         <DecorativeCloud tone="blue" className="bottom-[0.7rem] right-[-1.5vw] h-20 w-48 opacity-78" />
-        <div className="absolute bottom-[0.5rem] right-[17vw] h-8 w-36 rotate-[-8deg] rounded-full bg-[#d6a977]/28 blur-md" />
       </div>
 
       <DecorativeCloud tone="blue" className="left-[24vw] top-[18vh] hidden h-14 w-36 opacity-45 lg:block" />

@@ -22,6 +22,7 @@ import {
 
 type UploadedImage = { url: string; id: string; publicId?: string; };
 type PromotionBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
+type CategoryOption = { id: string; name: string; slug: string; productCount?: number };
 
 const Panel = ({ title, icon: Icon, children, note }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; note?: string }) => (
   <section className="relative overflow-hidden rounded-[1.8rem] border border-boutique-brown/10 bg-white/84 p-6 shadow-[0_18px_45px_rgba(58,37,26,0.07)] backdrop-blur-sm">
@@ -113,6 +114,7 @@ export const ProductForm = () => {
   const [salePrice, setSalePrice] = useState('');
   const [sku, setSku] = useState('');
   const [stockQuantity, setStockQuantity] = useState('0');
+  const [categoryId, setCategoryId] = useState('');
   const [status, setStatus] = useState<'active' | 'draft'>('active');
   const [promotionBadge, setPromotionBadge] = useState<PromotionBadge>('none');
   const [ageRange, setAgeRange] = useState('');
@@ -126,8 +128,27 @@ export const ProductForm = () => {
   const [personalizationRequired, setPersonalizationRequired] = useState(true);
   const [personalizationFields, setPersonalizationFields] = useState<PersonalizationBuilderField[]>(getDefaultFields);
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const token = getAdminToken();
+        const response = await fetch('/api/admin/categories', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.details || data.error || 'Could not load categories.');
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -138,7 +159,7 @@ export const ProductForm = () => {
         const response = await fetch(`/api/admin/products/${id}`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await response.json();
         if (!response.ok) throw new Error(data.details || data.error || 'Could not load product.');
-        setName(data.name || ''); setDescription(data.description || ''); setPrice(String(data.price || '')); setSalePrice(data.salePrice ? String(data.salePrice) : ''); setSku(data.sku || ''); setStockQuantity(String(data.stockQuantity ?? 0));
+        setName(data.name || ''); setDescription(data.description || ''); setPrice(String(data.price || '')); setSalePrice(data.salePrice ? String(data.salePrice) : ''); setSku(data.sku || ''); setStockQuantity(String(data.stockQuantity ?? 0)); setCategoryId(data.categoryId || '');
         setStatus(data.status === 'draft' ? 'draft' : 'active'); setPromotionBadge(data.bestseller ? 'bestseller' : data.newArrival ? 'newArrival' : data.featured ? 'featured' : 'none');
         const loadedDesign = parseCardDesign(data.bgImage);
         setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setCloudShape(loadedDesign.cloud); setPanelShape(loadedDesign.panel); setCardColor(loadedDesign.color); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setPersonalizationFields(normalizeProductFields(data.personalizationFields)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
@@ -157,7 +178,7 @@ export const ProductForm = () => {
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired, personalizationFields: personalizationRequired ? personalizationFields : [] }) });
+      const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, categoryId: categoryId || null, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired, personalizationFields: personalizationRequired ? personalizationFields : [] }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); alert(isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.'); navigate('/admin/products');
     } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsSaving(false); }
   };
@@ -205,6 +226,21 @@ export const ProductForm = () => {
         <aside className="space-y-8">
           <Panel title="Organization" icon={Sparkles} note="Set visibility, promotion badge and card design.">
             <div className="space-y-5">
+              <div>
+                <FieldLabel>Category</FieldLabel>
+                <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className={inputClass}>
+                  <option value="">No category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">
+                  Manage category names from the Categories page.
+                </p>
+              </div>
+
               <div>
                 <FieldLabel>Status</FieldLabel>
                 <div className="grid grid-cols-2 gap-2">
@@ -281,7 +317,7 @@ export const ProductForm = () => {
           <div className="relative overflow-hidden rounded-[1.8rem] border border-boutique-brown/10 bg-white/84 p-5 shadow-[0_18px_45px_rgba(58,37,26,0.07)] backdrop-blur-sm">
             <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-25 mix-blend-multiply" alt="" />
             <p className="relative z-10 text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Quick check</p>
-            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Cloud products</span><span className="font-bold text-boutique-brown">{createCloudVariants && !isEditing ? '6 colors' : '1 color'}</span></div><div className="flex justify-between"><span>Fields</span><span className="font-bold text-boutique-brown">{personalizationRequired ? personalizationFields.length : 'Off'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
+            <div className="relative z-10 mt-4 space-y-3 text-sm text-boutique-brown-light"><div className="flex justify-between"><span>Name</span><span className="font-bold text-boutique-brown">{name ? 'Ready' : 'Missing'}</span></div><div className="flex justify-between"><span>Price</span><span className="font-bold text-boutique-brown">{price ? `$${Number(price || 0).toFixed(2)}` : 'Missing'}</span></div><div className="flex justify-between"><span>Image</span><span className="font-bold text-boutique-brown">{images.length ? 'Uploaded' : 'Missing'}</span></div><div className="flex justify-between"><span>Category</span><span className="font-bold text-boutique-brown">{categories.find((category) => category.id === categoryId)?.name || 'None'}</span></div><div className="flex justify-between"><span>Cloud products</span><span className="font-bold text-boutique-brown">{createCloudVariants && !isEditing ? '6 colors' : '1 color'}</span></div><div className="flex justify-between"><span>Fields</span><span className="font-bold text-boutique-brown">{personalizationRequired ? personalizationFields.length : 'Off'}</span></div><div className="flex justify-between"><span>Status</span><span className="font-bold text-boutique-brown">{status}</span></div></div>
           </div>
         </aside>
       </div>

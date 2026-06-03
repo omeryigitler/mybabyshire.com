@@ -28,6 +28,7 @@ export type Product = {
   personalizationRequired?: boolean;
   status?: string;
   sku?: string;
+  categoryId?: string;
   stockQuantity?: number;
   featured?: boolean;
   newArrival?: boolean;

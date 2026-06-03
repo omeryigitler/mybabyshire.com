@@ -53,6 +53,7 @@ type AdminOrder = {
   shipmentStatusLabel?: string | null;
   estimatedDelivery?: string | null;
   trackingUrl?: string | null;
+  internalNote?: string | null;
   shippingMethod?: string | null;
   shippingService?: string | null;
   createdAt: string;
@@ -227,6 +228,14 @@ export const AdminOrders = () => {
       if (!response.ok)
         throw new Error(data.details || data.error || "Could not load orders.");
       setOrders(data);
+      setInternalNotes(
+        Array.isArray(data)
+          ? data.reduce((notes: Record<string, string>, order: AdminOrder) => {
+              notes[order.id] = order.internalNote || "";
+              return notes;
+            }, {})
+          : {},
+      );
     } catch (error) {
       console.error(error);
       alert((error as Error).message);
@@ -270,6 +279,10 @@ export const AdminOrders = () => {
     setDraftShipmentStatus(order.shipmentStatus || "preparing_shipment");
     setDraftEstimatedDelivery(order.estimatedDelivery || "");
     setDraftTrackingUrl(order.trackingUrl || "");
+    setInternalNotes((current) => ({
+      ...current,
+      [order.id]: order.internalNote || current[order.id] || "",
+    }));
     setCopiedLabel("");
   };
 
@@ -281,6 +294,7 @@ export const AdminOrders = () => {
     shipmentStatus?: string;
     estimatedDelivery?: string;
     trackingUrl?: string;
+    internalNote?: string;
   }) => {
     if (!selectedOrder) return;
     const nextOrderStatus = overrides?.orderStatus || draftOrderStatus;
@@ -295,6 +309,8 @@ export const AdminOrders = () => {
       (overrides?.trackingUrl ?? draftTrackingUrl.trim()) ||
       getCarrierTrackingUrl(nextCarrier, nextTrackingReference) ||
       "";
+    const nextInternalNote =
+      overrides?.internalNote ?? internalNotes[selectedOrder.id] ?? "";
     setIsUpdating(true);
     try {
       const token = getAdminToken();
@@ -312,6 +328,7 @@ export const AdminOrders = () => {
           shipmentStatus: nextShipmentStatus,
           estimatedDelivery: nextEstimatedDelivery,
           trackingUrl: nextTrackingUrl,
+          internalNote: nextInternalNote,
         }),
       });
       const data = await response.json();
@@ -331,6 +348,7 @@ export const AdminOrders = () => {
         shipmentStatusLabel: data.shipmentStatusLabel,
         estimatedDelivery: data.estimatedDelivery,
         trackingUrl: data.trackingUrl,
+        internalNote: data.internalNote || "",
       };
       setDraftOrderStatus(data.orderStatus);
       setDraftPaymentStatus(data.paymentStatus);
@@ -339,6 +357,10 @@ export const AdminOrders = () => {
       setDraftShipmentStatus(data.shipmentStatus || nextShipmentStatus);
       setDraftEstimatedDelivery(data.estimatedDelivery || "");
       setDraftTrackingUrl(data.trackingUrl || "");
+      setInternalNotes((current) => ({
+        ...current,
+        [selectedOrder.id]: data.internalNote || "",
+      }));
       setSelectedOrder(updatedOrder);
       setOrders((currentOrders) =>
         currentOrders.map((order) =>
@@ -346,6 +368,50 @@ export const AdminOrders = () => {
         ),
       );
       alert("Order updated successfully.");
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const saveInternalNote = async () => {
+    if (!selectedOrder) return;
+    setIsUpdating(true);
+    try {
+      const token = getAdminToken();
+      const response = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          internalNote: internalNotes[selectedOrder.id] || "",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(
+          data.details || data.error || "Could not save internal note.",
+        );
+      const updatedOrder = {
+        ...selectedOrder,
+        internalNote: data.internalNote || "",
+      };
+      setSelectedOrder(updatedOrder);
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          order.id === selectedOrder.id ? updatedOrder : order,
+        ),
+      );
+      setInternalNotes((current) => ({
+        ...current,
+        [selectedOrder.id]: data.internalNote || "",
+      }));
+      setCopiedLabel("Internal note saved");
+      setTimeout(() => setCopiedLabel(""), 1600);
     } catch (error) {
       console.error(error);
       alert((error as Error).message);
@@ -1002,9 +1068,13 @@ export const AdminOrders = () => {
                     className="w-full resize-none rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-3 py-3 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/35"
                     placeholder="Add a private note for this order..."
                   />
-                  <p className="mt-2 text-xs text-boutique-brown-light">
-                    Stored locally in this admin session for now.
-                  </p>
+                  <button
+                    onClick={saveInternalNote}
+                    disabled={isUpdating}
+                    className="mt-3 w-full rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50"
+                  >
+                    {isUpdating ? "Saving..." : "Save internal note"}
+                  </button>
                 </div>
                 <div className="rounded-[1.6rem] border border-boutique-brown/10 bg-white p-5 shadow-sm">
                   <div className="mb-4 flex items-center gap-3">

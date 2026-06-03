@@ -179,9 +179,18 @@ model orders {
   payment_reference         String?
   tracking_reference        String?
   personalization_data_json String?
+  internal_note             String?
   created_at                DateTime @default(now())
 
   items order_items[]
+}
+
+model customer_notes {
+  id             String   @id @default(uuid())
+  customer_email String   @unique
+  note           String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 }
 
 model order_items {

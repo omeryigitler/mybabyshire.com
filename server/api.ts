@@ -28,6 +28,7 @@ import {
   parseImageDataUrl,
 } from "../lib/upload.js";
 import {
+  mapPersonalizationFields,
   mapProductPersonalizationFields,
   normalizePersonalizationFieldCreateData,
 } from "../lib/products.js";
@@ -90,6 +91,24 @@ const uniqueSlug = async (name: string) => {
   return slug;
 };
 
+const uniqueCategorySlug = async (name: string, currentId?: string) => {
+  const baseSlug = slugify(name) || `category-${Date.now()}`;
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const existingCategory = await prisma.categories.findUnique({
+      where: { slug },
+    });
+    if (!existingCategory || existingCategory.id === currentId) return slug;
+    slug = `${baseSlug}-${counter}`;
+    counter += 1;
+  }
+};
+
+const normalizeEmail = (value: unknown) =>
+  String(value || "").trim().toLowerCase();
+
 const mapProductForStorefront = (product: any) => {
   const primaryImage =
     product.images?.find((image: any) => image.is_primary) ||
@@ -130,6 +149,25 @@ const mapProductForStorefront = (product: any) => {
     preparationTime: product.preparation_time || "",
   };
 };
+
+const mapCategoryForAdmin = (category: any) => ({
+  id: category.id,
+  name: category.name,
+  slug: category.slug,
+  description: category.description || "",
+  imageUrl: category.image_url || "",
+  productCount: Number(category._count?.products || 0),
+});
+
+const mapTemplateForAdmin = (template: any) => ({
+  id: template.id,
+  name: template.name,
+  description: template.description || "",
+  used: 0,
+  fields: mapPersonalizationFields(template.fields || []),
+  createdAt: template.created_at,
+  updatedAt: template.updated_at,
+});
 
 const normalizePrice = (value: unknown) => {
   const price = Number(value);
@@ -324,6 +362,7 @@ const mapOrderForAdmin = (order: any) => {
       snapshot?.shippingMethod?.estimatedDelivery ||
       null,
     trackingUrl,
+    internalNote: order.internal_note || "",
     shippingMethod: snapshot?.shippingMethod?.label || null,
     shippingService: snapshot?.shippingMethod?.service || null,
     customer: snapshot?.customer || null,
@@ -1003,7 +1042,18 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       shipmentStatus,
       estimatedDelivery,
       trackingUrl,
+      internalNote,
     } = req.body;
+    const shouldUpdateInternalNote = typeof internalNote === "string";
+    const hasShipmentUpdate = [
+      "orderStatus",
+      "paymentStatus",
+      "trackingReference",
+      "carrier",
+      "shipmentStatus",
+      "estimatedDelivery",
+      "trackingUrl",
+    ].some((key) => Object.prototype.hasOwnProperty.call(req.body, key));
 
     if (orderStatus && !allowedOrderStatuses.includes(orderStatus)) {
       return res.status(400).json({ error: "Invalid order status." });
@@ -1025,12 +1075,27 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "Order not found." });
     }
 
+    if (!hasShipmentUpdate && shouldUpdateInternalNote) {
+      const updatedOrder = await prisma.orders.update({
+        where: { id: req.params.id },
+        data: { internal_note: internalNote.trim() || null },
+        include: { items: true },
+      });
+
+      return res.json(mapOrderForAdmin(updatedOrder));
+    }
+
     const previousSnapshot =
       parseJson(previousOrder.personalization_data_json) || {};
     const nextOrderStatus = orderStatus || previousOrder.order_status;
     const nextPaymentStatus = paymentStatus || previousOrder.payment_status;
-    const nextTrackingReference =
-      String(trackingReference || "").trim() || null;
+    const hasTrackingReference = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "trackingReference",
+    );
+    const nextTrackingReference = hasTrackingReference
+      ? String(trackingReference || "").trim() || null
+      : previousOrder.tracking_reference || previousSnapshot.trackingNumber || null;
     const nextCarrier = String(
       carrier ||
         previousSnapshot.carrier ||
@@ -1114,6 +1179,9 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
         payment_status: nextPaymentStatus,
         tracking_reference: nextTrackingReference,
         personalization_data_json: JSON.stringify(nextSnapshot),
+        ...(shouldUpdateInternalNote
+          ? { internal_note: internalNote.trim() || null }
+          : {}),
       },
       include: { items: true },
     });
@@ -1127,6 +1195,7 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       shipmentStatusLabel: getShipmentStatusLabel(nextShipmentStatus),
       estimatedDelivery: nextEstimatedDelivery,
       trackingUrl: nextTrackingUrl,
+      internalNote: updatedOrder.internal_note || "",
     });
   } catch (error) {
     res.status(400).json({
@@ -1137,26 +1206,195 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
 });
 
 // ---------------------------------------------------------
+// Customer Admin Notes
+// ---------------------------------------------------------
+router.get("/admin/customer-notes", requireAdmin, async (req, res) => {
+  try {
+    const notes = await prisma.customer_notes.findMany({
+      orderBy: { updated_at: "desc" },
+    });
+
+    res.json(
+      notes.map((note) => ({
+        id: note.id,
+        customerEmail: note.customer_email,
+        note: note.note,
+        updatedAt: note.updated_at,
+      })),
+    );
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch customer notes",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.put("/admin/customer-notes/:email", requireAdmin, async (req, res) => {
+  try {
+    const customerEmail = normalizeEmail(
+      decodeURIComponent(String(req.params.email || "")),
+    );
+    const note = String(req.body.note || "").trim();
+
+    if (!customerEmail) {
+      return res.status(400).json({ error: "Customer email is required." });
+    }
+
+    if (!note) {
+      await prisma.customer_notes.deleteMany({
+        where: { customer_email: customerEmail },
+      });
+
+      return res.json({
+        customerEmail,
+        note: "",
+        updatedAt: null,
+      });
+    }
+
+    const savedNote = await prisma.customer_notes.upsert({
+      where: { customer_email: customerEmail },
+      update: { note },
+      create: { customer_email: customerEmail, note },
+    });
+
+    res.json({
+      id: savedNote.id,
+      customerEmail: savedNote.customer_email,
+      note: savedNote.note,
+      updatedAt: savedNote.updated_at,
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to save customer note",
+      details: (error as Error).message,
+    });
+  }
+});
+
+// ---------------------------------------------------------
 // Category CRUD
 // ---------------------------------------------------------
 router.get("/categories", async (req, res) => {
   try {
-    const categories = await prisma.categories.findMany();
+    const categories = await prisma.categories.findMany({
+      orderBy: { name: "asc" },
+    });
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch categories" });
   }
 });
 
-router.post("/admin/categories", requireAdmin, async (req, res) => {
+router.get("/admin/categories", requireAdmin, async (req, res) => {
   try {
-    const category = await prisma.categories.create({
-      data: req.body,
+    const categories = await prisma.categories.findMany({
+      include: { _count: { select: { products: true } } },
+      orderBy: { name: "asc" },
     });
 
-    res.status(201).json(category);
+    res.json(categories.map(mapCategoryForAdmin));
   } catch (error) {
-    res.status(400).json({ error: "Failed to create category" });
+    res.status(500).json({
+      error: "Failed to fetch categories",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.post("/admin/categories", requireAdmin, async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    const description = String(req.body.description || "").trim();
+    const imageUrl = String(req.body.imageUrl || req.body.image_url || "").trim();
+
+    if (!name) {
+      return res.status(400).json({ error: "Category name is required." });
+    }
+
+    const slug = await uniqueCategorySlug(req.body.slug || name);
+    const category = await prisma.categories.create({
+      data: {
+        name,
+        slug,
+        description: description || null,
+        image_url: imageUrl || null,
+      },
+      include: { _count: { select: { products: true } } },
+    });
+
+    res.status(201).json(mapCategoryForAdmin(category));
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to create category",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.put("/admin/categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const existingCategory = await prisma.categories.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ error: "Category not found." });
+    }
+
+    const name = String(req.body.name || "").trim();
+    const description = String(req.body.description || "").trim();
+    const imageUrl = String(req.body.imageUrl || req.body.image_url || "").trim();
+
+    if (!name) {
+      return res.status(400).json({ error: "Category name is required." });
+    }
+
+    const slugSource = String(req.body.slug || name).trim();
+    const slug = await uniqueCategorySlug(slugSource, existingCategory.id);
+    const category = await prisma.categories.update({
+      where: { id: existingCategory.id },
+      data: {
+        name,
+        slug,
+        description: description || null,
+        image_url: imageUrl || null,
+      },
+      include: { _count: { select: { products: true } } },
+    });
+
+    res.json(mapCategoryForAdmin(category));
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to update category",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.delete("/admin/categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const existingCategory = await prisma.categories.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ error: "Category not found." });
+    }
+
+    await prisma.products.updateMany({
+      where: { category_id: existingCategory.id },
+      data: { category_id: null },
+    });
+    await prisma.categories.delete({ where: { id: existingCategory.id } });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to delete category",
+      details: (error as Error).message,
+    });
   }
 });
 
@@ -1167,9 +1405,10 @@ router.get("/admin/templates", requireAdmin, async (req, res) => {
   try {
     const templates = await prisma.personalization_templates.findMany({
       include: { fields: true },
+      orderBy: { updated_at: "desc" },
     });
 
-    res.json(templates);
+    res.json(templates.map(mapTemplateForAdmin));
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch templates" });
   }
@@ -1177,13 +1416,86 @@ router.get("/admin/templates", requireAdmin, async (req, res) => {
 
 router.post("/admin/templates", requireAdmin, async (req, res) => {
   try {
+    const name = String(req.body.name || "").trim();
+    const description = String(req.body.description || "").trim();
+    const fields = Array.isArray(req.body.fields)
+      ? req.body.fields
+      : Array.isArray(req.body.personalizationFields)
+        ? req.body.personalizationFields
+        : [];
+
+    if (!name) {
+      return res.status(400).json({ error: "Template name is required." });
+    }
+
     const template = await prisma.personalization_templates.create({
-      data: req.body,
+      data: {
+        name,
+        description: description || null,
+        fields: {
+          create: normalizePersonalizationFieldCreateData(fields),
+        },
+      },
+      include: { fields: true },
     });
 
-    res.status(201).json(template);
+    res.status(201).json(mapTemplateForAdmin(template));
   } catch (error) {
-    res.status(400).json({ error: "Failed to create template" });
+    res.status(400).json({
+      error: "Failed to create template",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
+  try {
+    const name = String(req.body.name || "").trim();
+    const description = String(req.body.description || "").trim();
+    const fields = Array.isArray(req.body.fields)
+      ? req.body.fields
+      : Array.isArray(req.body.personalizationFields)
+        ? req.body.personalizationFields
+        : [];
+
+    if (!name) {
+      return res.status(400).json({ error: "Template name is required." });
+    }
+
+    const template = await prisma.personalization_templates.update({
+      where: { id: req.params.id },
+      data: {
+        name,
+        description: description || null,
+        fields: {
+          deleteMany: {},
+          create: normalizePersonalizationFieldCreateData(fields),
+        },
+      },
+      include: { fields: true },
+    });
+
+    res.json(mapTemplateForAdmin(template));
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to update template",
+      details: (error as Error).message,
+    });
+  }
+});
+
+router.delete("/admin/templates/:id", requireAdmin, async (req, res) => {
+  try {
+    await prisma.personalization_templates.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({
+      error: "Failed to delete template",
+      details: (error as Error).message,
+    });
   }
 });
 

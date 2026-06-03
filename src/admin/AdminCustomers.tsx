@@ -170,17 +170,35 @@ export const AdminCustomers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [copiedLabel, setCopiedLabel] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const loadOrders = async () => {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const response = await fetch('/api/admin/orders', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.details || data.error || 'Could not load customers.');
-      setOrders(data);
+      const [ordersResponse, notesResponse] = await Promise.all([
+        fetch('/api/admin/orders', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/admin/customer-notes', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      const [ordersData, notesData] = await Promise.all([
+        ordersResponse.json(),
+        notesResponse.json(),
+      ]);
+      if (!ordersResponse.ok) throw new Error(ordersData.details || ordersData.error || 'Could not load customers.');
+      if (!notesResponse.ok) throw new Error(notesData.details || notesData.error || 'Could not load customer notes.');
+      setOrders(ordersData);
+      setNotes(
+        Array.isArray(notesData)
+          ? notesData.reduce((current: Record<string, string>, item: any) => {
+              current[String(item.customerEmail || '').toLowerCase()] = item.note || '';
+              return current;
+            }, {})
+          : {},
+      );
     } catch (error) {
       console.error(error);
       alert((error as Error).message);
@@ -273,6 +291,33 @@ export const AdminCustomers = () => {
   };
 
   const selectedAddress = getAddress(selectedCustomer?.latestOrder.customer);
+  const selectedCustomerKey = selectedCustomer?.email.trim().toLowerCase() || '';
+
+  const saveCustomerNote = async () => {
+    if (!selectedCustomerKey) return;
+    setIsSavingNote(true);
+    try {
+      const token = getAdminToken();
+      const response = await fetch(`/api/admin/customer-notes/${encodeURIComponent(selectedCustomerKey)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ note: notes[selectedCustomerKey] || '' }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.error || 'Customer note could not be saved.');
+      setNotes((current) => ({ ...current, [selectedCustomerKey]: data.note || '' }));
+      setCopiedLabel('Customer note saved');
+      setTimeout(() => setCopiedLabel(''), 1600);
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -502,13 +547,15 @@ export const AdminCustomers = () => {
                     <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55">Customer notes</h3>
                   </div>
                   <textarea
-                    value={notes[selectedCustomer.email] || ''}
-                    onChange={(event) => setNotes((current) => ({ ...current, [selectedCustomer.email]: event.target.value }))}
+                    value={notes[selectedCustomerKey] || ''}
+                    onChange={(event) => setNotes((current) => ({ ...current, [selectedCustomerKey]: event.target.value }))}
                     rows={5}
                     className="w-full resize-none rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-3 py-3 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/35"
-                    placeholder="Private note for this admin session..."
+                    placeholder="Private customer note..."
                   />
-                  <p className="mt-2 text-xs text-boutique-brown-light">Stored locally in this browser session for now.</p>
+                  <button onClick={saveCustomerNote} disabled={isSavingNote} className="mt-3 w-full rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50">
+                    {isSavingNote ? 'Saving...' : 'Save customer note'}
+                  </button>
                 </div>
 
                 <div className="rounded-[1.6rem] border border-boutique-brown/10 bg-white p-5 shadow-sm">

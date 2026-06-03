@@ -88,7 +88,7 @@ export default function PayPalSuccessPage() {
             </div>
           )}
 
-          {status === 'success' && <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-3"><StepCard icon={MailCheck} title="Confirmation" text="Email confirmation is ready for when the store domain email is connected." /><StepCard icon={PackageCheck} title="Preparing" text="Your gift order will stay in processing while it is prepared." /><StepCard icon={Truck} title="Tracking" text="Tracking details will appear after the order ships." /></div>}
+          {status === 'success' && <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-3"><StepCard icon={MailCheck} title="Confirmation" text="Email confirmation will send after Resend domain verification is completed." /><StepCard icon={PackageCheck} title="Preparing" text="Your gift order will stay in processing while it is prepared." /><StepCard icon={Truck} title="Tracking" text="Tracking details will appear after the order ships." /></div>}
 
           <div className="relative z-10 mt-7 grid gap-3 sm:grid-cols-2">
             <Link to="/track-order" className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-4 text-sm font-bold text-white hover:bg-boutique-wood"><ShoppingBag className="h-4 w-4" /> Track Order</Link>

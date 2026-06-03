@@ -38,7 +38,7 @@ export const AdminSettings = () => {
         <SettingCard icon={Palette} title="Stripe Hosted Checkout branding" status="Later">Saved for later: dashboard branding, logo, colors, policy links, currency behavior and custom domain after the final domain decision.</SettingCard>
         <SettingCard icon={Globe} title="Storefront" status="Live">Public storefront, product pages, checkout, success, cancel and order tracking pages are available on the production domain.</SettingCard>
         <SettingCard icon={Truck} title="Shipping" status="Ready for tests">Flat shipping, admin shipment updates, public tracking lookup, carrier links and shipment timeline are connected. Later: add live carrier rates.</SettingCard>
-        <SettingCard icon={Mail} title="Email notifications" status="Later">Email code is ready, but real sending is waiting for the final domain. Later: connect Resend, verify domain, add FROM_EMAIL and RESEND_API_KEY.</SettingCard>
+        <SettingCard icon={Mail} title="Email notifications" status="DNS setup">The domain is connected. Real sending is waiting for Resend domain verification in Cloudflare DNS and the RESEND_API_KEY in Vercel.</SettingCard>
         <SettingCard icon={ShieldCheck} title="Admin access" status="Email + Google">Email/password and Google admin sign-in are wired. Apple is visible as coming soon until an Apple Developer account is ready.</SettingCard>
         <SettingCard icon={Sparkles} title="Brand system" status="In progress">Back office has MY BABY SHIRE colors, clouds, toy visuals and soft card layouts. Remaining flows can be refined as the shop grows.</SettingCard>
       </div>
@@ -50,8 +50,8 @@ export const AdminSettings = () => {
           <ChecklistItem done title="PayPal checkout" note="The sandbox payment flow is connected and tested." />
           <ChecklistItem title="Apple Pay / Google Pay / Link" note="Test real wallet visibility in Stripe Checkout using supported devices and browsers." />
           <ChecklistItem title="Stripe page branding" note="Later: add logo, brand colors, policy URLs and review currency selector behavior." />
-          <ChecklistItem title="Final domain" note="Later: buy/connect the real domain before email and custom checkout polish." />
-          <ChecklistItem title="Email sending" note="Later: verify domain in Resend and add email variables to Vercel." />
+          <ChecklistItem done title="Final domain" note="mybabyshire.com is connected and redirects to the canonical www domain." />
+          <ChecklistItem title="Email sending" note="Verify mybabyshire.com in Resend, add the generated DNS records in Cloudflare, then add RESEND_API_KEY to Vercel." />
         </div>
       </div>
     </div>

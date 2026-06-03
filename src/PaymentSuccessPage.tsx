@@ -53,7 +53,7 @@ export default function PaymentSuccessPage() {
           )}
 
           <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-3">
-            <StepCard icon={MailCheck} title="Confirmation" text="Email confirmation is ready for when the store domain email is connected." />
+            <StepCard icon={MailCheck} title="Confirmation" text="Email confirmation will send after Resend domain verification is completed." />
             <StepCard icon={PackageCheck} title="Preparing" text="Your gift order will stay in processing while it is prepared." />
             <StepCard icon={Truck} title="Tracking" text="Tracking details will appear after the order ships." />
           </div>

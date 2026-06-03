@@ -88,9 +88,9 @@ Without the Cloudinary variables, admin image upload will not work.
 Without the Google variables, the Google button stays visible but redirects back
 to the admin screen with a setup message.
 
-Without `RESEND_API_KEY` and `FROM_EMAIL`, email templates stay ready in code
-but no real payment/shipping/delivery email is sent. Add these only after the
-Resend domain is verified.
+Without `RESEND_API_KEY`, email templates stay ready in code but no real
+payment/shipping/delivery email is sent. Add it only after the Resend domain is
+verified in Cloudflare DNS.
 
 ## Database Setup
 
@@ -148,8 +148,9 @@ real orders:
 
 ## Email Status
 
-Email code is ready, but real sending should stay disabled until the domain is
-verified in Resend. After verification, add:
+Email code is ready, but real sending should stay disabled until
+`mybabyshire.com` is verified in Resend. DNS is managed in Cloudflare, so add
+Resend's generated SPF/DKIM records there. After verification, add:
 
 ```bash
 RESEND_API_KEY="re_..."

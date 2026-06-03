@@ -314,7 +314,7 @@ export const AdminOrders = () => {
     setIsUpdating(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+      const response = await fetch(`/api/admin/orders?id=${encodeURIComponent(selectedOrder.id)}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -381,7 +381,7 @@ export const AdminOrders = () => {
     setIsUpdating(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+      const response = await fetch(`/api/admin/orders?id=${encodeURIComponent(selectedOrder.id)}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

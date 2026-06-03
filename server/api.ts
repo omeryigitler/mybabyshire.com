@@ -1032,8 +1032,9 @@ router.get("/admin/orders", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
+const updateAdminOrder = async (req: Request, res: Response) => {
   try {
+    const orderId = String(req.params.id || req.query.id || req.body.id || "");
     const {
       orderStatus,
       paymentStatus,
@@ -1055,6 +1056,10 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       "trackingUrl",
     ].some((key) => Object.prototype.hasOwnProperty.call(req.body, key));
 
+    if (!orderId) {
+      return res.status(400).json({ error: "Order id is required." });
+    }
+
     if (orderStatus && !allowedOrderStatuses.includes(orderStatus)) {
       return res.status(400).json({ error: "Invalid order status." });
     }
@@ -1068,7 +1073,7 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
     }
 
     const previousOrder = await prisma.orders.findUnique({
-      where: { id: req.params.id },
+      where: { id: orderId },
     });
 
     if (!previousOrder) {
@@ -1077,7 +1082,7 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
 
     if (!hasShipmentUpdate && shouldUpdateInternalNote) {
       const updatedOrder = await prisma.orders.update({
-        where: { id: req.params.id },
+        where: { id: orderId },
         data: { internal_note: internalNote.trim() || null },
         include: { items: true },
       });
@@ -1173,7 +1178,7 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
     };
 
     const updatedOrder = await prisma.orders.update({
-      where: { id: req.params.id },
+      where: { id: orderId },
       data: {
         order_status: nextOrderStatus,
         payment_status: nextPaymentStatus,
@@ -1203,7 +1208,10 @@ router.put("/admin/orders/:id", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
+
+router.put("/admin/orders", requireAdmin, updateAdminOrder);
+router.put("/admin/orders/:id", requireAdmin, updateAdminOrder);
 
 // ---------------------------------------------------------
 // Customer Admin Notes
@@ -1230,10 +1238,12 @@ router.get("/admin/customer-notes", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/admin/customer-notes/:email", requireAdmin, async (req, res) => {
+const updateCustomerNote = async (req: Request, res: Response) => {
   try {
     const customerEmail = normalizeEmail(
-      decodeURIComponent(String(req.params.email || "")),
+      decodeURIComponent(
+        String(req.params.email || req.query.email || req.body.email || ""),
+      ),
     );
     const note = String(req.body.note || "").trim();
 
@@ -1271,7 +1281,10 @@ router.put("/admin/customer-notes/:email", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
+
+router.put("/admin/customer-notes", requireAdmin, updateCustomerNote);
+router.put("/admin/customer-notes/:email", requireAdmin, updateCustomerNote);
 
 // ---------------------------------------------------------
 // Category CRUD
@@ -1333,10 +1346,15 @@ router.post("/admin/categories", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/admin/categories/:id", requireAdmin, async (req, res) => {
+const updateAdminCategory = async (req: Request, res: Response) => {
   try {
+    const categoryId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!categoryId) {
+      return res.status(400).json({ error: "Category id is required." });
+    }
+
     const existingCategory = await prisma.categories.findUnique({
-      where: { id: req.params.id },
+      where: { id: categoryId },
     });
 
     if (!existingCategory) {
@@ -1371,12 +1389,17 @@ router.put("/admin/categories/:id", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
 
-router.delete("/admin/categories/:id", requireAdmin, async (req, res) => {
+const deleteAdminCategory = async (req: Request, res: Response) => {
   try {
+    const categoryId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!categoryId) {
+      return res.status(400).json({ error: "Category id is required." });
+    }
+
     const existingCategory = await prisma.categories.findUnique({
-      where: { id: req.params.id },
+      where: { id: categoryId },
     });
 
     if (!existingCategory) {
@@ -1396,7 +1419,12 @@ router.delete("/admin/categories/:id", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
+
+router.put("/admin/categories", requireAdmin, updateAdminCategory);
+router.put("/admin/categories/:id", requireAdmin, updateAdminCategory);
+router.delete("/admin/categories", requireAdmin, deleteAdminCategory);
+router.delete("/admin/categories/:id", requireAdmin, deleteAdminCategory);
 
 // ---------------------------------------------------------
 // Personalization CRUD
@@ -1448,8 +1476,9 @@ router.post("/admin/templates", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
+const updateAdminTemplate = async (req: Request, res: Response) => {
   try {
+    const templateId = String(req.params.id || req.query.id || req.body.id || "");
     const name = String(req.body.name || "").trim();
     const description = String(req.body.description || "").trim();
     const fields = Array.isArray(req.body.fields)
@@ -1458,12 +1487,16 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
         ? req.body.personalizationFields
         : [];
 
+    if (!templateId) {
+      return res.status(400).json({ error: "Template id is required." });
+    }
+
     if (!name) {
       return res.status(400).json({ error: "Template name is required." });
     }
 
     const template = await prisma.personalization_templates.update({
-      where: { id: req.params.id },
+      where: { id: templateId },
       data: {
         name,
         description: description || null,
@@ -1482,12 +1515,17 @@ router.put("/admin/templates/:id", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
 
-router.delete("/admin/templates/:id", requireAdmin, async (req, res) => {
+const deleteAdminTemplate = async (req: Request, res: Response) => {
   try {
+    const templateId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!templateId) {
+      return res.status(400).json({ error: "Template id is required." });
+    }
+
     await prisma.personalization_templates.delete({
-      where: { id: req.params.id },
+      where: { id: templateId },
     });
 
     res.json({ success: true });
@@ -1497,7 +1535,12 @@ router.delete("/admin/templates/:id", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
-});
+};
+
+router.put("/admin/templates", requireAdmin, updateAdminTemplate);
+router.put("/admin/templates/:id", requireAdmin, updateAdminTemplate);
+router.delete("/admin/templates", requireAdmin, deleteAdminTemplate);
+router.delete("/admin/templates/:id", requireAdmin, deleteAdminTemplate);
 
 router.post("/admin/fields", requireAdmin, async (req, res) => {
   try {

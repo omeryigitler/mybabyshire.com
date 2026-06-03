@@ -298,7 +298,7 @@ export const AdminCustomers = () => {
     setIsSavingNote(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/customer-notes/${encodeURIComponent(selectedCustomerKey)}`, {
+      const response = await fetch(`/api/admin/customer-notes?email=${encodeURIComponent(selectedCustomerKey)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

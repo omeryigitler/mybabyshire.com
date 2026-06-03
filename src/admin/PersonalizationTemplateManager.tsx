@@ -142,7 +142,7 @@ export const PersonalizationTemplateManager = () => {
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/templates/${selectedTemplateId}`, {
+      const response = await fetch(`/api/admin/templates?id=${encodeURIComponent(selectedTemplateId)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export const PersonalizationTemplateManager = () => {
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/templates/${selectedTemplate.id}`, {
+      const response = await fetch(`/api/admin/templates?id=${encodeURIComponent(selectedTemplate.id)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

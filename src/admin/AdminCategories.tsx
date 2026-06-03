@@ -100,7 +100,7 @@ export const AdminCategories = () => {
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(editingCategoryId ? `/api/admin/categories/${editingCategoryId}` : '/api/admin/categories', {
+      const response = await fetch(editingCategoryId ? `/api/admin/categories?id=${encodeURIComponent(editingCategoryId)}` : '/api/admin/categories', {
         method: editingCategoryId ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export const AdminCategories = () => {
 
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/categories/${category.id}`, {
+      const response = await fetch(`/api/admin/categories?id=${encodeURIComponent(category.id)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

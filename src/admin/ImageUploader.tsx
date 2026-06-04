@@ -20,6 +20,19 @@ const fileToDataUrl = (file: File) => {
   });
 };
 
+const readUploadResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+
+  const text = await response.text();
+  return {
+    error: response.ok ? '' : text || 'Image upload failed.',
+  };
+};
+
 export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -46,13 +59,13 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
     try {
       const token = getAdminToken();
       const fileDataUrl = await fileToDataUrl(file);
-      const endpoint = cleanImage ? ['/api/admin', 'remove-bg-upload'].join('/') : '/api/admin/upload-image';
+      const endpoint = cleanImage ? '/api/admin/remove-bg-upload' : '/api/admin/upload-image';
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ file: fileDataUrl, folder: 'little-wonders/products' }),
       });
-      const data = await response.json();
+      const data = await readUploadResponse(response);
       if (!response.ok) throw new Error(data.details || data.error || 'Image upload failed.');
       const nextImage = { url: data.imageUrl, publicId: data.publicId, id: crypto.randomUUID() };
       onImagesChange(maxImages === 1 ? [nextImage] : [...images, nextImage]);
@@ -86,7 +99,7 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {images.map((img, idx) => (
           <div key={img.id} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-            <img src={img.url} alt="" className="w-full h-full object-cover" />
+            <img src={img.url} alt="" className="w-full h-full object-contain p-2" />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button onClick={(e) => { e.preventDefault(); removeImage(img.id); }} className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"><X className="w-4 h-4" /></button>
             </div>
@@ -95,12 +108,12 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
         ))}
         {canUploadMore && (
           <label className={`relative aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${dragActive ? 'border-gray-900 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'}`} onDragOver={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
-            <input type="file" className="hidden" accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) handleUpload(e.target.files[0]); e.currentTarget.value = ''; }} />
+            <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp" onChange={(e) => { if (e.target.files && e.target.files[0]) handleUpload(e.target.files[0]); e.currentTarget.value = ''; }} />
             {isUploading ? <div className="text-gray-400 text-sm font-medium animate-pulse">Uploading...</div> : <><Upload className="w-6 h-6 text-gray-400 mb-2" /><span className="text-xs text-gray-500 font-medium text-center px-4">{cleanImage ? 'Clean Upload' : 'Normal Upload'}</span></>}
           </label>
         )}
       </div>
-      <p className="text-xs text-gray-400">Normal upload uses Cloudinary. Clean upload prepares the image first. Max {maxImages} image{maxImages === 1 ? '' : 's'}.</p>
+      <p className="text-xs text-gray-400">Normal upload uses Cloudinary. Clean upload removes the background first, then uploads the transparent PNG. Max {maxImages} image{maxImages === 1 ? '' : 's'}.</p>
     </div>
   );
 };

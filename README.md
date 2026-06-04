@@ -18,10 +18,8 @@ Personalized baby gift storefront with an admin product flow.
 GitHub repo:
 
 ```txt
-https://github.com/omeryigitler/-Little-Wonders
+https://github.com/omeryigitler/mybabyshire.com
 ```
-
-The old source remote is kept locally as `omery-ship-it`.
 
 ## Local Development
 
@@ -162,7 +160,7 @@ FROM_EMAIL="MY BABY SHIRE <orders@mybabyshire.com>"
 1. Import the GitHub repo into Vercel:
 
 ```txt
-omeryigitler/-Little-Wonders
+omeryigitler/mybabyshire.com
 ```
 
 2. Add the environment variables listed above.

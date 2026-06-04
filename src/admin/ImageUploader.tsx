@@ -63,7 +63,7 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ file: fileDataUrl, folder: 'little-wonders/products' }),
+        body: JSON.stringify({ file: fileDataUrl, folder: 'mybabyshire/products' }),
       });
       const data = await readUploadResponse(response);
       if (!response.ok) throw new Error(data.details || data.error || 'Image upload failed.');

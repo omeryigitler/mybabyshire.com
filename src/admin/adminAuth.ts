@@ -6,7 +6,6 @@ export const getStoredAdminToken = () => {
 
 export const clearAdminSession = () => {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
-  localStorage.removeItem('little-wonders-admin-token-v2');
 };
 
 export const isAuthErrorMessage = (message = '') => {
@@ -70,15 +69,10 @@ export const getAdminAuthErrorFromUrl = () => {
 };
 
 export const getAdminToken = () => {
-  const token = getStoredAdminToken() || localStorage.getItem('little-wonders-admin-token-v2');
+  const token = getStoredAdminToken();
 
   if (!token) {
     throw new Error('Please sign in to continue.');
-  }
-
-  if (!getStoredAdminToken()) {
-    localStorage.setItem(ADMIN_TOKEN_KEY, token);
-    localStorage.removeItem('little-wonders-admin-token-v2');
   }
 
   return token;

@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { file, folder = 'little-wonders/products' } = req.body;
+    const { file, folder = 'mybabyshire/products' } = req.body;
 
     if (!file || typeof file !== 'string') {
       return res.status(400).json({ error: 'Missing image file.' });

@@ -1,5 +1,5 @@
 export const MAX_IMAGE_UPLOAD_BYTES = 8 * 1024 * 1024;
-export const CLOUDINARY_PRODUCT_FOLDER = 'little-wonders/products';
+export const CLOUDINARY_PRODUCT_FOLDER = 'mybabyshire/products';
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 

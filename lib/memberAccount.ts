@@ -36,7 +36,7 @@ const loginHtml = (token: string, role: 'member' | 'admin') => {
   const tokenKey = role === 'admin' ? ADMIN_TOKEN_KEY : MEMBER_TOKEN_KEY;
   const removeKey = role === 'admin' ? MEMBER_TOKEN_KEY : ADMIN_TOKEN_KEY;
   const target = role === 'admin' ? '/admin' : '/account';
-  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body><script>localStorage.setItem('${tokenKey}', ${JSON.stringify(token)}); localStorage.removeItem('${removeKey}'); localStorage.removeItem('little-wonders-admin-token-v2'); window.location.replace('${target}');</script></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body><script>localStorage.setItem('${tokenKey}', ${JSON.stringify(token)}); localStorage.removeItem('${removeKey}'); window.location.replace('${target}');</script></body></html>`;
 };
 
 const memberFromRequest = (req: VercelRequest) => {

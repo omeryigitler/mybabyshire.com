@@ -275,7 +275,7 @@ const createGoogleAuthSuccessHtml = (token: string) => {
   </head>
   <body>
     <script>
-      localStorage.setItem('little-wonders-admin-token-v2', ${tokenJson});
+      localStorage.setItem('mybabyshire-admin-token-v1', ${tokenJson});
       window.location.replace('/admin');
     </script>
   </body>

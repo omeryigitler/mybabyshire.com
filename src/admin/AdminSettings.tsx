@@ -1,5 +1,6 @@
-import React from 'react';
-import { CheckCircle2, CreditCard, Globe, Mail, Palette, ShieldCheck, Sparkles, Truck, WalletCards } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, CreditCard, Globe, Mail, Palette, Send, ShieldCheck, Sparkles, Truck, WalletCards } from 'lucide-react';
+import { getAdminToken } from './adminAuth';
 
 const SettingCard = ({ icon: Icon, title, status, children }: { icon: React.ComponentType<{ className?: string }>; title: string; status: string; children: React.ReactNode }) => (
   <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
@@ -21,6 +22,34 @@ const ChecklistItem = ({ done, title, note }: { done?: boolean; title: string; n
 );
 
 export const AdminSettings = () => {
+  const [testEmail, setTestEmail] = useState('');
+  const [emailStatus, setEmailStatus] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const sendTestEmail = async () => {
+    setIsSendingEmail(true);
+    setEmailStatus('');
+
+    try {
+      const token = getAdminToken();
+      const response = await fetch('/api/admin/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ to: testEmail.trim() || undefined }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.error || 'Test email failed.');
+      setEmailStatus(`Test email sent to ${data.to}.`);
+    } catch (error) {
+      setEmailStatus((error as Error).message);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
@@ -38,7 +67,27 @@ export const AdminSettings = () => {
         <SettingCard icon={Palette} title="Stripe Hosted Checkout branding" status="Later">Saved for later: dashboard branding, logo, colors, policy links, currency behavior and custom domain after the final domain decision.</SettingCard>
         <SettingCard icon={Globe} title="Storefront" status="Live">Public storefront, product pages, checkout, success, cancel and order tracking pages are available on the production domain.</SettingCard>
         <SettingCard icon={Truck} title="Shipping" status="Ready for tests">Flat shipping, admin shipment updates, public tracking lookup, carrier links and shipment timeline are connected. Later: add live carrier rates.</SettingCard>
-        <SettingCard icon={Mail} title="Email notifications" status="DNS setup">The domain is connected. Real sending is waiting for Resend domain verification in Cloudflare DNS and the RESEND_API_KEY in Vercel.</SettingCard>
+        <SettingCard icon={Mail} title="Email notifications" status="Ready for test">
+          <p>The domain DNS records and RESEND_API_KEY are in place. Send a test message before relying on customer notifications.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+            <input
+              value={testEmail}
+              onChange={(event) => setTestEmail(event.target.value)}
+              type="email"
+              placeholder="Optional recipient email"
+              className="rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/35 focus:ring-2 focus:ring-boutique-wood/25"
+            />
+            <button
+              type="button"
+              onClick={sendTestEmail}
+              disabled={isSendingEmail}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-wood disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" /> {isSendingEmail ? 'Sending...' : 'Send test'}
+            </button>
+          </div>
+          {emailStatus && <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-xs font-bold text-boutique-brown-light shadow-sm">{emailStatus}</p>}
+        </SettingCard>
         <SettingCard icon={ShieldCheck} title="Admin access" status="Email + Google">Email/password and Google admin sign-in are wired. Apple is visible as coming soon until an Apple Developer account is ready.</SettingCard>
         <SettingCard icon={Sparkles} title="Brand system" status="In progress">Back office has MY BABY SHIRE colors, clouds, toy visuals and soft card layouts. Remaining flows can be refined as the shop grows.</SettingCard>
       </div>
@@ -51,7 +100,7 @@ export const AdminSettings = () => {
           <ChecklistItem title="Apple Pay / Google Pay / Link" note="Test real wallet visibility in Stripe Checkout using supported devices and browsers." />
           <ChecklistItem title="Stripe page branding" note="Later: add logo, brand colors, policy URLs and review currency selector behavior." />
           <ChecklistItem done title="Final domain" note="mybabyshire.com is connected and redirects to the canonical www domain." />
-          <ChecklistItem title="Email sending" note="Verify mybabyshire.com in Resend, add the generated DNS records in Cloudflare, then add RESEND_API_KEY to Vercel." />
+          <ChecklistItem done title="Email sending" note="Resend DNS records and API key are ready for a live test email." />
         </div>
       </div>
     </div>

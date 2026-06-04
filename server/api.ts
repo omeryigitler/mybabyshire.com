@@ -21,7 +21,11 @@ import {
   toCents as checkoutToCents,
   verifyPayPalCaptureForOrder,
 } from "../lib/checkout.js";
-import { sendPaymentConfirmedEmail } from "../lib/email.js";
+import {
+  sendOrderDeliveredEmail,
+  sendOrderShippedEmail,
+  sendPaymentConfirmedEmail,
+} from "../lib/email.js";
 import {
   CLOUDINARY_PRODUCT_FOLDER,
   isUploadValidationError,
@@ -168,6 +172,19 @@ const mapTemplateForAdmin = (template: any) => ({
   createdAt: template.created_at,
   updatedAt: template.updated_at,
 });
+
+const mapOrderItemsForEmail = (items: any[] = []) =>
+  items.map((item) => ({
+    productName: item.product_name_snapshot,
+    quantity: Number(item.quantity) || 1,
+    price: Number(item.price_snapshot) || 0,
+  }));
+
+const isShippedShipmentState = (value?: string | null) =>
+  ["shipped", "in_transit", "out_for_delivery"].includes(String(value || ""));
+
+const isDeliveredShipmentState = (value?: string | null) =>
+  String(value || "") === "delivered";
 
 const normalizePrice = (value: unknown) => {
   const price = Number(value);
@@ -463,6 +480,57 @@ router.post("/admin/login", async (req, res) => {
 
 router.get("/admin/me", requireAdmin, (req: AdminRequest, res) => {
   res.json({ user: req.user });
+});
+
+router.post("/admin/test-email", requireAdmin, async (req: AdminRequest, res) => {
+  try {
+    const to = String(req.body.to || process.env.ADMIN_EMAIL || "").trim();
+
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return res.status(400).json({
+        error: "Add a valid recipient email or configure ADMIN_EMAIL.",
+      });
+    }
+
+    const orderNumber = `TEST-${Date.now().toString(36).toUpperCase()}`;
+    const result = await sendPaymentConfirmedEmail({
+      to,
+      customerName: "MY BABY SHIRE Admin",
+      orderNumber,
+      total: 0,
+      paymentProvider: "Resend test",
+      items: [
+        {
+          productName: "Email setup check",
+          quantity: 1,
+          price: 0,
+        },
+      ],
+    });
+
+    if ((result as any).skipped) {
+      return res.status(500).json({
+        error: "Email was skipped because RESEND_API_KEY is missing.",
+      });
+    }
+
+    if ((result as any).error) {
+      return res.status(502).json({
+        error: "Resend rejected the test email.",
+        details:
+          (result as any).error?.message ||
+          (result as any).error?.error ||
+          "Check Resend domain verification and API key permissions.",
+      });
+    }
+
+    res.json({ success: true, to, orderNumber });
+  } catch (error) {
+    res.status(500).json({
+      error: "Test email failed.",
+      details: (error as Error).message,
+    });
+  }
 });
 
 // ---------------------------------------------------------
@@ -1154,6 +1222,18 @@ const updateAdminOrder = async (req: Request, res: Response) => {
       previousSnapshot.shipmentStatus !== nextShipmentStatus ||
       previousSnapshot.carrier !== nextCarrier ||
       previousOrder.tracking_reference !== nextTrackingReference;
+    const wasShipped =
+      previousOrder.order_status === "shipped" ||
+      isShippedShipmentState(previousSnapshot.shipmentStatus);
+    const isNowShipped =
+      nextOrderStatus === "shipped" ||
+      isShippedShipmentState(nextShipmentStatus);
+    const wasDelivered =
+      previousOrder.order_status === "delivered" ||
+      isDeliveredShipmentState(previousSnapshot.shipmentStatus);
+    const isNowDelivered =
+      nextOrderStatus === "delivered" ||
+      isDeliveredShipmentState(nextShipmentStatus);
     const trackingEvents = shipmentChanged
       ? [
           {
@@ -1190,6 +1270,25 @@ const updateAdminOrder = async (req: Request, res: Response) => {
       },
       include: { items: true },
     });
+
+    const emailPayload = {
+      to: updatedOrder.customer_email,
+      customerName: updatedOrder.customer_name,
+      orderNumber: updatedOrder.order_number,
+      total: Number(updatedOrder.total_amount) || 0,
+      paymentProvider: getPaymentProvider(
+        parseJson(updatedOrder.personalization_data_json),
+        updatedOrder.payment_reference,
+      ),
+      trackingReference: updatedOrder.tracking_reference,
+      items: mapOrderItemsForEmail(updatedOrder.items),
+    };
+
+    if (!wasDelivered && isNowDelivered) {
+      await sendOrderDeliveredEmail(emailPayload);
+    } else if (!wasShipped && isNowShipped) {
+      await sendOrderShippedEmail(emailPayload);
+    }
 
     res.json({
       ...mapOrderForAdmin(updatedOrder),

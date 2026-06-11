@@ -4,6 +4,7 @@ import { ArrowLeft, Gift, Heart, ShieldCheck, ShoppingBag, Sparkles, Truck, X } 
 import { CartDrawer } from './components/CartDrawer';
 import { CardDesignFrame } from './components/CardDesignFrame';
 import { PersonalizationModal } from './components/PersonalizationModal';
+import { BabyCubeMark, BrandLogo } from './components/BrandLogo';
 import { Product, useStore } from './store/useStore';
 
 export default function ProductDetailPage() {
@@ -104,8 +105,9 @@ export default function ProductDetailPage() {
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown">
           <ArrowLeft className="h-4 w-4" /> Back to shop
         </Link>
-        <Link to="/" className="flex items-center gap-2 font-serif text-3xl text-boutique-brown">
-          MY BABY SHIRE <img src="/decorative-moon-star.png" className="h-7 w-7 object-contain opacity-75" alt="" />
+        <Link to="/" className="group/logo inline-flex items-center" aria-label="MY BABY SHIRE home">
+          <BrandLogo variant="header" className="hidden sm:inline-flex" />
+          <BabyCubeMark className="h-auto w-12 sm:hidden" />
         </Link>
         <button onClick={openCart} className="rounded-full p-2 text-boutique-brown hover:bg-white/70 hover:text-boutique-wood">
           <ShoppingBag size={22} strokeWidth={1.5} />

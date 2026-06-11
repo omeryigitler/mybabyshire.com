@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, CreditCard, Lock, ShieldCheck, ShoppingBag, Truck, WalletCards, Zap } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { CardDesignFrame } from './components/CardDesignFrame';
+import { BabyCubeMark, BrandLogo } from './components/BrandLogo';
 
 type PaymentMethod = 'stripe' | 'paypal';
 type ShippingMethod = {
@@ -160,7 +161,10 @@ export default function CheckoutPage() {
 
       <header className="relative z-20 flex items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/80 px-6 py-5 backdrop-blur-md md:px-12">
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown"><ArrowLeft className="h-4 w-4" /> Back to shop</Link>
-        <Link to="/" className="font-serif text-3xl text-boutique-brown">MY BABY SHIRE</Link>
+        <Link to="/" className="group/logo inline-flex items-center" aria-label="MY BABY SHIRE home">
+          <BrandLogo variant="header" className="hidden sm:inline-flex" />
+          <BabyCubeMark className="h-auto w-12 sm:hidden" />
+        </Link>
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><Lock className="h-4 w-4" /> Secure checkout</div>
       </header>
 

@@ -229,7 +229,7 @@ export default function AccountLoginPage() {
       <FloatingStar className="bottom-[9vh] left-[34vw] hidden h-5 w-5 lg:block" />
 
       <main className="member-login-main relative z-10 flex h-full overflow-hidden items-center justify-center px-4 py-7 sm:px-6 lg:px-8">
-        <section className="member-login-panel relative mt-0 w-full max-w-[42rem] origin-top overflow-visible rounded-[2.5rem] border border-[#decfbe] bg-white/86 px-6 py-7 shadow-[0_34px_90px_rgba(58,37,26,0.19),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-[3px] sm:px-8 md:mt-14 md:px-10 md:py-8 lg:mt-16">
+        <section className="member-login-panel relative mt-0 w-full max-w-[22.5rem] origin-top overflow-visible rounded-[2.5rem] border border-[#decfbe] bg-white/86 px-5 py-7 shadow-[0_34px_90px_rgba(58,37,26,0.19),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-[3px] sm:max-w-[42rem] sm:px-8 md:mt-14 md:px-10 md:py-8 lg:mt-16">
           <DecorativeCloud tone="blue" className="-left-7 top-[8.6rem] hidden h-14 w-36 opacity-60 md:block" />
           <DecorativeCloud tone="peach" className="right-10 top-[5.9rem] hidden h-14 w-36 opacity-60 md:block" />
           <DecorativeCloud tone="lavender" className="-bottom-5 left-11 h-12 w-28 opacity-80" />
@@ -268,7 +268,7 @@ export default function AccountLoginPage() {
 
             <div className="flex items-center justify-center gap-4">
               <Sparkles className="hidden h-8 w-8 text-[#d8a855] md:block" />
-              <h1 className="whitespace-nowrap font-serif text-[clamp(2.72rem,10vw,4.75rem)] leading-none text-boutique-brown">Welcome back</h1>
+              <h1 className="max-w-full whitespace-nowrap font-serif text-[clamp(2rem,9vw,2.32rem)] leading-none text-boutique-brown sm:text-[clamp(2.72rem,10vw,4.75rem)]">Welcome back</h1>
               <Sparkles className="hidden h-8 w-8 text-[#d8a855] md:block" />
             </div>
             <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-boutique-brown-light md:text-base">
@@ -277,10 +277,10 @@ export default function AccountLoginPage() {
           </div>
 
           {error && (
-            <p className="relative z-10 mx-auto mt-5 max-w-[430px] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>
+            <p className="relative z-10 mx-auto mt-5 w-full max-w-[430px] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>
           )}
 
-          <div className="relative z-10 mx-auto mt-6 grid max-w-[430px] gap-3">
+          <div className="relative z-10 mx-auto mt-6 grid w-full max-w-[430px] gap-3">
             <AuthButton icon={<GoogleIcon />} onClick={startGoogleMemberLogin}>
               Continue with Google
             </AuthButton>
@@ -292,7 +292,7 @@ export default function AccountLoginPage() {
             </AuthButton>
           </div>
 
-          <div className="relative z-10 mx-auto mt-5 max-w-[430px] overflow-hidden rounded-[1.35rem] border border-[#dfcdbb] bg-[#fff7ec]/92 p-4 text-xs leading-relaxed text-boutique-brown-light shadow-[0_12px_24px_rgba(58,37,26,0.08)]">
+          <div className="relative z-10 mx-auto mt-5 w-full max-w-[430px] overflow-hidden rounded-[1.35rem] border border-[#dfcdbb] bg-[#fff7ec]/92 p-4 text-xs leading-relaxed text-boutique-brown-light shadow-[0_12px_24px_rgba(58,37,26,0.08)]">
             <DecorativeCloud tone="mint" className="-right-4 -bottom-3 h-12 w-28 opacity-60" />
             <div className="relative z-10 mb-2 flex items-center gap-2 font-black text-boutique-brown">
               <ShieldCheck className="h-5 w-5" /> Secure sign in

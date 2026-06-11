@@ -7,11 +7,11 @@ import {
   Package,
   Settings,
   ShoppingCart,
-  Sparkles,
   Tags,
   Users,
   Wand2,
 } from 'lucide-react';
+import { BabyCubeMark } from '../components/BrandLogo';
 
 interface AdminSidebarProps {
   onSignOut: () => void;
@@ -35,8 +35,8 @@ export const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
         <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-8 w-32 opacity-35 mix-blend-multiply" alt="" />
         <img src="/decorative-moon-star.png" className="pointer-events-none absolute right-5 bottom-4 w-8 rotate-12 opacity-45" alt="" />
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm">
-            <Sparkles className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center">
+            <BabyCubeMark decorative className="h-14 w-14" />
           </div>
           <div>
             <p className="font-serif text-2xl leading-none text-boutique-brown">MY BABY SHIRE</p>

@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import { useId, type SVGProps } from 'react';
 
 type BrandLogoVariant = 'header' | 'footer' | 'hero' | 'icon';
 
@@ -18,6 +18,15 @@ export function BabyCubeMark({
   decorative = false,
   ...props
 }: BabyCubeMarkProps) {
+  const rawId = useId().replace(/:/g, '');
+  const ids = {
+    cream: `mybabyshireCubeCream-${rawId}`,
+    top: `mybabyshireCubeTop-${rawId}`,
+    pink: `mybabyshireCubePink-${rawId}`,
+    blue: `mybabyshireCubeBlue-${rawId}`,
+    shadow: `mybabyshireCubeShadow-${rawId}`,
+  };
+
   return (
     <svg
       viewBox="0 0 180 150"
@@ -31,34 +40,34 @@ export function BabyCubeMark({
     >
       {!decorative && <title>{title}</title>}
       <defs>
-        <linearGradient id="mybabyshireCubeCream" x1="21" y1="8" x2="158" y2="139" gradientUnits="userSpaceOnUse">
+        <linearGradient id={ids.cream} x1="21" y1="8" x2="158" y2="139" gradientUnits="userSpaceOnUse">
           <stop stopColor="#fff7ed" />
           <stop offset="0.56" stopColor="#f5dec7" />
           <stop offset="1" stopColor="#d9b893" />
         </linearGradient>
-        <linearGradient id="mybabyshireCubeTop" x1="57" y1="16" x2="128" y2="62" gradientUnits="userSpaceOnUse">
+        <linearGradient id={ids.top} x1="57" y1="16" x2="128" y2="62" gradientUnits="userSpaceOnUse">
           <stop stopColor="#fffaf3" />
           <stop offset="1" stopColor="#f3d6bd" />
         </linearGradient>
-        <linearGradient id="mybabyshireCubePink" x1="30" y1="58" x2="82" y2="132" gradientUnits="userSpaceOnUse">
+        <linearGradient id={ids.pink} x1="30" y1="58" x2="82" y2="132" gradientUnits="userSpaceOnUse">
           <stop stopColor="#f8bbb6" />
           <stop offset="1" stopColor="#e99b95" />
         </linearGradient>
-        <linearGradient id="mybabyshireCubeBlue" x1="97" y1="55" x2="154" y2="129" gradientUnits="userSpaceOnUse">
+        <linearGradient id={ids.blue} x1="97" y1="55" x2="154" y2="129" gradientUnits="userSpaceOnUse">
           <stop stopColor="#d8edf3" />
           <stop offset="1" stopColor="#9fc9d8" />
         </linearGradient>
-        <filter id="mybabyshireCubeShadow" x="0" y="0" width="180" height="150" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+        <filter id={ids.shadow} x="0" y="0" width="180" height="150" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
           <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#3a251a" floodOpacity="0.16" />
           <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#3a251a" floodOpacity="0.12" />
         </filter>
       </defs>
 
-      <g filter="url(#mybabyshireCubeShadow)">
-        <path d="M23 52.5L87.5 20.5C92.2 18.2 97.8 18.2 102.5 20.5L157 47.5C163.1 50.5 167 56.7 167 63.5V108.4C167 115.1 163.2 121.2 157.3 124.3L101.7 153.3C96.9 155.8 91.1 155.8 86.3 153.3L22.8 119.8C16.9 116.7 13.2 110.6 13.2 104V68C13.2 61.4 17 55.5 23 52.5Z" fill="url(#mybabyshireCubeCream)" />
-        <path d="M44.5 48.7L87.7 28.1C92.3 25.9 97.7 25.9 102.3 28.1L143.1 47.6C148.4 50.1 148.3 57.7 142.9 60L100.9 78C96.5 79.9 91.5 79.9 87.1 78L44.6 59.8C39.4 57.6 39.4 51.1 44.5 48.7Z" fill="url(#mybabyshireCubeTop)" />
-        <path d="M27.5 68.2C27.5 63.4 32.5 60.2 36.9 62.2L82.8 82.7C86 84.1 88 87.3 88 90.8V127.6C88 132.5 82.8 135.6 78.5 133.3L32.6 109.4C29.5 107.8 27.5 104.6 27.5 101.1V68.2Z" fill="url(#mybabyshireCubePink)" />
-        <path d="M101.5 90.8C101.5 87.4 103.5 84.2 106.6 82.7L150 62.4C154.4 60.3 159.5 63.5 159.5 68.4V101.1C159.5 104.5 157.6 107.6 154.6 109.3L111.2 133.4C106.9 135.8 101.5 132.7 101.5 127.8V90.8Z" fill="url(#mybabyshireCubeBlue)" />
+      <g filter={`url(#${ids.shadow})`}>
+        <path d="M23 52.5L87.5 20.5C92.2 18.2 97.8 18.2 102.5 20.5L157 47.5C163.1 50.5 167 56.7 167 63.5V108.4C167 115.1 163.2 121.2 157.3 124.3L101.7 153.3C96.9 155.8 91.1 155.8 86.3 153.3L22.8 119.8C16.9 116.7 13.2 110.6 13.2 104V68C13.2 61.4 17 55.5 23 52.5Z" fill={`url(#${ids.cream})`} />
+        <path d="M44.5 48.7L87.7 28.1C92.3 25.9 97.7 25.9 102.3 28.1L143.1 47.6C148.4 50.1 148.3 57.7 142.9 60L100.9 78C96.5 79.9 91.5 79.9 87.1 78L44.6 59.8C39.4 57.6 39.4 51.1 44.5 48.7Z" fill={`url(#${ids.top})`} />
+        <path d="M27.5 68.2C27.5 63.4 32.5 60.2 36.9 62.2L82.8 82.7C86 84.1 88 87.3 88 90.8V127.6C88 132.5 82.8 135.6 78.5 133.3L32.6 109.4C29.5 107.8 27.5 104.6 27.5 101.1V68.2Z" fill={`url(#${ids.pink})`} />
+        <path d="M101.5 90.8C101.5 87.4 103.5 84.2 106.6 82.7L150 62.4C154.4 60.3 159.5 63.5 159.5 68.4V101.1C159.5 104.5 157.6 107.6 154.6 109.3L111.2 133.4C106.9 135.8 101.5 132.7 101.5 127.8V90.8Z" fill={`url(#${ids.blue})`} />
         <path d="M37.5 72.5C37.5 69.4 40.7 67.4 43.5 68.6L74.3 82.4C76.4 83.3 77.7 85.4 77.7 87.7V116.1C77.7 119.2 74.4 121.2 71.7 119.7L40.9 103.8C38.8 102.7 37.5 100.6 37.5 98.2V72.5Z" fill="#f7c2bc" opacity="0.58" />
         <path d="M112.1 87.6C112.1 85.3 113.4 83.2 115.5 82.3L144.1 68.8C146.9 67.5 150.2 69.5 150.2 72.6V98.1C150.2 100.5 148.9 102.7 146.8 103.8L118.1 119.7C115.4 121.2 112.1 119.2 112.1 116.1V87.6Z" fill="#c9e5ed" opacity="0.72" />
         <path d="M95 35L99.6 45L110.5 46.3L102.4 53.6L104.5 64.4L95 58.9L85.5 64.4L87.6 53.6L79.5 46.3L90.4 45L95 35Z" fill="#f2a1a4" />

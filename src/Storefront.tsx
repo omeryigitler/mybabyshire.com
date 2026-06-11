@@ -5,6 +5,7 @@ import { useStore } from './store/useStore';
 import { CartDrawer } from './components/CartDrawer';
 import { PersonalizationModal } from './components/PersonalizationModal';
 import { ProductCard } from './components/ProductCard';
+import { BrandLogo } from './components/BrandLogo';
 
 const DecorativeElement = ({ src, className, size = "w-20 md:w-24 h-auto", rotate = "0deg" }: any) => (
   <div
@@ -57,11 +58,8 @@ export default function Storefront() {
           <button type="button" onClick={() => scrollToSection('our-story')} className="hover:text-boutique-wood transition-colors">Our Story</button>
         </nav>
 
-        <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex-1 flex justify-center md:absolute md:left-1/2 md:-translate-x-1/2">
-          <div className="flex items-center gap-2">
-            <span className="font-serif text-[30px] leading-none md:text-[36px] text-boutique-brown tracking-wide translate-y-1 relative z-10">MY BABY SHIRE</span>
-            <img src="/decorative-moon-star.png" className="w-6 h-6 md:w-7 md:h-7 object-contain -translate-y-2 opacity-80 z-0" alt="Moon Star" />
-          </div>
+        <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group/logo flex flex-1 justify-center md:absolute md:left-1/2 md:-translate-x-1/2" aria-label="Back to MY BABY SHIRE home">
+          <BrandLogo variant="header" />
         </button>
 
         <div className="flex items-center gap-3 md:gap-6 text-boutique-brown">
@@ -122,9 +120,8 @@ export default function Storefront() {
       <footer id="our-story" className="scroll-mt-24 w-full bg-boutique-bg border-t border-boutique-brown/10 relative z-20 pt-6 md:pt-8 pb-6 md:pb-8 mt-6">
         <div className="max-w-[1300px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 md:divide-x divide-y md:divide-y-0 divide-boutique-brown/15 relative z-10">
           <div className="flex flex-col items-start gap-2 py-4 md:py-0 md:pr-10">
-             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-end gap-3 mb-1 text-left">
-               <img src="/toy-rocking-horse-beige.png" className="w-[108px] md:w-[128px] h-auto object-contain mix-blend-multiply flex-shrink-0 drop-shadow-sm" alt="Rocking Horse" />
-               <span className="font-serif text-[20px] md:text-[24px] tracking-wide text-boutique-brown leading-none pb-2 md:pb-3">MY BABY SHIRE</span>
+             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group/logo mb-1 text-left" aria-label="Back to MY BABY SHIRE home">
+               <BrandLogo variant="footer" />
              </button>
              <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[13px] opacity-90">Crafting expertly personalized baby gifts and nursery essentials with love and care.</p>
           </div>

@@ -9,10 +9,10 @@ const brandLogoSrc = '/brand/mybabyshire-logo.png.png';
 const cubeIconSrc = '/brand/mybabyshire-cube.png.png';
 
 const logoClasses: Record<BrandLogoVariant, string> = {
-  header: 'h-[46px] sm:h-[54px] md:h-[66px] w-auto object-contain',
-  footer: 'h-[58px] md:h-[72px] w-auto object-contain',
-  hero: 'h-[170px] sm:h-[210px] md:h-[260px] w-auto object-contain',
-  icon: 'h-[54px] md:h-[68px] w-auto object-contain',
+  header: 'h-[82px] sm:h-[92px] md:h-[104px] lg:h-[112px] w-auto object-contain drop-shadow-[0_8px_16px_rgba(58,37,26,0.08)]',
+  footer: 'h-[92px] md:h-[118px] w-auto object-contain drop-shadow-[0_8px_16px_rgba(58,37,26,0.08)]',
+  hero: 'h-[210px] sm:h-[260px] md:h-[330px] w-auto object-contain drop-shadow-[0_14px_30px_rgba(58,37,26,0.10)]',
+  icon: 'h-[72px] md:h-[92px] w-auto object-contain drop-shadow-[0_8px_16px_rgba(58,37,26,0.08)]',
 };
 
 export function BabyCubeMark({ className = '' }: { className?: string }) {

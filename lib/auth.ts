@@ -86,12 +86,16 @@ export const clearAdminLoginAttempts = (key: string) => {
 };
 
 const parseEmailList = (...values: Array<string | undefined>) =>
-  values
-    .filter(Boolean)
-    .join(',')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  Array.from(
+    new Set(
+      values
+        .filter(Boolean)
+        .join(',')
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
 
 export const getAdminCredentials = () => {
   const emails = parseEmailList(process.env.ADMIN_EMAIL, process.env.GOOGLE_ADMIN_EMAILS);

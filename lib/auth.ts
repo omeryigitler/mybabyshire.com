@@ -85,25 +85,40 @@ export const clearAdminLoginAttempts = (key: string) => {
   loginAttempts.delete(key);
 };
 
-export const getAdminCredentials = () => ({
-  email: process.env.ADMIN_EMAIL?.trim(),
-  password: process.env.ADMIN_PASSWORD,
-});
+const parseEmailList = (...values: Array<string | undefined>) =>
+  values
+    .filter(Boolean)
+    .join(',')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+export const getAdminCredentials = () => {
+  const emails = parseEmailList(process.env.ADMIN_EMAIL, process.env.GOOGLE_ADMIN_EMAILS);
+
+  return {
+    email: emails[0],
+    emails,
+    password: process.env.ADMIN_PASSWORD,
+  };
+};
 
 export const hasConfiguredAdminCredentials = () => {
-  const { email, password } = getAdminCredentials();
-  return Boolean(email && password);
+  const { emails, password } = getAdminCredentials();
+  return Boolean(emails.length && password);
 };
 
 export const isConfiguredAdminLogin = (email?: string, password?: string) => {
   const adminCredentials = getAdminCredentials();
 
-  if (!adminCredentials.email || !adminCredentials.password || !email || !password) {
+  if (!adminCredentials.emails.length || !adminCredentials.password || !email || !password) {
     return false;
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+
   return (
-    constantTimeEqual(email.trim().toLowerCase(), adminCredentials.email.toLowerCase()) &&
+    adminCredentials.emails.some((adminEmail) => constantTimeEqual(normalizedEmail, adminEmail)) &&
     constantTimeEqual(password, adminCredentials.password)
   );
 };

@@ -47,7 +47,7 @@ Admin product form:
 http://localhost:3000/admin/products/new
 ```
 
-Admin login uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment variables.
+Admin login uses `ADMIN_EMAIL` / `GOOGLE_ADMIN_EMAILS` and `ADMIN_PASSWORD` from environment variables.
 Google admin sign-in is also supported when Google OAuth credentials are added.
 Apple sign-in is shown as coming soon until an Apple Developer account is ready.
 
@@ -69,7 +69,7 @@ GOOGLE_CLIENT_ID="your_google_oauth_client_id"
 GOOGLE_CLIENT_SECRET="your_google_oauth_client_secret"
 GOOGLE_REDIRECT_URI="https://your-domain.com/api/admin-google-callback"
 GOOGLE_MEMBER_REDIRECT_URI="https://your-domain.com/login"
-GOOGLE_ADMIN_EMAILS="admin@example.com"
+GOOGLE_ADMIN_EMAILS="admin@example.com,second-admin@example.com"
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 PAYPAL_ENV="sandbox"

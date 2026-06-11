@@ -5,8 +5,8 @@ type BrandLogoProps = {
   className?: string;
 };
 
-const brandLogoSrc = '/brand/mybabyshire-logo.png';
-const cubeIconSrc = '/brand/mybabyshire-cube.png';
+const brandLogoSrc = '/brand/mybabyshire-logo.png.png';
+const cubeIconSrc = '/brand/mybabyshire-cube.png.png';
 
 const logoClasses: Record<BrandLogoVariant, string> = {
   header: 'h-[46px] sm:h-[54px] md:h-[66px] w-auto object-contain',

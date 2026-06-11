@@ -1,0 +1,17 @@
+{
+  "name": "MY BABY SHIRE",
+  "short_name": "Baby Shire",
+  "description": "Personalized baby gifts made with love.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fcfaf6",
+  "theme_color": "#fcfaf6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

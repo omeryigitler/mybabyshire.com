@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" role="img" aria-label="My Baby Shire toy cube mark">
+  <defs>
+    <linearGradient id="cream" x1="21" y1="8" x2="158" y2="139" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff7ed"/>
+      <stop offset="0.56" stop-color="#f5dec7"/>
+      <stop offset="1" stop-color="#d9b893"/>
+    </linearGradient>
+    <linearGradient id="top" x1="57" y1="16" x2="128" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fffaf3"/>
+      <stop offset="1" stop-color="#f3d6bd"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="30" y1="58" x2="82" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8bbb6"/>
+      <stop offset="1" stop-color="#e99b95"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="97" y1="55" x2="154" y2="129" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d8edf3"/>
+      <stop offset="1" stop-color="#9fc9d8"/>
+    </linearGradient>
+  </defs>
+  <path d="M23 52.5L87.5 20.5C92.2 18.2 97.8 18.2 102.5 20.5L157 47.5C163.1 50.5 167 56.7 167 63.5V108.4C167 115.1 163.2 121.2 157.3 124.3L101.7 153.3C96.9 155.8 91.1 155.8 86.3 153.3L22.8 119.8C16.9 116.7 13.2 110.6 13.2 104V68C13.2 61.4 17 55.5 23 52.5Z" fill="url(#cream)"/>
+  <path d="M44.5 48.7L87.7 28.1C92.3 25.9 97.7 25.9 102.3 28.1L143.1 47.6C148.4 50.1 148.3 57.7 142.9 60L100.9 78C96.5 79.9 91.5 79.9 87.1 78L44.6 59.8C39.4 57.6 39.4 51.1 44.5 48.7Z" fill="url(#top)"/>
+  <path d="M27.5 68.2C27.5 63.4 32.5 60.2 36.9 62.2L82.8 82.7C86 84.1 88 87.3 88 90.8V127.6C88 132.5 82.8 135.6 78.5 133.3L32.6 109.4C29.5 107.8 27.5 104.6 27.5 101.1V68.2Z" fill="url(#pink)"/>
+  <path d="M101.5 90.8C101.5 87.4 103.5 84.2 106.6 82.7L150 62.4C154.4 60.3 159.5 63.5 159.5 68.4V101.1C159.5 104.5 157.6 107.6 154.6 109.3L111.2 133.4C106.9 135.8 101.5 132.7 101.5 127.8V90.8Z" fill="url(#blue)"/>
+  <path d="M95 35L99.6 45L110.5 46.3L102.4 53.6L104.5 64.4L95 58.9L85.5 64.4L87.6 53.6L79.5 46.3L90.4 45L95 35Z" fill="#f2a1a4"/>
+  <text x="56.5" y="107" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="48" font-weight="900" fill="#fff8ee">m</text>
+  <text x="131.5" y="106" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="50" font-weight="900" fill="#fff8ee">y</text>
+</svg>

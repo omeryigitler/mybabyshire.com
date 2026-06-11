@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="My Baby Shire favicon">
+  <rect width="160" height="160" rx="36" fill="#fcfaf6"/>
+  <path d="M31 55 76 32c3-2 7-2 10 0l43 22c4 2 7 7 7 12v41c0 5-3 9-7 12l-43 23c-3 2-7 2-11 0l-44-24c-4-2-7-7-7-12V67c0-5 3-10 7-12Z" fill="#f1d7be"/>
+  <path d="M39 61 78 42c2-1 5-1 8 0l36 18-42 19-41-18Z" fill="#fff2e5"/>
+  <path d="M35 70c0-4 4-6 7-5l34 16c2 1 4 4 4 7v35c0 4-5 7-8 5l-33-18c-3-1-4-4-4-7V70Z" fill="#f4ada8"/>
+  <path d="M88 88c0-3 2-6 5-7l33-16c4-1 8 1 8 5v33c0 3-2 6-5 7l-33 18c-4 2-8-1-8-5V88Z" fill="#b8dce8"/>
+  <path d="M82 47 86 55l9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1 4-8Z" fill="#f4a1a5"/>
+  <text x="56" y="105" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="42" font-weight="900" fill="#fff8ee">m</text>
+  <text x="112" y="105" text-anchor="middle" font-family="Nunito, Arial, sans-serif" font-size="43" font-weight="900" fill="#fff8ee">y</text>
+</svg>

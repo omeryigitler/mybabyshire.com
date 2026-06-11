@@ -124,12 +124,20 @@ export default function Storefront() {
 
       <footer id="our-story" className="scroll-mt-24 w-full bg-boutique-bg border-t border-boutique-brown/10 relative z-20 pt-6 md:pt-8 pb-6 md:pb-8 mt-6">
         <div className="max-w-[1300px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 md:divide-x divide-y md:divide-y-0 divide-boutique-brown/15 relative z-10">
-          <div className="flex flex-col items-start gap-2 py-4 md:py-0 md:pr-10">
-             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="mb-1 text-left group/logo" aria-label="Go to My Baby Shire home">
-               <BrandLogo variant="footer" />
-             </button>
-             <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[13px] opacity-90">Crafting expertly personalized baby gifts and nursery essentials with love and care.</p>
-          </div>
+          <div className="flex flex-col items-start py-4 md:py-0 md:pr-10">
+  <button
+    type="button"
+    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+    className="-ml-1 mb-0 text-left group/logo"
+    aria-label="Go to My Baby Shire home"
+  >
+    <BrandLogo variant="footer" />
+  </button>
+
+  <p className="-mt-2 font-sans text-boutique-brown-light leading-relaxed max-w-[270px] text-[13px] md:text-[14px] opacity-90 text-left">
+    Crafting expertly personalized baby gifts and nursery essentials with love and care.
+  </p>
+</div>
 
           <div className="flex flex-col gap-3 py-4 md:py-0 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SHOP <div className="flex items-end gap-2 translate-y-[-2px]"><img src="/toy-abc-blocks.png" className="w-[42px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /><img src="/toy-wooden-train.png" className="w-[63px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /></div></h4>

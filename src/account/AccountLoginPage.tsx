@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, ShieldCheck, Sparkles, Star, UserRound, X } from 'lucide-react';
+import { ArrowLeft, Mail, ShieldCheck, Sparkles, Star, X } from 'lucide-react';
+import { BrandLogo } from '../components/BrandLogo';
 import { getMemberAuthErrorFromUrl, startGoogleMemberLogin } from './memberAuth';
 
 const assets = {
@@ -253,11 +254,8 @@ export default function AccountLoginPage() {
           </Link>
 
           <div className="relative z-10 mt-1 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-boutique-brown text-white shadow-[0_16px_28px_rgba(58,37,26,0.24)] md:h-16 md:w-16">
-              <UserRound className="h-7 w-7 md:h-8 md:w-8" />
-            </div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#dfcdbb] bg-[#fffaf3] px-5 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-boutique-brown-light shadow-sm">
-              <Sparkles className="h-3.5 w-3.5" /> MY BABY SHIRE
+            <div className="mx-auto mb-3 flex justify-center">
+              <BrandLogo variant="login" />
             </div>
 
             <div className="relative mx-auto mb-3 flex h-14 max-w-[13.5rem] items-end justify-center md:h-24 md:max-w-[18rem]">

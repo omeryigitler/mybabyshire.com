@@ -11,7 +11,7 @@ import {
   Users,
   Wand2,
 } from 'lucide-react';
-import { BabyCubeMark } from '../components/BrandLogo';
+import { BrandLogo } from '../components/BrandLogo';
 
 interface AdminSidebarProps {
   onSignOut: () => void;
@@ -34,14 +34,9 @@ export const AdminSidebar = ({ onSignOut }: AdminSidebarProps) => {
       <div className="relative overflow-hidden border-b border-boutique-brown/10 px-5 py-5">
         <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-8 w-32 opacity-35 mix-blend-multiply" alt="" />
         <img src="/decorative-moon-star.png" className="pointer-events-none absolute right-5 bottom-4 w-8 rotate-12 opacity-45" alt="" />
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center">
-            <BabyCubeMark decorative className="h-14 w-14" />
-          </div>
-          <div>
-            <p className="font-serif text-2xl leading-none text-boutique-brown">MY BABY SHIRE</p>
-            <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown/55">Back Office</p>
-          </div>
+        <div className="relative z-10 flex flex-col items-start">
+          <BrandLogo variant="footer" className="!w-[184px] !max-w-full" />
+          <p className="mt-1 pl-1 text-[11px] font-bold uppercase tracking-[0.22em] text-boutique-brown/55">Back Office</p>
         </div>
       </div>
 

@@ -16,7 +16,7 @@ import {
   Sparkles,
   Truck,
 } from 'lucide-react';
-import { BabyCubeMark, BrandLogo } from './components/BrandLogo';
+import { BrandLogo } from './components/BrandLogo';
 import { getShipmentStatusLabel, type TrackingEvent, type TrackingProviderType } from './utils/carriers';
 
 type TrackedOrder = {
@@ -158,13 +158,12 @@ export default function TrackOrderPage() {
       <img src="/toy-abc-blocks.png" className="pointer-events-none absolute right-[9%] top-[360px] z-0 hidden w-16 -rotate-6 opacity-45 mix-blend-multiply lg:block" alt="" />
       <img src="/toy-pull-duck.png" className="pointer-events-none absolute right-[4%] bottom-[120px] z-0 hidden w-36 opacity-50 mix-blend-multiply xl:block" alt="" />
 
-      <header className="relative z-20 flex items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/85 px-6 py-5 backdrop-blur-md md:px-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown"><ArrowLeft className="h-4 w-4" /> Back to shop</Link>
-        <Link to="/" className="group/logo inline-flex items-center" aria-label="MY BABY SHIRE home">
-          <BrandLogo variant="header" className="hidden sm:inline-flex" />
-          <BabyCubeMark className="h-auto w-12 sm:hidden" />
+      <header className="relative z-20 flex min-h-[74px] items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/85 px-4 py-3 backdrop-blur-md sm:px-6 md:min-h-[86px] md:px-12">
+        <Link to="/" className="relative z-20 inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown"><ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Back to shop</span></Link>
+        <Link to="/" className="group/logo absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center" aria-label="MY BABY SHIRE home">
+          <BrandLogo variant="nav" />
         </Link>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><PackageCheck className="h-4 w-4" /> Order tracking</div>
+        <div className="relative z-20 hidden items-center gap-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light sm:flex"><PackageCheck className="h-4 w-4" /> Order tracking</div>
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-6 py-10 md:py-16">

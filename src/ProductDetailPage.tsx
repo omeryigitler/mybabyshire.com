@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Gift, Heart, ShieldCheck, ShoppingBag, Sparkles, Truck, X } from 'lucide-react';
+import { ArrowLeft, Gift, Heart, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
 import { CartDrawer } from './components/CartDrawer';
 import { CardDesignFrame } from './components/CardDesignFrame';
 import { PersonalizationModal } from './components/PersonalizationModal';
-import { BabyCubeMark, BrandLogo } from './components/BrandLogo';
+import { BrandLogo } from './components/BrandLogo';
 import { Product, useStore } from './store/useStore';
 
 export default function ProductDetailPage() {
@@ -101,15 +101,14 @@ export default function ProductDetailPage() {
         </div>
       )}
 
-      <header className="relative z-20 flex items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/85 px-6 py-5 backdrop-blur-md md:px-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown">
-          <ArrowLeft className="h-4 w-4" /> Back to shop
+      <header className="relative z-20 flex min-h-[74px] items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/85 px-4 py-3 backdrop-blur-md sm:px-6 md:min-h-[86px] md:px-12">
+        <Link to="/" className="relative z-20 inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown">
+          <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Back to shop</span>
         </Link>
-        <Link to="/" className="group/logo inline-flex items-center" aria-label="MY BABY SHIRE home">
-          <BrandLogo variant="header" className="hidden sm:inline-flex" />
-          <BabyCubeMark className="h-auto w-12 sm:hidden" />
+        <Link to="/" className="group/logo absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center" aria-label="MY BABY SHIRE home">
+          <BrandLogo variant="nav" />
         </Link>
-        <button onClick={openCart} className="rounded-full p-2 text-boutique-brown hover:bg-white/70 hover:text-boutique-wood">
+        <button onClick={openCart} className="relative z-20 rounded-full p-2 text-boutique-brown hover:bg-white/70 hover:text-boutique-wood">
           <ShoppingBag size={22} strokeWidth={1.5} />
         </button>
       </header>
@@ -146,12 +145,11 @@ export default function ProductDetailPage() {
             <section className="relative z-10 overflow-hidden rounded-[2.2rem] border border-boutique-brown/10 bg-white/75 p-7 shadow-[0_24px_70px_rgba(58,37,26,0.10)] backdrop-blur-sm md:p-10">
               <img loading="lazy" src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-16 -top-16 w-56 opacity-35 mix-blend-multiply" alt="" />
               <div className="relative z-10">
-                <div className="mb-5 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-boutique-bg px-4 py-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light">
-                    <Sparkles className="h-4 w-4" /> Handmade in the USA
-                  </span>
-                  {product.personalizationRequired && <span className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><Heart className="h-4 w-4" /> Customizable</span>}
-                </div>
+                {product.personalizationRequired && (
+                  <div className="mb-5 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><Heart className="h-4 w-4" /> Customizable</span>
+                  </div>
+                )}
 
                 <h1 className="font-serif text-4xl leading-tight text-boutique-brown md:text-6xl">{product.name}</h1>
                 <p className="mt-5 text-lg leading-relaxed text-boutique-brown-light">{product.description}</p>

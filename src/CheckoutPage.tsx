@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, CreditCard, Lock, ShieldCheck, ShoppingBag, Truck, WalletCards, Zap } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { CardDesignFrame } from './components/CardDesignFrame';
-import { BabyCubeMark, BrandLogo } from './components/BrandLogo';
+import { BrandLogo } from './components/BrandLogo';
 
 type PaymentMethod = 'stripe' | 'paypal';
 type ShippingMethod = {
@@ -159,13 +159,12 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-boutique-bg font-sans text-boutique-brown relative overflow-x-clip">
       <div className="fixed inset-0 pointer-events-none z-0 opacity-40 bg-pattern bg-[length:400px_400px]"></div>
 
-      <header className="relative z-20 flex items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/80 px-6 py-5 backdrop-blur-md md:px-12">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown"><ArrowLeft className="h-4 w-4" /> Back to shop</Link>
-        <Link to="/" className="group/logo inline-flex items-center" aria-label="MY BABY SHIRE home">
-          <BrandLogo variant="header" className="hidden sm:inline-flex" />
-          <BabyCubeMark className="h-auto w-12 sm:hidden" />
+      <header className="relative z-20 flex min-h-[74px] items-center justify-between border-b border-boutique-brown/10 bg-boutique-bg/80 px-4 py-3 backdrop-blur-md sm:px-6 md:min-h-[86px] md:px-12">
+        <Link to="/" className="relative z-20 inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light hover:text-boutique-brown"><ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Back to shop</span></Link>
+        <Link to="/" className="group/logo absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center" aria-label="MY BABY SHIRE home">
+          <BrandLogo variant="nav" />
         </Link>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><Lock className="h-4 w-4" /> Secure checkout</div>
+        <div className="relative z-20 hidden items-center gap-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light sm:flex"><Lock className="h-4 w-4" /> Secure checkout</div>
       </header>
 
       <main className="relative z-10 mx-auto grid max-w-6xl gap-8 px-6 py-10 md:grid-cols-[58%_42%] md:py-14">

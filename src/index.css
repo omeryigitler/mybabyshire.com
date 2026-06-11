@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -55,6 +55,57 @@ body {
   background-image: url("/arka_plan.png");
   background-size: 800px;
   background-repeat: repeat;
+}
+
+.brand-logo {
+  color: #243452;
+  text-decoration: none;
+}
+
+.brand-logo-mark {
+  transform: translateY(-1px);
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.group\/logo:hover .brand-logo-mark,
+.brand-logo:hover .brand-logo-mark {
+  transform: translateY(-3px) rotate(-1deg);
+  filter: drop-shadow(0 10px 14px rgba(58, 37, 26, 0.12));
+}
+
+.brand-logo-wordmark {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: #243452;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.brand-logo-letter-a {
+  position: relative;
+  display: inline-block;
+}
+
+.brand-logo-heart {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+  color: #f4a1a5;
+  font-size: 0.32em;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .brand-logo-wordmark {
+    letter-spacing: 0.08em;
+  }
 }
 
 /* Custom styles for 3d button effect */

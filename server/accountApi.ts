@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import { createAdminToken, getAdminCredentials } from "../lib/auth.js";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -36,7 +37,7 @@ const getMemberGoogleRedirectUri = (req: Request) => {
 };
 
 const redirectMemberAuthError = (res: Response, message: string) => {
-  res.redirect(`/account/login?auth_error=${encodeURIComponent(message)}`);
+  res.redirect(`/login?auth_error=${encodeURIComponent(message)}`);
 };
 
 const createMemberToken = (member: { id: string; email: string; name: string; role: string }) => {
@@ -53,8 +54,19 @@ const createMemberToken = (member: { id: string; email: string; name: string; ro
   );
 };
 
-const createMemberAuthSuccessHtml = (token: string) => {
+const isAdminEmail = (email: string) => {
+  return getAdminCredentials().emails.includes(email.trim().toLowerCase());
+};
+
+const createAuthSuccessHtml = (token: string, role: "member" | "admin") => {
   const tokenJson = JSON.stringify(token);
+  const tokenKey = role === "admin"
+    ? "mybabyshire-admin-token-v1"
+    : "mybabyshire-member-token-v1";
+  const removedTokenKey = role === "admin"
+    ? "mybabyshire-member-token-v1"
+    : "mybabyshire-admin-token-v1";
+  const target = role === "admin" ? "/admin" : "/account";
 
   return `<!doctype html>
 <html lang="en">
@@ -65,8 +77,9 @@ const createMemberAuthSuccessHtml = (token: string) => {
   </head>
   <body>
     <script>
-      localStorage.setItem('mybabyshire-member-token-v1', ${tokenJson});
-      window.location.replace('/account');
+      localStorage.setItem('${tokenKey}', ${tokenJson});
+      localStorage.removeItem('${removedTokenKey}');
+      window.location.replace('${target}');
     </script>
   </body>
 </html>`;
@@ -206,6 +219,12 @@ router.get("/account/google/callback", async (req, res) => {
       return redirectMemberAuthError(res, "Google account could not be verified.");
     }
 
+    if (isAdminEmail(email)) {
+      const token = createAdminToken(email);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.status(200).send(createAuthSuccessHtml(token, "admin"));
+    }
+
     const existingUser = await prisma.users.findUnique({ where: { email } });
     const user = existingUser
       ? await prisma.users.update({
@@ -232,7 +251,7 @@ router.get("/account/google/callback", async (req, res) => {
     });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.status(200).send(createMemberAuthSuccessHtml(token));
+    return res.status(200).send(createAuthSuccessHtml(token, "member"));
   } catch (error) {
     return redirectMemberAuthError(
       res,

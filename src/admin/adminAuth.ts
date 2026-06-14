@@ -25,7 +25,7 @@ export const handleAdminAuthError = (error: unknown) => {
 
   if (isAuthErrorMessage(message)) {
     clearAdminSession();
-    window.location.assign('/admin');
+    window.location.assign('/login');
     return true;
   }
 
@@ -48,24 +48,6 @@ export const loginAdmin = async (email: string, password: string) => {
 
   localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
   return data.token as string;
-};
-
-export const startGoogleAdminLogin = () => {
-  window.location.assign('/api/admin-google-start');
-};
-
-export const getAdminAuthErrorFromUrl = () => {
-  const params = new URLSearchParams(window.location.search);
-  const error = params.get('auth_error');
-
-  if (!error) return '';
-
-  params.delete('auth_error');
-  const nextQuery = params.toString();
-  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
-  window.history.replaceState({}, '', nextUrl);
-
-  return error;
 };
 
 export const getAdminToken = () => {

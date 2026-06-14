@@ -1,8 +1,9 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { FormEvent, useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, ShieldCheck, Sparkles, Star, X } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, Star, X } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
-import { getMemberAuthErrorFromUrl, startGoogleMemberLogin } from './memberAuth';
+import { clearMemberSession, getMemberAuthErrorFromUrl, startGoogleMemberLogin } from './memberAuth';
+import { loginAdmin } from '../admin/adminAuth';
 
 const assets = {
   shop: '/login-assets/boutique-shop.png',
@@ -144,13 +145,35 @@ const AuthButton = ({
 );
 
 export default function AccountLoginPage() {
-  const [error, setError] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
+  const [isEmailLoginOpen, setIsEmailLoginOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const authError = getMemberAuthErrorFromUrl();
-    if (authError) setError(authError);
+    const errorFromUrl = getMemberAuthErrorFromUrl();
+    if (errorFromUrl) setAuthError(errorFromUrl);
   }, []);
+
+  const handleEmailLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setEmailError('');
+    setIsSubmitting(true);
+
+    try {
+      await loginAdmin(email.trim(), password);
+      clearMemberSession();
+      window.location.replace('/admin');
+    } catch (loginError) {
+      setEmailError((loginError as Error).message || 'Email or password is incorrect.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="relative h-dvh overflow-hidden bg-[#fbf5ec] font-sans text-boutique-brown">
@@ -274,8 +297,8 @@ export default function AccountLoginPage() {
             </p>
           </div>
 
-          {error && (
-            <p className="relative z-10 mx-auto mt-5 w-full max-w-[430px] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>
+          {authError && (
+            <p className="relative z-10 mx-auto mt-5 w-full max-w-[430px] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{authError}</p>
           )}
 
           <div className="relative z-10 mx-auto mt-6 grid w-full max-w-[430px] gap-3">
@@ -285,7 +308,13 @@ export default function AccountLoginPage() {
             <AuthButton icon={<AppleIcon />} onClick={() => setNotice({ title: 'Apple sign in', message: 'Apple sign in is coming soon. Please use Google sign in while we finish this option.' })}>
               Continue with Apple
             </AuthButton>
-            <AuthButton icon={<Mail className="h-5 w-5" />} onClick={() => setNotice({ title: 'Email sign in', message: 'Email sign in is being prepared. For now, please continue with Google to access your account securely.' })}>
+            <AuthButton
+              icon={<Mail className="h-5 w-5" />}
+              onClick={() => {
+                setEmailError('');
+                setIsEmailLoginOpen(true);
+              }}
+            >
               Continue with Email
             </AuthButton>
           </div>
@@ -312,6 +341,108 @@ export default function AccountLoginPage() {
               Got it
             </button>
           </div>
+        </div>
+      )}
+
+      {isEmailLoginOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boutique-brown/35 px-5 backdrop-blur-sm">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="email-login-title"
+            className="w-full max-w-sm rounded-[2rem] border border-boutique-brown/10 bg-white p-6 shadow-[0_24px_70px_rgba(58,37,26,0.18)]"
+          >
+            <button
+              type="button"
+              onClick={() => setIsEmailLoginOpen(false)}
+              className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-boutique-bg text-boutique-brown-light hover:text-boutique-brown"
+              aria-label="Close email sign in"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-boutique-brown text-white shadow-[0_10px_24px_rgba(58,37,26,0.2)]">
+                <Mail className="h-5 w-5" />
+              </div>
+              <h2 id="email-login-title" className="mt-4 font-serif text-3xl text-boutique-brown">
+                Continue with email
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-boutique-brown-light">
+                Sign in here and we will take you to the correct account area automatically.
+              </p>
+            </div>
+
+            <form onSubmit={handleEmailLogin} className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="login-email" className="mb-2 block text-[11px] font-black uppercase tracking-[0.13em] text-boutique-brown/55">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/35" />
+                  <input
+                    id="login-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="h-13 w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] pl-11 pr-4 text-sm font-semibold text-boutique-brown outline-none placeholder:text-boutique-brown/30 focus:border-boutique-wood/40 focus:ring-2 focus:ring-boutique-wood/15"
+                    autoComplete="username"
+                    placeholder="name@example.com"
+                    autoFocus
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="login-password" className="mb-2 block text-[11px] font-black uppercase tracking-[0.13em] text-boutique-brown/55">
+                  Password
+                </label>
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/35" />
+                  <input
+                    id="login-password"
+                    type={isPasswordVisible ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="h-13 w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] pl-11 pr-12 text-sm font-semibold text-boutique-brown outline-none placeholder:text-boutique-brown/30 focus:border-boutique-wood/40 focus:ring-2 focus:ring-boutique-wood/15"
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordVisible((visible) => !visible)}
+                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-boutique-brown/45 transition-colors hover:bg-white hover:text-boutique-brown"
+                    aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+                  >
+                    {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {emailError && (
+                <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {emailError}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex h-13 w-full items-center justify-center rounded-2xl bg-boutique-brown px-4 text-sm font-black text-white shadow-[0_12px_26px_rgba(58,37,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-boutique-wood disabled:translate-y-0 disabled:cursor-wait disabled:opacity-55"
+              >
+                {isSubmitting ? 'Signing in...' : 'Continue'}
+              </button>
+            </form>
+
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+              <p className="text-xs font-semibold leading-relaxed text-boutique-brown-light">
+                Approved administrator emails open the Back Office. Customer accounts continue through Google.
+              </p>
+            </div>
+          </section>
         </div>
       )}
     </div>

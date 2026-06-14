@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
-import { AdminLogin } from './AdminLogin';
 import { clearAdminSession, getStoredAdminToken } from './adminAuth';
 import { BrandLogo } from '../components/BrandLogo';
 
 export const AdminLayout = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getStoredAdminToken()));
+  const isAuthenticated = Boolean(getStoredAdminToken());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -28,13 +27,12 @@ export const AdminLayout = () => {
   }, [isMobileMenuOpen]);
 
   if (!isAuthenticated) {
-    return <AdminLogin onLogin={() => setIsAuthenticated(true)} />;
+    return <Navigate to="/login" replace />;
   }
 
   const handleSignOut = () => {
     clearAdminSession();
-    setIsAuthenticated(false);
-    window.location.assign('/');
+    window.location.assign('/login');
   };
 
   return (

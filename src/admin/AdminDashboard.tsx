@@ -21,15 +21,15 @@ const StatCard = ({ title, value, note, icon: Icon, tone = 'cream' }: { title: s
   const toneClass = tone === 'green' ? 'bg-green-50 text-green-800' : tone === 'amber' ? 'bg-amber-50 text-amber-800' : tone === 'blue' ? 'bg-blue-50 text-blue-800' : 'bg-[#fff4df] text-boutique-brown';
 
   return (
-    <div className="relative overflow-hidden rounded-[1.7rem] border border-boutique-brown/10 bg-white/80 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
+    <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-boutique-brown/10 bg-white/80 p-4 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm sm:rounded-[1.7rem] sm:p-5">
       <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-10 w-32 opacity-25 mix-blend-multiply" alt="" />
-      <div className="relative z-10 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">{title}</p>
-          <p className="mt-4 font-serif text-4xl leading-none text-boutique-brown">{value}</p>
+      <div className="relative z-10 min-w-0">
+        <div className="min-w-0">
+          <p className="min-h-8 pr-11 text-[10px] font-bold uppercase tracking-[0.1em] text-boutique-brown/55 sm:min-h-0 sm:pr-14 sm:text-xs sm:tracking-[0.16em]">{title}</p>
+          <p className="mt-3 whitespace-nowrap font-serif text-3xl leading-none text-boutique-brown sm:mt-4 sm:text-4xl">{value}</p>
           <p className="mt-2 text-xs text-boutique-brown-light">{note}</p>
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${toneClass}`}><Icon className="h-5 w-5" /></div>
+        <div className={`absolute right-0 top-0 flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm sm:h-12 sm:w-12 ${toneClass}`}><Icon className="h-5 w-5" /></div>
       </div>
     </div>
   );
@@ -88,31 +88,31 @@ export const AdminDashboard = () => {
   const recentOrders = orders.slice(0, 5);
 
   return (
-    <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
+    <div className="space-y-5 md:space-y-8">
+      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-5 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm sm:p-7">
         <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
         <img src="/toy-abc-blocks.png" className="pointer-events-none absolute right-12 bottom-5 w-16 -rotate-6 opacity-35 mix-blend-multiply" alt="" />
-        <div className="relative z-10 flex items-center justify-between gap-6">
-          <div>
+        <div className="relative z-10 flex flex-col items-start gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="min-w-0">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light"><Sparkles className="h-4 w-4" /> Back office overview</div>
-            <h1 className="font-serif text-5xl leading-none text-boutique-brown">Dashboard</h1>
+            <h1 className="font-serif text-4xl leading-none text-boutique-brown sm:text-5xl">Dashboard</h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">A quick view of MY BABY SHIRE orders, products, payments, and next actions.</p>
           </div>
-          <div className="flex gap-3">
-            <button onClick={loadDashboard} disabled={isLoading} className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-5 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50"><RefreshCcw className="h-4 w-4" /> Refresh</button>
-            <Link to="/admin/products/new" className="inline-flex items-center gap-2 rounded-full bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood"><Plus className="h-4 w-4" /> Add Product</Link>
+          <div className="flex w-full flex-wrap gap-3 lg:w-auto lg:flex-nowrap">
+            <button onClick={loadDashboard} disabled={isLoading} className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-4 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50 lg:flex-none lg:px-5"><RefreshCcw className="h-4 w-4" /> Refresh</button>
+            <Link to="/admin/products/new" className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood lg:flex-none lg:px-5"><Plus className="h-4 w-4" /> Add Product</Link>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard title="Orders" value={isLoading ? '—' : stats.totalOrders} icon={ShoppingCart} note="All customer requests" tone="cream" />
         <StatCard title="Paid Orders" value={isLoading ? '—' : stats.paidOrders} icon={CheckCircle2} note="Confirmed payments" tone="green" />
         <StatCard title="Pending Payment" value={isLoading ? '—' : stats.pendingPayments} icon={Clock3} note="Needs payment follow-up" tone="amber" />
         <StatCard title="Recorded Value" value={isLoading ? '—' : `$${stats.recordedValue.toFixed(2)}`} icon={Gift} note="Total order value" tone="blue" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard title="Products" value={isLoading ? '—' : stats.totalProducts} icon={Package} note="Catalog items" tone="cream" />
         <StatCard title="Active" value={isLoading ? '—' : stats.activeProducts} icon={CheckCircle2} note="Visible in storefront" tone="green" />
         <StatCard title="Drafts" value={isLoading ? '—' : stats.draftProducts} icon={AlertCircle} note="Not visible yet" tone="amber" />
@@ -121,7 +121,7 @@ export const AdminDashboard = () => {
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/82 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-          <div className="flex items-center justify-between border-b border-boutique-brown/10 bg-[#fffaf3]/70 p-5">
+          <div className="flex flex-col items-start gap-3 border-b border-boutique-brown/10 bg-[#fffaf3]/70 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div><h2 className="font-serif text-3xl text-boutique-brown">Recent Orders</h2><p className="mt-1 text-sm text-boutique-brown-light">Latest payment and fulfillment activity.</p></div>
             <Link to="/admin/orders" className="inline-flex items-center gap-1 rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df]">View all <ArrowRight className="h-4 w-4" /></Link>
           </div>
@@ -162,7 +162,7 @@ export const AdminDashboard = () => {
       </div>
 
       <div className="overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/82 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <div className="flex items-center justify-between border-b border-boutique-brown/10 bg-[#fffaf3]/70 p-5">
+        <div className="flex flex-col items-start gap-3 border-b border-boutique-brown/10 bg-[#fffaf3]/70 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="font-serif text-3xl text-boutique-brown">Recent Products</h2><p className="mt-1 text-sm text-boutique-brown-light">Latest catalog items from your admin database.</p></div>
           <Link to="/admin/products" className="inline-flex items-center gap-1 rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df]">View all <ArrowRight className="h-4 w-4" /></Link>
         </div>

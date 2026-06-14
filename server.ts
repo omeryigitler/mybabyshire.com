@@ -9,7 +9,7 @@ async function startServer() {
   const { default: apiRoutes } = await import("./server/api.js");
   const { default: accountRoutes } = await import("./server/accountApi.js");
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use((req, res, next) => {
     res.setHeader(

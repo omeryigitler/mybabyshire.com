@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Layers3, Plus, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { Button, PageHeader } from './ui';
 import { DEFAULT_PRODUCT_FIELDS, PersonalizationFieldBuilder, type FieldType, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 import { getAdminToken } from './adminAuth';
 
@@ -202,17 +203,13 @@ export const PersonalizationTemplateManager = () => {
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-6 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-10 -top-16 w-56 opacity-25 mix-blend-multiply" alt="" />
-        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light"><Sparkles className="h-4 w-4" /> Custom gift setup</div>
-            <h1 className="font-serif text-4xl leading-none text-boutique-brown lg:text-5xl">Personalization Templates</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">Create reusable fields for names, colors, dates and special gift details.</p>
-          </div>
-          <button onClick={createTemplate} disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:opacity-50"><Plus className="h-4 w-4" /> New Template</button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Custom gift setup"
+        icon={Sparkles}
+        title="Personalization Templates"
+        description="Create reusable fields for names, colors, dates and special gift details."
+        actions={<Button variant="primary" icon={Plus} onClick={createTemplate} disabled={isSaving}>New Template</Button>}
+      />
 
       <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
         <aside className="rounded-[2rem] border border-boutique-brown/10 bg-white/82 p-4 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">

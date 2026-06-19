@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Package, RefreshCcw, Search, Sparkles } from 'lucide-react';
+import { Button, PageHeader } from './ui';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { CardDesignFrame } from '../components/CardDesignFrame';
@@ -57,17 +58,13 @@ export const AdminImageLibrary = () => {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
-        <div className="relative z-10 flex items-center justify-between gap-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light"><Sparkles className="h-4 w-4" /> Visual assets</div>
-            <h1 className="font-serif text-5xl leading-none text-boutique-brown">Image Library</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">Review product images, cloud backgrounds, and brand decoration assets used across the storefront and back office.</p>
-          </div>
-          <button onClick={loadProducts} disabled={isLoading} className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-5 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50"><RefreshCcw className="h-4 w-4" /> Refresh</button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Visual assets"
+        icon={Sparkles}
+        title="Image Library"
+        description="Review product images, cloud backgrounds, and brand decoration assets used across the storefront and back office."
+        actions={<Button variant="secondary" icon={RefreshCcw} onClick={loadProducts} disabled={isLoading}>Refresh</Button>}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-sm"><ImageIcon className="mb-4 h-6 w-6 text-boutique-brown" /><p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Images</p><p className="mt-3 font-serif text-4xl text-boutique-brown">{isLoading ? '—' : images.length}</p></div>

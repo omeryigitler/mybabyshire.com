@@ -12,8 +12,8 @@ type BabyCubeMarkProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'
   title?: string;
 };
 
-const brandLogoSrc = '/brand/mybabyshire-logo.png.png';
-const cubeIconSrc = '/brand/mybabyshire-cube.png.png';
+const brandLogoSrc = '/brand/mybabyshire-logo.png';
+const cubeIconSrc = '/brand/mybabyshire-cube.png';
 const headerLogoSrc = '/brand/mybabyshire-header-horizontal-logo_2x-removebg-preview.png';
 
 const logoClasses: Record<BrandLogoVariant, string> = {

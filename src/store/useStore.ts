@@ -28,7 +28,8 @@ export type Product = {
   personalizationRequired?: boolean;
   status?: string;
   sku?: string;
-  categoryId?: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
   stockQuantity?: number;
   featured?: boolean;
   newArrival?: boolean;
@@ -39,6 +40,8 @@ export type Product = {
   careInstructions?: string;
   preparationTime?: string;
   personalizationFields?: PersonalizationField[];
+  ratingAverage?: number;
+  ratingCount?: number;
 };
 
 export type CartItem = {

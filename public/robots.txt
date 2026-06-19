@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /payment-cancel
+Disallow: /paypal-success
+
+Sitemap: https://www.mybabyshire.com/sitemap.xml

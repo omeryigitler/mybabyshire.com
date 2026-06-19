@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Copy, Loader2, MailCheck, PackageCheck, ShoppingBag, Sparkles, Truck } from 'lucide-react';
 import { useStore } from './store/useStore';
+import { consumePendingPurchase, trackPurchase } from './utils/analytics';
 
 const StepCard = ({ icon: Icon, title, text }: { icon: React.ComponentType<{ className?: string }>; title: string; text: string }) => (
   <div className="rounded-[1.35rem] border border-boutique-brown/10 bg-[#fffaf3] p-4 text-left shadow-sm">
@@ -40,6 +41,8 @@ export default function PayPalSuccessPage() {
         if (!response.ok) throw new Error(data.details || data.error || 'PayPal payment could not be confirmed.');
 
         clearCart();
+        const purchase = consumePendingPurchase(orderReference || undefined);
+        if (purchase) trackPurchase({ orderNumber: purchase.orderNumber, value: purchase.value });
         setStatus('success');
         setMessage('Your PayPal payment was completed successfully. We received your MY BABY SHIRE gift order and will start preparing it soon.');
       } catch (error) {

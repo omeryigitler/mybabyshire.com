@@ -1,16 +1,16 @@
 import { prisma } from './prisma.js';
+import { calculateTax, type TaxBreakdown } from '../src/utils/tax.js';
+import { resolveCoupon } from './coupons.js';
+import {
+  SHIPPING_METHODS,
+  resolveShippingMethod as resolveShippingMethodById,
+  type ShippingMethod,
+} from '../src/utils/shipping.js';
 
 export type CheckoutProvider = 'stripe' | 'paypal';
 
-export type ShippingMethod = {
-  id: string;
-  label: string;
-  description: string;
-  carrier: string;
-  service: string;
-  estimatedDelivery: string;
-  amount: number;
-};
+export { SHIPPING_METHODS };
+export type { ShippingMethod };
 
 export type VerifiedCheckoutItem = {
   productId: string;
@@ -33,8 +33,13 @@ export type VerifiedCheckout = {
   };
   items: VerifiedCheckoutItem[];
   shippingMethod: ShippingMethod;
+  giftMessage: string;
   subtotal: number;
+  discount: number;
+  couponCode: string | null;
   shipping: number;
+  tax: number;
+  taxBreakdown: TaxBreakdown;
   total: number;
   currency: 'USD';
 };
@@ -48,27 +53,6 @@ export class CheckoutValidationError extends Error {
     this.statusCode = statusCode;
   }
 }
-
-export const SHIPPING_METHODS: ShippingMethod[] = [
-  {
-    id: 'us-standard',
-    label: 'Standard Shipping',
-    description: 'Reliable gift-ready delivery for most US addresses.',
-    carrier: 'USPS',
-    service: 'Ground Advantage',
-    estimatedDelivery: '3-5 business days',
-    amount: 6.95,
-  },
-  {
-    id: 'us-priority',
-    label: 'Priority Shipping',
-    description: 'Faster delivery for time-sensitive gifts.',
-    carrier: 'USPS',
-    service: 'Priority Mail',
-    estimatedDelivery: '2-3 business days',
-    amount: 12.95,
-  },
-];
 
 export const isCheckoutValidationError = (error: unknown): error is CheckoutValidationError =>
   error instanceof CheckoutValidationError;
@@ -152,8 +136,8 @@ const getPrimaryImage = (product: any) =>
   product.images?.find((image: any) => image.is_primary) || product.images?.[0] || null;
 
 const resolveShippingMethod = (body: any) => {
-  const requestedId = String(body?.shippingMethodId || body?.shippingId || body?.shippingMethod?.id || 'us-standard').trim();
-  return SHIPPING_METHODS.find((method) => method.id === requestedId) || SHIPPING_METHODS[0];
+  const requestedId = body?.shippingMethodId || body?.shippingId || body?.shippingMethod?.id;
+  return resolveShippingMethodById(requestedId);
 };
 
 export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout> => {
@@ -210,14 +194,36 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
   const subtotal = roundMoney(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
   const shippingMethod = resolveShippingMethod(body || {});
   const shipping = subtotal > 0 ? roundMoney(shippingMethod.amount) : 0;
-  const total = roundMoney(subtotal + shipping);
+
+  let discount = 0;
+  let couponCode: string | null = null;
+  try {
+    const coupon = await resolveCoupon(body?.couponCode || body?.coupon, subtotal);
+    if (coupon) {
+      discount = roundMoney(coupon.discount);
+      couponCode = coupon.code;
+    }
+  } catch (couponError) {
+    throw new CheckoutValidationError((couponError as Error).message);
+  }
+
+  const taxableBase = roundMoney(Math.max(0, subtotal - discount));
+  const taxBreakdown = calculateTax(taxableBase, customer.state);
+  const tax = roundMoney(taxBreakdown.amount);
+  const total = roundMoney(taxableBase + shipping + tax);
+  const giftMessage = String(body?.giftMessage || '').trim().slice(0, 500);
 
   return {
     customer,
     items,
     shippingMethod,
+    giftMessage,
     subtotal,
+    discount,
+    couponCode,
     shipping,
+    tax,
+    taxBreakdown,
     total,
     currency: 'USD',
   };
@@ -227,9 +233,15 @@ export const createPendingOrderFromCheckout = async (checkout: VerifiedCheckout,
   const orderNumber = createOrderNumber();
   const snapshot = {
     customer: checkout.customer,
+    giftMessage: checkout.giftMessage,
     subtotal: checkout.subtotal,
+    discount: checkout.discount,
+    couponCode: checkout.couponCode,
     shipping: checkout.shipping,
     shippingMethod: checkout.shippingMethod,
+    tax: checkout.tax,
+    taxRate: checkout.taxBreakdown.rate,
+    taxLabel: checkout.taxBreakdown.label,
     total: checkout.total,
     currency: checkout.currency,
     provider,
@@ -257,6 +269,23 @@ export const createPendingOrderFromCheckout = async (checkout: VerifiedCheckout,
     },
     include: { items: true },
   });
+};
+
+// Decrement stock for a paid order. Only products that actively track stock
+// (stock_quantity > 0) are reduced; a stock_quantity of 0 means "untracked /
+// unlimited" and is left alone. The `gte` guard keeps stock from going negative
+// and makes this safe to call exactly once per order (after payment succeeds).
+export const decrementInventoryForOrder = async (
+  items: Array<{ product_id: string; quantity: number | null }>,
+) => {
+  for (const item of items) {
+    const quantity = Number(item.quantity) || 0;
+    if (quantity <= 0) continue;
+    await prisma.products.updateMany({
+      where: { id: item.product_id, stock_quantity: { gte: quantity } },
+      data: { stock_quantity: { decrement: quantity } },
+    });
+  }
 };
 
 const getPayPalPurchaseUnit = (captureData: any, orderNumber: string) => {

@@ -1,25 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, CreditCard, Lock, ShieldCheck, ShoppingBag, Truck, WalletCards, Zap } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CreditCard, Gift, Lock, ShieldCheck, ShoppingBag, Tag, Truck, WalletCards, Zap } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { CardDesignFrame } from './components/CardDesignFrame';
 import { BrandLogo } from './components/BrandLogo';
+import { calculateTax } from './utils/tax';
+import { SHIPPING_METHODS } from './utils/shipping';
+import { rememberPendingPurchase } from './utils/analytics';
 
 type PaymentMethod = 'stripe' | 'paypal';
-type ShippingMethod = {
-  id: string;
-  label: string;
-  description: string;
-  carrier: string;
-  service: string;
-  estimatedDelivery: string;
-  amount: number;
-};
-
-const SHIPPING_METHODS: ShippingMethod[] = [
-  { id: 'us-standard', label: 'Standard Shipping', description: 'Reliable gift-ready delivery for most US addresses.', carrier: 'USPS', service: 'Ground Advantage', estimatedDelivery: '3-5 business days', amount: 6.95 },
-  { id: 'us-priority', label: 'Priority Shipping', description: 'Faster delivery for time-sensitive gifts.', carrier: 'USPS', service: 'Priority Mail', estimatedDelivery: '2-3 business days', amount: 12.95 },
-];
 
 const WalletBadge = ({ label, tone = 'light' }: { label: string; tone?: 'dark' | 'light' | 'blue' }) => {
   const toneClass = tone === 'dark'
@@ -42,11 +31,48 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zip, setZip] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const selectedShippingMethod = SHIPPING_METHODS.find((method) => method.id === selectedShippingId) || SHIPPING_METHODS[0];
   const subtotal = useMemo(() => cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0), [cartItems]);
   const shipping = subtotal > 0 ? selectedShippingMethod.amount : 0;
-  const total = subtotal + shipping;
+  const discount = appliedCoupon ? Math.min(appliedCoupon.discount, subtotal) : 0;
+  const taxableBase = Math.max(0, subtotal - discount);
+  const taxBreakdown = useMemo(() => calculateTax(taxableBase, state), [taxableBase, state]);
+  const tax = taxBreakdown.amount;
+  const total = taxableBase + shipping + tax;
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponError('');
+    setCouponLoading(true);
+    try {
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, subtotal }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Invalid coupon code.');
+      setAppliedCoupon({ code: data.code, discount: data.discount });
+    } catch (error) {
+      setAppliedCoupon(null);
+      setCouponError((error as Error).message);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
 
   const validateCheckout = () => {
     if (cartItems.length === 0) {
@@ -87,6 +113,8 @@ export default function CheckoutPage() {
       personalizationData: item.personalizationData,
     })),
     shippingMethodId: selectedShippingMethod.id,
+    giftMessage: giftMessage.trim(),
+    couponCode: appliedCoupon?.code || '',
     currency: 'USD',
   };
 
@@ -111,6 +139,7 @@ export default function CheckoutPage() {
     const data = await readJsonResponse(response);
     if (!response.ok) throw new Error(data.details || data.error || 'Checkout could not be created.');
     if (!data.checkoutUrl) throw new Error('Checkout URL was not returned.');
+    rememberPendingPurchase(data.orderId, data.total ?? total);
     window.location.href = data.checkoutUrl;
   };
 
@@ -124,6 +153,7 @@ export default function CheckoutPage() {
     const data = await readJsonResponse(response);
     if (!response.ok) throw new Error(data.details || data.error || 'PayPal checkout could not be created.');
     if (!data.approvalUrl) throw new Error('PayPal approval URL was not returned.');
+    rememberPendingPurchase(data.orderId, total);
     window.location.href = data.approvalUrl;
   };
 
@@ -192,6 +222,21 @@ export default function CheckoutPage() {
             </div>
           </section>
 
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-boutique-brown" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-boutique-brown">Gift message <span className="font-medium normal-case text-boutique-brown-light">(optional)</span></h2>
+            </div>
+            <textarea
+              value={giftMessage}
+              onChange={(event) => setGiftMessage(event.target.value.slice(0, 500))}
+              rows={3}
+              className="w-full rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-boutique-wood/40"
+              placeholder="Add a personal note to include with this gift..."
+            />
+            <p className="text-right text-[11px] text-boutique-brown-light">{giftMessage.length}/500</p>
+          </section>
+
           <section className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-sm font-bold uppercase tracking-wider text-boutique-brown">Shipping method</h2>
@@ -246,12 +291,40 @@ export default function CheckoutPage() {
           </section>
 
           <button disabled={isSubmitting || cartItems.length === 0} className={`w-full rounded-full px-6 py-4 text-base font-bold shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${selectedPaymentMethod === 'paypal' ? 'bg-[#ffc439] text-[#003087] hover:bg-[#f7b820]' : 'bg-boutique-brown text-white hover:bg-boutique-wood'}`}>{buttonLabel}</button>
+
+          <p className="px-2 text-center text-[11px] leading-relaxed text-boutique-brown-light">
+            By placing your order you agree to our{' '}
+            <Link to="/policies/terms" className="font-semibold text-boutique-brown underline decoration-boutique-wood/50 underline-offset-2 hover:text-boutique-wood">Terms</Link>,{' '}
+            <Link to="/policies/returns" className="font-semibold text-boutique-brown underline decoration-boutique-wood/50 underline-offset-2 hover:text-boutique-wood">Returns &amp; Refunds</Link>, and{' '}
+            <Link to="/policies/privacy" className="font-semibold text-boutique-brown underline decoration-boutique-wood/50 underline-offset-2 hover:text-boutique-wood">Privacy Policy</Link>. Personalized items are made to order.
+          </p>
         </form>
 
         <aside className="rounded-[2rem] border border-boutique-brown/10 bg-white/75 p-6 shadow-sm md:p-8 h-fit">
           <div className="mb-6 flex items-center gap-2"><ShoppingBag className="h-5 w-5" /><h2 className="font-serif text-2xl text-boutique-brown">Order Summary</h2></div>
           {cartItems.length === 0 ? <div className="rounded-2xl bg-boutique-bg p-6 text-center text-sm text-boutique-brown-light">Your gift bag is empty.</div> : <div className="space-y-4">{cartItems.map((item) => <div key={item.id} className="flex gap-4 rounded-2xl bg-boutique-bg p-3"><div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-white">{item.product.bgImage && <CardDesignFrame value={item.product.bgImage} className="absolute inset-0 h-full w-full opacity-70" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-70" />}<img src={item.product.imageUrl} className="relative z-10 h-full w-full object-contain p-2" alt="" /></div><div className="min-w-0 flex-1"><p className="font-serif text-sm font-medium text-boutique-brown">{item.product.name}</p><p className="mt-1 text-xs text-boutique-brown-light">Qty {item.quantity}</p>{Object.keys(item.personalizationData).length > 0 && <p className="mt-1 truncate text-[11px] text-boutique-brown-light">Personalized</p>}</div><p className="text-sm font-bold text-boutique-brown">${(item.product.price * item.quantity).toFixed(2)}</p></div>)}</div>}
-          <div className="mt-6 space-y-3 border-t border-boutique-brown/10 pt-5 text-sm"><div className="flex justify-between text-boutique-brown-light"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div><div className="flex justify-between text-boutique-brown-light"><span>{selectedShippingMethod.label}</span><span>${shipping.toFixed(2)}</span></div><div className="flex justify-between text-xs text-boutique-brown-light"><span>{selectedShippingMethod.carrier} · {selectedShippingMethod.service}</span><span>{selectedShippingMethod.estimatedDelivery}</span></div><div className="flex justify-between pt-3 font-serif text-xl text-boutique-brown"><span>Total</span><span>${total.toFixed(2)}</span></div></div>
+          {cartItems.length > 0 && (
+            <div className="mt-6 border-t border-boutique-brown/10 pt-5">
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm font-bold text-green-800"><Tag className="h-4 w-4" /> {appliedCoupon.code} applied</div>
+                  <button type="button" onClick={removeCoupon} className="text-xs font-bold text-green-800 underline hover:text-green-900">Remove</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={couponInput}
+                    onChange={(event) => { setCouponInput(event.target.value); setCouponError(''); }}
+                    placeholder="Coupon code"
+                    className="min-w-0 flex-1 rounded-2xl border border-boutique-brown/15 bg-boutique-bg px-4 py-3 text-sm uppercase outline-none focus:ring-2 focus:ring-boutique-wood/40"
+                  />
+                  <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponInput.trim()} className="rounded-2xl bg-boutique-brown px-5 py-3 text-sm font-bold text-white hover:bg-boutique-wood disabled:opacity-50">{couponLoading ? '...' : 'Apply'}</button>
+                </div>
+              )}
+              {couponError && <p className="mt-2 text-xs font-medium text-red-600">{couponError}</p>}
+            </div>
+          )}
+          <div className="mt-6 space-y-3 border-t border-boutique-brown/10 pt-5 text-sm"><div className="flex justify-between text-boutique-brown-light"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>{discount > 0 && <div className="flex justify-between font-medium text-green-700"><span>Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span><span>-${discount.toFixed(2)}</span></div>}<div className="flex justify-between text-boutique-brown-light"><span>{selectedShippingMethod.label}</span><span>${shipping.toFixed(2)}</span></div><div className="flex justify-between text-xs text-boutique-brown-light"><span>{selectedShippingMethod.carrier} · {selectedShippingMethod.service}</span><span>{selectedShippingMethod.estimatedDelivery}</span></div>{tax > 0 && <div className="flex justify-between text-boutique-brown-light"><span>{taxBreakdown.label}</span><span>${tax.toFixed(2)}</span></div>}<div className="flex justify-between pt-3 font-serif text-xl text-boutique-brown"><span>Total</span><span>${total.toFixed(2)}</span></div></div>
         </aside>
       </main>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, CreditCard, Globe, Mail, Palette, Send, ShieldCheck, Sparkles, Truck, WalletCards } from 'lucide-react';
+import { PageHeader } from './ui';
 import { getAdminToken } from './adminAuth';
 
 const SettingCard = ({ icon: Icon, title, status, children }: { icon: React.ComponentType<{ className?: string }>; title: string; status: string; children: React.ReactNode }) => (
@@ -52,14 +53,12 @@ export const AdminSettings = () => {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
-        <div className="relative z-10">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light"><Sparkles className="h-4 w-4" /> Store setup</div>
-          <h1 className="font-serif text-5xl leading-none text-boutique-brown">Settings</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">A practical checklist for payments, storefront, shipping, email, admin access and launch readiness.</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Store setup"
+        icon={Sparkles}
+        title="Settings"
+        description="A practical checklist for payments, storefront, shipping, email, admin access and launch readiness."
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <SettingCard icon={CreditCard} title="Payments" status="Active">Stripe and PayPal checkout are connected. Stripe card checkout is primary and PayPal is secondary.</SettingCard>

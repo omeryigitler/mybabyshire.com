@@ -200,6 +200,8 @@ export const mapProductForStorefront = (product: any) => {
     description: product.description || '',
     price: Number(product.price),
     salePrice: product.sale_price ? Number(product.sale_price) : null,
+    categoryId: product.category_id || null,
+    categoryName: product.category?.name || null,
     sku: product.sku || '',
     stockQuantity: product.stock_quantity || 0,
     imageUrl: primaryImage?.image_url || '',

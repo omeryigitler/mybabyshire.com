@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Boxes, CheckCircle2, Edit3, Package, Plus, RefreshCcw, Save, Sparkles, Tag, Trash2, Wand2 } from 'lucide-react';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import { Button, PageHeader } from './ui';
 
 type Category = {
   id: string;
@@ -152,18 +153,13 @@ export const AdminCategories = () => {
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
-        <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute right-10 bottom-6 w-10 rotate-12 opacity-35 mix-blend-multiply" alt="" />
-        <div className="relative z-10 flex items-center justify-between gap-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light"><Sparkles className="h-4 w-4" /> Catalog groups</div>
-            <h1 className="font-serif text-5xl leading-none text-boutique-brown">Categories</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">Create storefront categories and assign products to them from the product editor.</p>
-          </div>
-          <button onClick={loadData} disabled={isLoading} className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-5 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50"><RefreshCcw className="h-4 w-4" /> Refresh</button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Catalog groups"
+        icon={Sparkles}
+        title="Categories"
+        description="Create storefront categories and assign products to them from the product editor."
+        actions={<Button variant="secondary" icon={RefreshCcw} onClick={loadData} disabled={isLoading}>Refresh</Button>}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard title="Active Products" count={isLoading ? '-' : stats.active} note="Visible gifts in the storefront" icon={CheckCircle2} />

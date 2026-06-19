@@ -4,20 +4,7 @@ import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { CardDesignFrame } from '../components/CardDesignFrame';
-
-const StatCard = ({ title, value, note, icon: Icon }: { title: string; value: string | number; note: string; icon: React.ComponentType<{ className?: string }> }) => (
-  <div className="relative overflow-hidden rounded-[1.7rem] border border-boutique-brown/10 bg-white/80 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
-    <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-8 -top-10 w-32 opacity-25 mix-blend-multiply" alt="" />
-    <div className="relative z-10 flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">{title}</p>
-        <p className="mt-4 font-serif text-4xl leading-none text-boutique-brown">{value}</p>
-        <p className="mt-2 text-xs text-boutique-brown-light">{note}</p>
-      </div>
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm"><Icon className="h-5 w-5" /></div>
-    </div>
-  </div>
-);
+import { Button, PageHeader, StatCard } from './ui';
 
 const StatusBadge = ({ status }: { status?: string }) => {
   const value = status || 'active';
@@ -89,27 +76,18 @@ export const AdminProducts = () => {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply" alt="" />
-        <img src="/toy-abc-blocks.png" className="pointer-events-none absolute right-12 bottom-5 w-16 -rotate-6 opacity-35 mix-blend-multiply" alt="" />
-        <div className="relative z-10 flex items-center justify-between gap-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light">
-              <Sparkles className="h-4 w-4" /> Product studio
-            </div>
-            <h1 className="font-serif text-5xl leading-none text-boutique-brown">Products</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">Manage MY BABY SHIRE gifts, product images, pricing, visibility, and personalization readiness.</p>
-          </div>
-          <Link to="/admin/products/new" className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood">
-            <Plus className="h-4 w-4" /> Add Product
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Product studio"
+        icon={Sparkles}
+        title="Products"
+        description="Manage MY BABY SHIRE gifts, product images, pricing, visibility, and personalization readiness."
+        actions={<Link to="/admin/products/new"><Button variant="primary" icon={Plus}>Add Product</Button></Link>}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Total Products" value={isLoading ? '—' : products.length} icon={Package} note="All gifts in the catalog" />
-        <StatCard title="Active" value={isLoading ? '—' : activeProducts} icon={Star} note="Visible products ready to sell" />
-        <StatCard title="Draft / Personalized" value={isLoading ? '—' : `${draftProducts} / ${personalizedProducts}`} icon={Wand2} note="Drafts and custom gifts" />
+        <StatCard label="Total Products" value={isLoading ? '—' : products.length} icon={Package} hint="All gifts in the catalog" />
+        <StatCard label="Active" value={isLoading ? '—' : activeProducts} icon={Star} tone="green" hint="Visible products ready to sell" />
+        <StatCard label="Draft / Personalized" value={isLoading ? '—' : `${draftProducts} / ${personalizedProducts}`} icon={Wand2} tone="blue" hint="Drafts and custom gifts" />
       </div>
 
       <div className="overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/82 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">

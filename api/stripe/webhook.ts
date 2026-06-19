@@ -1,7 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { sendPaymentConfirmedEmail } from '../../lib/email.js';
+import { decrementInventoryForOrder } from '../../lib/checkout.js';
+import { incrementCouponRedemption } from '../../lib/coupons.js';
 import { prisma } from '../../lib/prisma.js';
+
+const parseSnapshot = (value?: string | null) => {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+};
 
 export const config = {
   api: {
@@ -97,6 +107,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         throw new Error('Stripe order metadata did not match a local order.');
       }
 
+      // Idempotency: Stripe retries webhooks, so skip side effects if this
+      // order was already marked paid (prevents duplicate emails and stock loss).
+      if (order.payment_status === 'paid') {
+        return res.status(200).json({ received: true, duplicate: true });
+      }
+
       assertStripeSessionMatchesOrder(session, order);
 
       const updatedOrder = await prisma.orders.update({
@@ -110,6 +126,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       if (updatedOrder) {
+        await decrementInventoryForOrder(updatedOrder.items);
+        await incrementCouponRedemption(parseSnapshot(updatedOrder.personalization_data_json)?.couponCode);
         await sendConfirmationForOrder(updatedOrder);
       }
     }

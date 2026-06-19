@@ -16,6 +16,7 @@ import {
 import {
   buildVerifiedCheckout,
   createPendingOrderFromCheckout,
+  decrementInventoryForOrder,
   getAbsoluteImageUrl as getCheckoutAbsoluteImageUrl,
   isCheckoutValidationError,
   toCents as checkoutToCents,
@@ -26,6 +27,7 @@ import {
   sendOrderShippedEmail,
   sendPaymentConfirmedEmail,
 } from "../lib/email.js";
+import { incrementCouponRedemption, resolveCoupon } from "../lib/coupons.js";
 import {
   CLOUDINARY_PRODUCT_FOLDER,
   isUploadValidationError,
@@ -383,8 +385,13 @@ const mapOrderForAdmin = (order: any) => {
     shippingMethod: snapshot?.shippingMethod?.label || null,
     shippingService: snapshot?.shippingMethod?.service || null,
     customer: snapshot?.customer || null,
+    giftMessage: snapshot?.giftMessage || null,
     subtotal: snapshot?.subtotal || null,
+    discount: snapshot?.discount || null,
+    couponCode: snapshot?.couponCode || null,
     shipping: snapshot?.shipping || null,
+    tax: snapshot?.tax || null,
+    taxLabel: snapshot?.taxLabel || null,
     createdAt: order.created_at,
     items: order.items.map((item: any) => ({
       id: item.id,
@@ -790,7 +797,20 @@ router.get("/products", async (req, res) => {
       orderBy: { created_at: "asc" },
     });
 
-    res.json(products.map(mapProductForStorefront));
+    const summaries = await getApprovedReviewSummaries(
+      products.map((product) => product.id),
+    );
+
+    res.json(
+      products.map((product) => {
+        const summary = summaries.get(product.id);
+        return {
+          ...mapProductForStorefront(product),
+          ratingAverage: summary?.average || 0,
+          ratingCount: summary?.count || 0,
+        };
+      }),
+    );
   } catch (error) {
     console.error("Failed to fetch products", error);
     res.status(500).json({
@@ -814,11 +834,334 @@ router.get("/products/:slug", async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    res.json(mapProductForStorefront(product));
+    const summaries = await getApprovedReviewSummaries([product.id]);
+    const summary = summaries.get(product.id);
+
+    res.json({
+      ...mapProductForStorefront(product),
+      ratingAverage: summary?.average || 0,
+      ratingCount: summary?.count || 0,
+    });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch product" });
   }
 });
+
+// ---------------------------------------------------------
+// Product Reviews
+// ---------------------------------------------------------
+const REVIEW_STATUSES = ["pending", "approved", "rejected"];
+
+// Aggregate approved ratings per product. Degrades to an empty map if the
+// reviews table is not present yet (e.g. before the migration is applied).
+const getApprovedReviewSummaries = async (productIds: string[]) => {
+  const map = new Map<string, { average: number; count: number }>();
+  const ids = Array.from(new Set(productIds.filter(Boolean)));
+  if (!ids.length) return map;
+
+  try {
+    const grouped = await prisma.product_reviews.groupBy({
+      by: ["product_id"],
+      where: { product_id: { in: ids }, status: "approved" },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+
+    for (const row of grouped) {
+      map.set(row.product_id, {
+        average: Math.round((row._avg.rating || 0) * 10) / 10,
+        count: row._count._all,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to load review summaries", error);
+  }
+
+  return map;
+};
+
+const mapReviewPublic = (review: any) => ({
+  id: review.id,
+  authorName: review.author_name,
+  rating: review.rating,
+  title: review.title || "",
+  body: review.body || "",
+  createdAt: review.created_at,
+});
+
+const mapReviewAdmin = (review: any) => ({
+  id: review.id,
+  productId: review.product_id,
+  productName: review.product?.name || null,
+  productSlug: review.product?.slug || null,
+  authorName: review.author_name,
+  authorEmail: review.author_email || "",
+  rating: review.rating,
+  title: review.title || "",
+  body: review.body || "",
+  status: review.status,
+  createdAt: review.created_at,
+});
+
+// Public: list approved reviews for a product
+router.get("/products/:slug/reviews", async (req, res) => {
+  try {
+    const product = await prisma.products.findUnique({
+      where: { slug: req.params.slug },
+      select: { id: true },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const reviews = await prisma.product_reviews.findMany({
+      where: { product_id: product.id, status: "approved" },
+      orderBy: { created_at: "desc" },
+    });
+
+    const summaries = await getApprovedReviewSummaries([product.id]);
+    const summary = summaries.get(product.id);
+
+    res.json({
+      summary: {
+        average: summary?.average || 0,
+        count: summary?.count || 0,
+      },
+      reviews: reviews.map(mapReviewPublic),
+    });
+  } catch (error) {
+    console.error("Failed to fetch reviews", error);
+    res.json({ summary: { average: 0, count: 0 }, reviews: [] });
+  }
+});
+
+// Public: submit a review (held for admin approval)
+router.post("/reviews", async (req, res) => {
+  try {
+    const { productId, slug, name, email, rating, title, body } = req.body || {};
+
+    const ratingValue = Math.round(Number(rating));
+    if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+      return res.status(400).json({ error: "Please choose a rating from 1 to 5 stars." });
+    }
+
+    const authorName = String(name || "").trim();
+    if (!authorName || authorName.length > 80) {
+      return res.status(400).json({ error: "Please enter your name." });
+    }
+
+    const reviewBody = String(body || "").trim();
+    if (reviewBody.length > 2000) {
+      return res.status(400).json({ error: "Your review is too long." });
+    }
+
+    const reviewTitle = String(title || "").trim().slice(0, 120) || null;
+    const authorEmail = String(email || "").trim().toLowerCase().slice(0, 180) || null;
+
+    const product = await prisma.products.findFirst({
+      where: {
+        status: "active",
+        ...(productId ? { id: String(productId) } : { slug: String(slug || "") }),
+      },
+      select: { id: true },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    await prisma.product_reviews.create({
+      data: {
+        product_id: product.id,
+        author_name: authorName,
+        author_email: authorEmail,
+        rating: ratingValue,
+        title: reviewTitle,
+        body: reviewBody || null,
+        status: "pending",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Thank you! Your review was submitted and will appear once approved.",
+    });
+  } catch (error) {
+    console.error("Failed to submit review", error);
+    res.status(500).json({ error: "Could not submit your review. Please try again." });
+  }
+});
+
+// Admin: list reviews (optionally filtered by status)
+router.get("/admin/reviews", requireAdmin, async (req, res) => {
+  try {
+    const status = String(req.query.status || "").trim();
+    const reviews = await prisma.product_reviews.findMany({
+      where: REVIEW_STATUSES.includes(status) ? { status } : undefined,
+      include: { product: { select: { name: true, slug: true } } },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(reviews.map(mapReviewAdmin));
+  } catch (error) {
+    console.error("Failed to fetch admin reviews", error);
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
+// Admin: update review status (approve / reject / pending)
+const updateAdminReview = async (req: Request, res: Response) => {
+  try {
+    const reviewId = String(req.params.id || req.query.id || req.body.id || "");
+    const status = String(req.body.status || "").trim();
+
+    if (!reviewId) {
+      return res.status(400).json({ error: "Review id is required." });
+    }
+
+    if (!REVIEW_STATUSES.includes(status)) {
+      return res.status(400).json({ error: "Invalid review status." });
+    }
+
+    const review = await prisma.product_reviews.update({
+      where: { id: reviewId },
+      data: { status },
+      include: { product: { select: { name: true, slug: true } } },
+    });
+
+    res.json(mapReviewAdmin(review));
+  } catch (error) {
+    console.error("Failed to update review", error);
+    res.status(500).json({ error: "Failed to update review" });
+  }
+};
+
+router.put("/admin/reviews", requireAdmin, updateAdminReview);
+router.put("/admin/reviews/:id", requireAdmin, updateAdminReview);
+
+// Admin: delete a review
+const deleteAdminReview = async (req: Request, res: Response) => {
+  try {
+    const reviewId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!reviewId) {
+      return res.status(400).json({ error: "Review id is required." });
+    }
+
+    await prisma.product_reviews.delete({ where: { id: reviewId } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete review", error);
+    res.status(500).json({ error: "Failed to delete review" });
+  }
+};
+
+router.delete("/admin/reviews", requireAdmin, deleteAdminReview);
+router.delete("/admin/reviews/:id", requireAdmin, deleteAdminReview);
+
+// ---------------------------------------------------------
+// Coupons
+// ---------------------------------------------------------
+const mapCoupon = (coupon: any) => ({
+  id: coupon.id,
+  code: coupon.code,
+  type: coupon.type,
+  value: Number(coupon.value),
+  active: coupon.active,
+  minSubtotal: Number(coupon.min_subtotal),
+  maxRedemptions: coupon.max_redemptions,
+  timesRedeemed: coupon.times_redeemed,
+  expiresAt: coupon.expires_at,
+  createdAt: coupon.created_at,
+});
+
+// Public: validate a coupon code against a subtotal (checkout preview)
+router.post("/coupons/validate", async (req, res) => {
+  try {
+    const subtotal = Math.max(0, Number(req.body?.subtotal) || 0);
+    const coupon = await resolveCoupon(req.body?.code, subtotal);
+    if (!coupon) {
+      return res.status(400).json({ error: "Enter a coupon code." });
+    }
+    res.json({ success: true, ...coupon });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message || "Invalid coupon code." });
+  }
+});
+
+const parseCouponBody = (body: any) => {
+  const code = String(body?.code || "").trim().toUpperCase();
+  const type = body?.type === "fixed" ? "fixed" : "percent";
+  const value = Number(body?.value);
+  if (!code) throw new Error("Coupon code is required.");
+  if (!Number.isFinite(value) || value <= 0) throw new Error("Enter a discount value greater than zero.");
+  if (type === "percent" && value > 100) throw new Error("Percent discounts cannot exceed 100%.");
+
+  return {
+    code,
+    type,
+    value,
+    active: body?.active !== false,
+    min_subtotal: Math.max(0, Number(body?.minSubtotal) || 0),
+    max_redemptions:
+      body?.maxRedemptions === null || body?.maxRedemptions === undefined || body?.maxRedemptions === ""
+        ? null
+        : Math.max(1, Math.floor(Number(body.maxRedemptions))),
+    expires_at: body?.expiresAt ? new Date(body.expiresAt) : null,
+  };
+};
+
+router.get("/admin/coupons", requireAdmin, async (req, res) => {
+  try {
+    const coupons = await prisma.coupons.findMany({ orderBy: { created_at: "desc" } });
+    res.json(coupons.map(mapCoupon));
+  } catch (error) {
+    console.error("Failed to fetch coupons", error);
+    res.status(500).json({ error: "Failed to fetch coupons" });
+  }
+});
+
+router.post("/admin/coupons", requireAdmin, async (req, res) => {
+  try {
+    const data = parseCouponBody(req.body);
+    const coupon = await prisma.coupons.create({ data });
+    res.json(mapCoupon(coupon));
+  } catch (error) {
+    const message = (error as Error).message || "Failed to create coupon.";
+    res.status(message.includes("Unique constraint") ? 409 : 400).json({
+      error: message.includes("Unique constraint") ? "A coupon with this code already exists." : message,
+    });
+  }
+});
+
+const updateAdminCoupon = async (req: Request, res: Response) => {
+  try {
+    const couponId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!couponId) return res.status(400).json({ error: "Coupon id is required." });
+    const data = parseCouponBody(req.body);
+    const coupon = await prisma.coupons.update({ where: { id: couponId }, data });
+    res.json(mapCoupon(coupon));
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message || "Failed to update coupon." });
+  }
+};
+
+router.put("/admin/coupons", requireAdmin, updateAdminCoupon);
+router.put("/admin/coupons/:id", requireAdmin, updateAdminCoupon);
+
+const deleteAdminCoupon = async (req: Request, res: Response) => {
+  try {
+    const couponId = String(req.params.id || req.query.id || req.body.id || "");
+    if (!couponId) return res.status(400).json({ error: "Coupon id is required." });
+    await prisma.coupons.delete({ where: { id: couponId } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete coupon" });
+  }
+};
+
+router.delete("/admin/coupons", requireAdmin, deleteAdminCoupon);
+router.delete("/admin/coupons/:id", requireAdmin, deleteAdminCoupon);
 
 router.get("/admin/products", requireAdmin, async (req, res) => {
   try {
@@ -1733,11 +2076,36 @@ router.post("/checkout/create-payment", async (req, res) => {
       });
     }
 
+    if (checkout.tax > 0) {
+      lineItems.push({
+        quantity: 1,
+        price_data: {
+          currency: checkout.currency.toLowerCase(),
+          unit_amount: checkoutToCents(checkout.tax),
+          product_data: {
+            name: checkout.taxBreakdown.label,
+          },
+        },
+      });
+    }
+
+    let stripeDiscounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
+    if (checkout.discount > 0) {
+      const stripeCoupon = await stripe.coupons.create({
+        amount_off: checkoutToCents(checkout.discount),
+        currency: checkout.currency.toLowerCase(),
+        duration: "once",
+        name: checkout.couponCode ? `Coupon ${checkout.couponCode}` : "Discount",
+      });
+      stripeDiscounts = [{ coupon: stripeCoupon.id }];
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       locale: "en",
       customer_email: checkout.customer.email,
       line_items: lineItems,
+      ...(stripeDiscounts ? { discounts: stripeDiscounts } : {}),
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&order=${encodeURIComponent(order.order_number)}`,
       cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
       payment_method_types: ["card"],
@@ -1775,7 +2143,10 @@ router.post("/checkout/create-payment", async (req, res) => {
       sessionId: session.id,
       currency: order.currency,
       subtotal: checkout.subtotal,
+      discount: checkout.discount,
+      couponCode: checkout.couponCode,
       shipping: checkout.shipping,
+      tax: checkout.tax,
       shippingMethod: checkout.shippingMethod,
       total: Number(order.total_amount) || 0,
       message: "Stripe Checkout session created.",
@@ -1834,6 +2205,18 @@ const createPayPalOrderHandler = async (req: Request, res: Response) => {
                   currency_code: checkout.currency,
                   value: checkout.shipping.toFixed(2),
                 },
+                tax_total: {
+                  currency_code: checkout.currency,
+                  value: checkout.tax.toFixed(2),
+                },
+                ...(checkout.discount > 0
+                  ? {
+                      discount: {
+                        currency_code: checkout.currency,
+                        value: checkout.discount.toFixed(2),
+                      },
+                    }
+                  : {}),
               },
             },
               items: checkout.items.map((item) => ({
@@ -1925,6 +2308,18 @@ const capturePayPalOrderHandler = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Order not found." });
     }
 
+    // Idempotency: if this order is already paid, don't capture again (PayPal
+    // would reject a double capture) and don't re-run side effects.
+    if (existingOrder.payment_status === "paid") {
+      return res.json({
+        success: true,
+        status: "COMPLETED",
+        orderNumber: existingOrder.order_number,
+        paypalOrderId: existingOrder.payment_reference,
+        duplicate: true,
+      });
+    }
+
     const response = await fetch(
       `${getPayPalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(token)}/capture`,
       {
@@ -1959,6 +2354,8 @@ const capturePayPalOrderHandler = async (req: Request, res: Response) => {
     });
 
     if (isCompleted) {
+      await decrementInventoryForOrder(updatedOrder.items);
+      await incrementCouponRedemption(parseJson(updatedOrder.personalization_data_json)?.couponCode);
       await sendPaymentConfirmedEmail({
         to: updatedOrder.customer_email,
         customerName: updatedOrder.customer_name,

@@ -16,6 +16,7 @@ import {
   Truck,
   UserRound,
 } from "lucide-react";
+import { Button, PageHeader } from "./ui";
 import { getAdminToken } from "./adminAuth";
 import {
   CARRIER_CONFIGS,
@@ -63,8 +64,13 @@ type AdminOrder = {
     state?: string;
     zip?: string;
   } | null;
+  giftMessage?: string | null;
   subtotal?: number | null;
+  discount?: number | null;
+  couponCode?: string | null;
   shipping?: number | null;
+  tax?: number | null;
+  taxLabel?: string | null;
   items: OrderItem[];
 };
 
@@ -461,40 +467,14 @@ export const AdminOrders = () => {
     (shipmentNeedsTracking && !draftTrackingReference.trim());
 
   return (
-    <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/78 p-7 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <img
-          src="/cloud-watercolor-pink.png"
-          className="pointer-events-none absolute -right-12 -top-14 w-64 opacity-30 mix-blend-multiply"
-          alt=""
-        />
-        <img
-          src="/toy-wooden-star-solid.png"
-          className="pointer-events-none absolute right-10 bottom-6 w-10 rotate-12 opacity-35 mix-blend-multiply"
-          alt=""
-        />
-        <div className="relative z-10 flex items-center justify-between gap-6">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown-light">
-              <Sparkles className="h-4 w-4" /> Gift requests
-            </div>
-            <h1 className="font-serif text-5xl leading-none text-boutique-brown">
-              Orders
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">
-              Review customer gift requests, personalization details, payment
-              providers, and shipping progress.
-            </p>
-          </div>
-          <button
-            onClick={loadOrders}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood disabled:opacity-50"
-          >
-            <RefreshCcw className="h-4 w-4" /> Refresh
-          </button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Gift requests"
+        icon={Sparkles}
+        title="Orders"
+        description="Review customer gift requests, personalization details, payment providers, and shipping progress."
+        actions={<Button variant="secondary" icon={RefreshCcw} onClick={loadOrders} disabled={isLoading}>Refresh</Button>}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
@@ -700,6 +680,13 @@ export const AdminOrders = () => {
                       </p>
                     )}
                   </DetailCard>
+                  {selectedOrder.giftMessage && (
+                    <DetailCard icon={Gift} title="Gift message">
+                      <p className="whitespace-pre-line rounded-2xl bg-[#fff4df] px-4 py-3 text-sm italic leading-relaxed text-boutique-brown">
+                        “{selectedOrder.giftMessage}”
+                      </p>
+                    </DetailCard>
+                  )}
                   <DetailCard icon={CreditCard} title="Payment">
                     <div className="flex flex-wrap gap-2">
                       <span
@@ -1104,6 +1091,18 @@ export const AdminOrders = () => {
                         ${Number(selectedOrder.shipping || 0).toFixed(2)}
                       </span>
                     </div>
+                    {Number(selectedOrder.discount || 0) > 0 && (
+                      <div className="flex justify-between text-green-700">
+                        <span>Discount {selectedOrder.couponCode ? `(${selectedOrder.couponCode})` : ""}</span>
+                        <span>-${Number(selectedOrder.discount || 0).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {Number(selectedOrder.tax || 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span>{selectedOrder.taxLabel || "Sales Tax"}</span>
+                        <span>${Number(selectedOrder.tax || 0).toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span>Carrier</span>
                       <span className="font-bold text-boutique-brown">

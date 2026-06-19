@@ -94,6 +94,38 @@ model products {
   personalization_fields personalization_fields[]
   cart_items             cart_items[]
   order_items            order_items[]
+  reviews                product_reviews[]
+}
+
+model product_reviews {
+  id           String   @id @default(uuid())
+  product_id   String
+  author_name  String
+  author_email String?
+  rating       Int      // 1-5
+  title        String?
+  body         String?
+  status       String   @default("pending") // pending, approved, rejected
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  product products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id, status])
+}
+
+model coupons {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  type            String    @default("percent") // percent | fixed
+  value           Decimal
+  active          Boolean   @default(true)
+  min_subtotal    Decimal   @default(0)
+  max_redemptions Int?
+  times_redeemed  Int       @default(0)
+  expires_at      DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 }
 
 model product_images {

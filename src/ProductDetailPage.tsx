@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useSeo } from './utils/seo';
 import { ArrowLeft, Gift, Heart, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
 import { CartDrawer } from './components/CartDrawer';
 import { CardDesignFrame } from './components/CardDesignFrame';
 import { PersonalizationModal } from './components/PersonalizationModal';
 import { BrandLogo } from './components/BrandLogo';
+import { StarRating } from './components/StarRating';
+import { ProductReviews } from './components/ProductReviews';
 import { Product, useStore } from './store/useStore';
 
 export default function ProductDetailPage() {
@@ -52,6 +55,34 @@ export default function ProductDetailPage() {
     }
     addProductWithoutPersonalization();
   };
+
+  const productJsonLd = useMemo(() => {
+    if (!product) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description,
+      image: product.imageUrl || undefined,
+      offers: {
+        '@type': 'Offer',
+        price: product.price,
+        priceCurrency: 'USD',
+        availability: (product.stockQuantity ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/MadeToOrder',
+      },
+      ...((product.ratingCount ?? 0) > 0
+        ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.ratingAverage, reviewCount: product.ratingCount } }
+        : {}),
+    };
+  }, [product]);
+
+  useSeo({
+    title: product?.name,
+    description: product?.description || undefined,
+    image: product?.imageUrl || undefined,
+    type: 'product',
+    jsonLd: productJsonLd,
+  });
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-boutique-bg font-sans text-boutique-brown">
@@ -125,6 +156,7 @@ export default function ProductDetailPage() {
         )}
 
         {product && (
+          <>
           <div className="relative grid gap-8 md:grid-cols-[52%_48%] md:items-center">
             <img loading="lazy" src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-20 top-0 z-0 hidden w-64 opacity-55 mix-blend-multiply md:block" alt="" />
             <img loading="lazy" src="/toy-wooden-star-teether.png" className="pointer-events-none absolute right-[8%] top-0 z-0 hidden w-20 rotate-12 opacity-70 mix-blend-multiply md:block" alt="" />
@@ -152,6 +184,15 @@ export default function ProductDetailPage() {
                 )}
 
                 <h1 className="font-serif text-4xl leading-tight text-boutique-brown md:text-6xl">{product.name}</h1>
+
+                {(product.ratingCount ?? 0) > 0 && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <StarRating value={product.ratingAverage ?? 0} size={18} />
+                    <span className="text-sm font-bold text-boutique-brown">{(product.ratingAverage ?? 0).toFixed(1)}</span>
+                    <span className="text-sm text-boutique-brown-light">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                  </div>
+                )}
+
                 <p className="mt-5 text-lg leading-relaxed text-boutique-brown-light">{product.description}</p>
 
                 <div className="mt-6 flex items-end gap-3">
@@ -193,6 +234,8 @@ export default function ProductDetailPage() {
               </div>
             </section>
           </div>
+          <ProductReviews slug={product.slug || slug || ''} productId={product.id} />
+          </>
         )}
       </main>
     </div>

@@ -1,5 +1,6 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { initAnalytics, trackPageView } from './utils/analytics';
 import Storefront from './Storefront';
 import ProductDetailPage from './ProductDetailPage';
 import CheckoutPage from './CheckoutPage';
@@ -9,12 +10,15 @@ import PaymentCancelPage from './PaymentCancelPage';
 import PayPalSuccessPage from './PayPalSuccessPage';
 import AccountLoginPage from './account/AccountLoginPage';
 import AccountPage from './account/AccountPage';
+import { ShippingPolicyPage, RefundPolicyPage, PrivacyPolicyPage, TermsPage } from './legal/LegalPages';
 
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
 const AdminProducts = lazy(() => import('./admin/AdminProducts').then((module) => ({ default: module.AdminProducts })));
 const ProductForm = lazy(() => import('./admin/ProductForm').then((module) => ({ default: module.ProductForm })));
 const AdminOrders = lazy(() => import('./admin/AdminOrders').then((module) => ({ default: module.AdminOrders })));
+const AdminReviews = lazy(() => import('./admin/AdminReviews').then((module) => ({ default: module.AdminReviews })));
+const AdminCoupons = lazy(() => import('./admin/AdminCoupons').then((module) => ({ default: module.AdminCoupons })));
 const AdminCategories = lazy(() => import('./admin/AdminCategories').then((module) => ({ default: module.AdminCategories })));
 const AdminCustomers = lazy(() => import('./admin/AdminCustomers').then((module) => ({ default: module.AdminCustomers })));
 const AdminImageLibrary = lazy(() => import('./admin/AdminImageLibrary').then((module) => ({ default: module.AdminImageLibrary })));
@@ -27,9 +31,17 @@ const RouteFallback = () => (
   </div>
 );
 
+function RouteAnalytics() {
+  const location = useLocation();
+  useEffect(() => { initAnalytics(); }, []);
+  useEffect(() => { trackPageView(location.pathname + location.search); }, [location.pathname, location.search]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <RouteAnalytics />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Storefront />} />
@@ -42,6 +54,10 @@ export default function App() {
           <Route path="/login" element={<AccountLoginPage />} />
           <Route path="/account/login" element={<Navigate to="/login" replace />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/policies/shipping" element={<ShippingPolicyPage />} />
+          <Route path="/policies/returns" element={<RefundPolicyPage />} />
+          <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/policies/terms" element={<TermsPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
@@ -50,6 +66,8 @@ export default function App() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="templates" element={<PersonalizationTemplateManager />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="reviews" element={<AdminReviews />} />
+            <Route path="coupons" element={<AdminCoupons />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="images" element={<AdminImageLibrary />} />
             <Route path="settings" element={<AdminSettings />} />

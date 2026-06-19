@@ -269,6 +269,17 @@ export default function Storefront() {
               <Link to="/policies/terms" className="hover:text-boutique-wood transition-colors">Terms</Link>
             </nav>
           </div>
+          <p className="mt-4 text-center text-[11px] text-boutique-brown-light/80">
+            Designed &amp; Developed by{' '}
+            <a
+              href="https://omeryigitler.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-boutique-brown underline decoration-transparent decoration-1 underline-offset-2 transition-all duration-200 hover:text-boutique-wood hover:decoration-boutique-wood/50"
+            >
+              Ömer YİĞİTLER
+            </a>
+          </p>
         </div>
       </footer>
     </div>

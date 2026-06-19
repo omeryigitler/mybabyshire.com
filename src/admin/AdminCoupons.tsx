@@ -178,9 +178,21 @@ export const AdminCoupons = () => {
               <label className={labelClass}>Expires (optional)</label>
               <input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} className={inputClass} />
             </div>
-            <label className="flex items-center gap-2 text-sm font-medium text-boutique-brown">
-              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="h-4 w-4 rounded" /> Active
-            </label>
+            <div className="flex items-center justify-between rounded-2xl border border-boutique-brown/12 bg-[#fffaf3] px-4 py-3">
+              <div>
+                <p className="text-sm font-bold text-boutique-brown">Active</p>
+                <p className="text-[11px] text-boutique-brown-light">{form.active ? 'Customers can use this code' : 'Hidden from checkout'}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.active}
+                onClick={() => setForm({ ...form, active: !form.active })}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${form.active ? 'bg-green-500' : 'bg-boutique-brown/25'}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${form.active ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
             <div className="flex gap-2 pt-1">
               <Button type="submit" variant="primary" icon={Plus} disabled={saving}>{saving ? 'Saving...' : editingId ? 'Update coupon' : 'Create coupon'}</Button>
               {editingId && <Button type="button" variant="ghost" onClick={resetForm}>Cancel</Button>}

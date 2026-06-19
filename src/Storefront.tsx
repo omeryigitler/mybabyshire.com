@@ -114,9 +114,7 @@ export default function Storefront() {
         </div>
       </header>
 
-      <main className="flex-1 relative z-10 flex flex-col items-center justify-start pt-12 md:pt-9 pb-8 md:pb-0 overflow-visible">
-        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 w-[150vw] md:w-[1400px] h-[700px] bg-[radial-gradient(ellipse_at_center,rgba(252,250,246,1)_0%,rgba(252,250,246,0.9)_30%,rgba(252,250,246,0.5)_55%,rgba(252,250,246,0)_80%)] -translate-y-1/2 pointer-events-none -z-10"></div>
-
+      <main className="flex-1 relative z-10 flex flex-col items-center justify-start pt-12 md:pt-16 pb-8 md:pb-0 overflow-visible">
         <DecorativeElement src="/decorative-moon-star.png" className="hidden sm:block top-[2%] left-[4%] md:left-[8%] opacity-90 drop-shadow-md" rotate="-15deg" size="w-32 md:w-48" />
         <DecorativeElement src="/cloud-watercolor-pink.png" className="hidden sm:block top-[20%] left-[8%] md:left-[11%] opacity-95" rotate="5deg" size="w-40 md:w-64" />
         <DecorativeElement src="/toy-teddy-ring-teether.png" className="top-[35%] left-[2%] md:left-[8%] opacity-90 drop-shadow-md" rotate="-5deg" size="w-24 md:w-36" />
@@ -126,11 +124,14 @@ export default function Storefront() {
         <DecorativeElement src="/toy-wooden-star-solid.png" className="hidden sm:block top-[40%] right-[6%] md:right-[10%] opacity-80 drop-shadow-sm" rotate="-20deg" size="w-12 md:w-16" />
         <DecorativeElement src="/toy-pull-duck.png" className="top-[45%] right-[2%] md:right-[10%] opacity-90 drop-shadow-md" rotate="-2deg" size="w-28 md:w-44" />
 
-        <div id="gifts" className="scroll-mt-24 text-center max-w-4xl px-6 mb-6 md:mb-3 relative z-10 mt-0">
-          <h1 className="font-serif text-[42px] leading-[1.15] md:text-[64px] text-boutique-brown mb-5 md:mb-4">
+        <div id="gifts" className="scroll-mt-24 text-center max-w-4xl px-6 mb-6 md:mb-4 relative z-10 mt-0">
+          <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/70 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown-light shadow-sm backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-boutique-wood" /> Handmade · Personalized keepsakes
+          </span>
+          <h1 className="font-serif text-[44px] leading-[1.08] md:text-[68px] text-boutique-brown mb-5 md:mb-4 tracking-[-0.01em]">
             <span className="relative inline-block">Personalized Baby Gifts<span className="absolute -right-10 -top-2 scale-75 md:scale-100"><SparkleIcon /></span></span><br/>Made with Love
           </h1>
-          <p className="font-sans text-lg md:text-[20px] text-boutique-brown-light max-w-3xl mx-auto leading-relaxed">Welcome to our magical nursery boutique. Discover bespoke heirlooms, exquisitely soft blankets, and heartfelt gifts customized just for them.</p>
+          <p className="font-sans text-lg md:text-[20px] text-boutique-brown-light max-w-2xl mx-auto leading-relaxed">Bespoke heirlooms, exquisitely soft blankets, and heartfelt keepsakes — embroidered with your little one's name and made to treasure.</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6 mb-5 md:mb-0 justify-center w-full max-w-2xl px-4 relative z-10">
@@ -144,25 +145,38 @@ export default function Storefront() {
           </button>
         </div>
 
+        <div className="relative z-10 mb-8 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 text-[13px] font-medium text-boutique-brown-light md:mb-4">
+          <span className="inline-flex items-center gap-1.5">🧵 Hand-embroidered</span>
+          <span className="hidden h-1 w-1 rounded-full bg-boutique-brown/25 sm:inline-block" />
+          <span className="inline-flex items-center gap-1.5">🇺🇸 Ships across the US</span>
+          <span className="hidden h-1 w-1 rounded-full bg-boutique-brown/25 sm:inline-block" />
+          <span className="inline-flex items-center gap-1.5">🎁 Gift-ready packaging</span>
+        </div>
+
         {productsLoading && <p className="text-boutique-brown-light text-sm mb-6 relative z-20">Loading products...</p>}
 
         <div id="shop" className="scroll-mt-24 w-full max-w-[1620px] mx-auto px-4 md:px-8 z-20 relative">
-          <div className="mb-8 flex flex-col gap-4 rounded-[1.6rem] border border-boutique-brown/10 bg-white/70 p-4 shadow-sm backdrop-blur-sm md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-sm">
+          <div className="mb-7 text-center">
+            <h2 className="font-serif text-3xl text-boutique-brown md:text-[40px]">Shop the Collection</h2>
+            <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Personalized gifts, ready to make their own.</p>
+          </div>
+
+          <div className="mb-9 flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-xs">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/40" />
               <input
                 ref={searchInputRef}
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search gifts..."
-                className="w-full rounded-full border border-boutique-brown/12 bg-white py-2.5 pl-10 pr-9 text-sm text-boutique-brown shadow-sm outline-none placeholder:text-boutique-brown/35 focus:ring-2 focus:ring-boutique-wood/30"
+                className="w-full rounded-full border border-boutique-brown/15 bg-white/90 py-2.5 pl-10 pr-9 text-sm text-boutique-brown shadow-sm outline-none placeholder:text-boutique-brown/35 focus:border-boutique-wood/40 focus:ring-2 focus:ring-boutique-wood/25"
               />
               {searchTerm && (
                 <button type="button" onClick={() => setSearchTerm('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-boutique-brown/40 hover:text-boutique-brown"><X className="h-4 w-4" /></button>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
               {categories.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {['all', ...categories].map((category) => (
@@ -173,7 +187,7 @@ export default function Storefront() {
                       className={`rounded-full px-3.5 py-2 text-xs font-bold transition-colors ${
                         activeCategory === category
                           ? 'bg-boutique-brown text-white shadow-sm'
-                          : 'border border-boutique-brown/12 bg-white text-boutique-brown-light hover:bg-[#fff4df]'
+                          : 'border border-boutique-brown/12 bg-white/80 text-boutique-brown-light hover:bg-[#fff4df]'
                       }`}
                     >
                       {category === 'all' ? 'All' : category}
@@ -184,7 +198,7 @@ export default function Storefront() {
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-full border border-boutique-brown/12 bg-white px-4 py-2.5 text-sm font-medium text-boutique-brown shadow-sm outline-none focus:ring-2 focus:ring-boutique-wood/30"
+                className="rounded-full border border-boutique-brown/15 bg-white/90 px-4 py-2.5 text-sm font-medium text-boutique-brown shadow-sm outline-none focus:ring-2 focus:ring-boutique-wood/25"
               >
                 <option value="featured">Featured</option>
                 <option value="price-asc">Price: Low to High</option>

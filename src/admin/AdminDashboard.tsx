@@ -145,7 +145,7 @@ export const AdminDashboard = () => {
           )}
         </Panel>
 
-        <div className="space-y-5">
+        <div className="flex flex-col gap-5">
           <div className="relative overflow-hidden rounded-2xl border border-boutique-brown/10 bg-boutique-brown p-5 text-white shadow-[0_14px_40px_rgba(58,37,26,0.16)]">
             <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-20 mix-blend-screen" alt="" />
             <div className="relative z-10 mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5" /><h2 className="text-[15px] font-bold tracking-tight">Quick Actions</h2></div>
@@ -157,7 +157,7 @@ export const AdminDashboard = () => {
             </div>
           </div>
 
-          <Panel title="Catalog health">
+          <Panel title="Catalog health" className="flex flex-1 flex-col" bodyClassName="flex flex-1 flex-col justify-center p-5">
             <div className="space-y-2.5 text-sm">
               <div className="flex items-center justify-between"><span className="text-boutique-brown-light">Active products</span><span className="font-bold text-boutique-brown">{isLoading ? '—' : stats.activeProducts}</span></div>
               <div className="flex items-center justify-between"><span className="text-boutique-brown-light">Drafts</span><span className="font-bold text-boutique-brown">{isLoading ? '—' : stats.draftProducts}</span></div>

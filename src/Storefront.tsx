@@ -224,16 +224,16 @@ export default function Storefront() {
         </div>
       </main>
 
-      <footer id="our-story" className="scroll-mt-24 w-full bg-boutique-bg border-t border-boutique-brown/10 relative z-20 pt-6 md:pt-8 pb-6 md:pb-8 mt-6">
+      <footer id="our-story" className="scroll-mt-24 w-full bg-boutique-bg border-t border-boutique-brown/10 relative z-20 pt-4 md:pt-5 pb-4 mt-4">
         <div className="max-w-[1300px] mx-auto px-6 grid grid-cols-1 items-start md:grid-cols-4 md:divide-x divide-y md:divide-y-0 divide-boutique-brown/15 relative z-10">
-          <div className="flex flex-col items-start gap-3 py-4 md:py-0 md:pr-10">
-             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group/logo mb-1 text-left" aria-label="Back to MY BABY SHIRE home">
-               <BrandLogo variant="footer" />
+          <div className="flex flex-col items-start gap-2 py-2.5 md:py-0 md:pr-10">
+             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group/logo text-left" aria-label="Back to MY BABY SHIRE home">
+               <BrandLogo variant="footer" className="!w-[140px] sm:!w-[160px] md:!w-[180px]" />
              </button>
-             <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[13px] opacity-90">Crafting expertly personalized baby gifts and nursery essentials with love and care.</p>
+             <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[12px] opacity-90">Crafting expertly personalized baby gifts and nursery essentials with love and care.</p>
           </div>
 
-          <div className="flex flex-col gap-3 py-4 md:py-1 md:px-10">
+          <div className="flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SHOP <div className="flex items-end gap-2 translate-y-[-2px]"><img src="/toy-abc-blocks.png" className="w-[42px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /><img src="/toy-wooden-train.png" className="w-[63px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /></div></h4>
             <div className="flex flex-col gap-2">
               <button type="button" onClick={() => scrollToSection('shop')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">New Arrivals</button>
@@ -241,7 +241,7 @@ export default function Storefront() {
             </div>
           </div>
 
-          <div id="personalization" className="scroll-mt-24 flex flex-col gap-3 py-4 md:py-1 md:px-10">
+          <div id="personalization" className="scroll-mt-24 flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SUPPORT <img src="/toy-drum-blue.png" className="w-[60px] h-auto object-contain mix-blend-multiply translate-y-[-2px] drop-shadow-sm" alt="" /></h4>
             <div className="flex flex-col gap-2">
               <Link to="/account" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">My Account</Link>
@@ -252,7 +252,7 @@ export default function Storefront() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 py-4 md:py-1 md:pl-10 relative">
+          <div className="flex flex-col gap-2 py-2.5 md:py-1 md:pl-10 relative">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">STAY CONNECTED <img src="/toy-teddy-ring-teether.png" className="w-[51px] h-auto object-contain mix-blend-multiply translate-y-[-2px] drop-shadow-sm" alt="" /></h4>
             <p className="font-sans text-boutique-brown-light leading-relaxed opacity-90 text-[13px] md:text-[14px] max-w-[240px]">Join our newsletter for magical updates and early access to new collections.</p>
             <img src="/cloud-watercolor-blue-light.png" className="absolute -bottom-10 right-[0%] md:right-[-10%] w-[140px] h-auto object-contain mix-blend-multiply opacity-50 z-0 pointer-events-none md:translate-x-[50%]" alt="" />

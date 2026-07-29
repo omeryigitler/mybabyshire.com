@@ -8,6 +8,7 @@ dotenv.config();
 async function startServer() {
   const { default: apiRoutes } = await import("./server/api.js");
   const { default: accountRoutes } = await import("./server/accountApi.js");
+  const { getCatalogArtwork } = await import("./lib/catalogArtwork.js");
   const {
     ensureCuratedCatalog,
     isCuratedCatalogReadRequest,
@@ -27,6 +28,12 @@ async function startServer() {
   });
 
   app.use(express.json());
+
+  app.get("/catalog/:name.webp", (req, res) => {
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    return res.status(200).send(getCatalogArtwork(req.params.name));
+  });
 
   app.use(async (req, res, next) => {
     if (!isCuratedCatalogReadRequest(req.method, req.path)) {

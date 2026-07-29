@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, ShoppingBag, UserRound, X } from 'lucide-react';
+import { Check, ChevronDown, Search, ShoppingBag, UserRound, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { CartDrawer } from './components/CartDrawer';
@@ -7,6 +7,13 @@ import { PersonalizationModal } from './components/PersonalizationModal';
 import { ProductCard } from './components/ProductCard';
 import { BrandLogo } from './components/BrandLogo';
 import { useSeo } from './utils/seo';
+
+const SORT_OPTIONS = [
+  { value: 'featured', label: 'Featured' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'rating', label: 'Top Rated' },
+] as const;
 
 const DecorativeElement = ({ src, className, size = "w-20 md:w-24 h-auto", rotate = "0deg" }: any) => (
   <div
@@ -32,7 +39,9 @@ export default function Storefront() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -66,6 +75,7 @@ export default function Storefront() {
     return result;
   }, [products, searchTerm, activeCategory, sortBy]);
 
+  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === sortBy)?.label || 'Featured';
   const hasFilters = Boolean(searchTerm.trim()) || activeCategory !== 'all' || sortBy !== 'featured';
 
   const productRows = filteredProducts.reduce<typeof products[]>((rows, product, index) => {
@@ -82,6 +92,28 @@ export default function Storefront() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (!isSortMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!sortMenuRef.current?.contains(event.target as Node)) {
+        setIsSortMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsSortMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSortMenuOpen]);
 
   return (
     <div className="w-full min-h-screen bg-boutique-bg font-sans overflow-x-clip relative selection:bg-boutique-wood-light">
@@ -195,16 +227,52 @@ export default function Storefront() {
                   ))}
                 </div>
               )}
-              <select
-                value={sortBy}
-                onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-full border border-boutique-brown/15 bg-white/90 px-4 py-2.5 text-sm font-medium text-boutique-brown shadow-sm outline-none focus:ring-2 focus:ring-boutique-wood/25"
-              >
-                <option value="featured">Featured</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating">Top Rated</option>
-              </select>
+
+              <div ref={sortMenuRef} className="relative min-w-[190px]">
+                <button
+                  type="button"
+                  onClick={() => setIsSortMenuOpen((isOpen) => !isOpen)}
+                  aria-haspopup="listbox"
+                  aria-expanded={isSortMenuOpen}
+                  className="flex w-full items-center justify-between gap-3 rounded-full border border-boutique-brown/15 bg-white/90 px-4 py-2.5 text-left text-sm font-semibold text-boutique-brown shadow-sm outline-none transition-all hover:border-boutique-wood/35 hover:bg-[#fffaf3] focus:ring-2 focus:ring-boutique-wood/25"
+                >
+                  <span>{selectedSortLabel}</span>
+                  <ChevronDown className={`h-4 w-4 text-boutique-wood transition-transform duration-200 ${isSortMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isSortMenuOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Sort products"
+                    className="absolute right-0 top-[calc(100%+0.55rem)] z-50 w-full min-w-[225px] overflow-hidden rounded-[1.35rem] border border-boutique-brown/12 bg-[#fffaf3]/95 p-1.5 shadow-[0_18px_45px_rgba(58,37,26,0.18)] backdrop-blur-xl"
+                  >
+                    {SORT_OPTIONS.map((option) => {
+                      const isSelected = option.value === sortBy;
+
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => {
+                            setSortBy(option.value);
+                            setIsSortMenuOpen(false);
+                          }}
+                          className={`flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-[#f0dcc5] font-bold text-boutique-brown'
+                              : 'font-medium text-boutique-brown-light hover:bg-[#fff0de] hover:text-boutique-brown'
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          {isSelected && <Check className="h-4 w-4 text-boutique-wood" strokeWidth={2.4} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

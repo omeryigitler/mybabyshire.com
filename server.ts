@@ -8,6 +8,10 @@ dotenv.config();
 async function startServer() {
   const { default: apiRoutes } = await import("./server/api.js");
   const { default: accountRoutes } = await import("./server/accountApi.js");
+  const {
+    ensureCuratedCatalog,
+    isCuratedCatalogReadRequest,
+  } = await import("./lib/curatedCatalog.js");
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
 
@@ -23,6 +27,25 @@ async function startServer() {
   });
 
   app.use(express.json());
+
+  app.use(async (req, res, next) => {
+    if (!isCuratedCatalogReadRequest(req.method, req.path)) {
+      return next();
+    }
+
+    try {
+      const result = await ensureCuratedCatalog();
+      if (result.applied) {
+        console.info("Curated catalog applied", result);
+      }
+      return next();
+    } catch (error) {
+      console.error("Curated catalog synchronization failed", error);
+      return res.status(500).json({
+        error: "The product catalog could not be prepared. Please try again shortly.",
+      });
+    }
+  });
 
   // Mount API paths
   app.use("/api", apiRoutes);

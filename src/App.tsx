@@ -10,6 +10,7 @@ import PaymentCancelPage from './PaymentCancelPage';
 import PayPalSuccessPage from './PayPalSuccessPage';
 import AccountLoginPage from './account/AccountLoginPage';
 import AccountPage from './account/AccountPage';
+import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
 import { ShippingPolicyPage, RefundPolicyPage, PrivacyPolicyPage, TermsPage } from './legal/LegalPages';
 
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
@@ -41,6 +42,7 @@ function RouteAnalytics() {
 export default function App() {
   return (
     <BrowserRouter>
+      <GlobalCustomFormControls />
       <RouteAnalytics />
       <Suspense fallback={<RouteFallback />}>
         <Routes>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, ChevronRight, Check } from 'lucide-react';
 import { useStore, type PersonalizationField } from '../store/useStore';
@@ -11,13 +11,36 @@ const DEFAULT_PERSONALIZATION_FIELDS: PersonalizationField[] = [
 
 export const PersonalizationModal = () => {
   const { isPersonalizationModalOpen, selectedProduct, closePersonalizationModal, addToCart } = useStore();
-  
   const [step, setStep] = useState(1);
-  const [personalizationData, setPersonalizationData] = useState<Record<string, any>>({});
-  
-  const getFieldsForProduct = () => {
-    return selectedProduct?.personalizationFields?.length ? selectedProduct.personalizationFields : DEFAULT_PERSONALIZATION_FIELDS;
-  };
+  const [personalizationData, setPersonalizationData] = useState<Record<string, string>>({});
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isPersonalizationModalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isPersonalizationModalOpen]);
+
+  useEffect(() => {
+    if (!isPersonalizationModalOpen) return;
+    setStep(1);
+    setPersonalizationData({});
+  }, [isPersonalizationModalOpen, selectedProduct?.id]);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [step, selectedProduct?.id]);
+
+  const getFieldsForProduct = () => (
+    selectedProduct?.personalizationFields?.length
+      ? selectedProduct.personalizationFields
+      : DEFAULT_PERSONALIZATION_FIELDS
+  );
 
   const handleClose = () => {
     setStep(1);
@@ -26,14 +49,20 @@ export const PersonalizationModal = () => {
   };
 
   const handleAddToCart = () => {
-    if (selectedProduct) {
-      addToCart({
-        product: selectedProduct,
-        quantity: 1,
-        personalizationData
-      });
-      handleClose();
-    }
+    if (!selectedProduct) return;
+
+    const completedData = getFieldsForProduct().reduce<Record<string, string>>((result, field) => {
+      const value = personalizationData[field.fieldKey] ?? field.defaultValue ?? '';
+      if (value) result[field.fieldKey] = value;
+      return result;
+    }, {});
+
+    addToCart({
+      product: selectedProduct,
+      quantity: 1,
+      personalizationData: completedData,
+    });
+    handleClose();
   };
 
   if (!selectedProduct) return null;
@@ -44,10 +73,11 @@ export const PersonalizationModal = () => {
   const fieldByKey = new Map(fields.map((field) => [field.fieldKey, field]));
   const previewTextField = fields.find((field) => field.type === 'text') || firstField;
   const previewColorField = fields.find((field) => field.type === 'color');
-  const previewText = previewTextField ? personalizationData[previewTextField.fieldKey] : '';
-  const previewColor = previewColorField ? personalizationData[previewColorField.fieldKey] : undefined;
+  const getFieldValue = (field: PersonalizationField) => String(personalizationData[field.fieldKey] ?? field.defaultValue ?? '');
+  const previewText = previewTextField ? getFieldValue(previewTextField) : '';
+  const previewColor = previewColorField ? getFieldValue(previewColorField) : undefined;
   const isLastStep = step === 3;
-  const isFieldMissing = (field: PersonalizationField) => field.required && !String(personalizationData[field.fieldKey] || '').trim();
+  const isFieldMissing = (field: PersonalizationField) => field.required && !getFieldValue(field).trim();
   const isStepValid = step === 1
     ? !firstField || !isFieldMissing(firstField)
     : step === 2
@@ -55,17 +85,19 @@ export const PersonalizationModal = () => {
       : true;
 
   const updateFieldValue = (field: PersonalizationField, value: string) => {
-    setPersonalizationData({ ...personalizationData, [field.fieldKey]: value });
+    setPersonalizationData((current) => ({ ...current, [field.fieldKey]: value }));
   };
 
   const renderField = (field: PersonalizationField) => {
-    const value = String(personalizationData[field.fieldKey] || field.defaultValue || '');
+    const value = getFieldValue(field);
     const options = field.options || [];
 
     if (field.type === 'color') {
       return (
         <div className="flex flex-col gap-3">
-          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
+          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+            {field.label}{field.required ? ' *' : ''}
+          </label>
           <div className="flex flex-wrap gap-3 px-2">
             {options.map((color) => (
               <button
@@ -86,22 +118,27 @@ export const PersonalizationModal = () => {
     }
 
     if (field.type === 'select') {
+      const useCompactGrid = options.length >= 5 && options.every((option) => option.length <= 12);
+
       return (
         <div className="flex flex-col gap-3">
-          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
-          <div className="flex flex-col gap-2">
+          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+            {field.label}{field.required ? ' *' : ''}
+          </label>
+          <div className={useCompactGrid ? 'grid grid-cols-3 gap-2' : 'flex flex-col gap-2'}>
             {options.map((option) => (
               <button
                 type="button"
                 key={option}
                 onClick={() => updateFieldValue(field, option)}
-                className={`rounded-2xl border px-5 py-4 text-left transition-all ${value === option ? 'border-[#d4b497] bg-[#f7ede3] text-[#3a251a]' : 'border-[#d4b497]/20 bg-[#fcfaf6] text-[#5a4234] hover:bg-[#f7ede3]/50'}`}
+                className={`rounded-2xl border px-5 py-3.5 transition-all ${useCompactGrid ? 'text-center' : 'text-left'} ${value === option ? 'border-[#d4b497] bg-[#f7ede3] text-[#3a251a]' : 'border-[#d4b497]/20 bg-[#fcfaf6] text-[#5a4234] hover:bg-[#f7ede3]/50'}`}
               >
                 <span className="font-medium">{option}</span>
               </button>
             ))}
           </div>
           {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
+          {isFieldMissing(field) && <p className="ml-2 text-xs italic text-[#d4b497]">Please choose an option.</p>}
         </div>
       );
     }
@@ -110,7 +147,9 @@ export const PersonalizationModal = () => {
 
     return (
       <div className="flex flex-col gap-2">
-        <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">{field.label}{field.required ? ' *' : ''}</label>
+        <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+          {field.label}{field.required ? ' *' : ''}
+        </label>
         <input
           type={inputType}
           value={value}
@@ -128,7 +167,7 @@ export const PersonalizationModal = () => {
   return (
     <AnimatePresence>
       {isPersonalizationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-3 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -136,76 +175,72 @@ export const PersonalizationModal = () => {
             onClick={handleClose}
             className="absolute inset-0 bg-[#3a251a]/20 backdrop-blur-md"
           />
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.6 }}
-            className="relative w-full max-w-4xl bg-white rounded-3xl shadow-[var(--shadow-modal)] overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
+            className="relative flex max-h-[92dvh] min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-[var(--shadow-modal)] md:max-h-[90dvh] md:flex-row"
           >
-            {/* Close Button */}
-            <button 
+            <button
+              type="button"
               onClick={handleClose}
-              className="absolute top-4 right-4 z-20 p-2 bg-white/80 backdrop-blur-sm rounded-full text-[#5a4234] hover:bg-[#f7ede3] transition-colors"
+              className="absolute right-4 top-4 z-20 rounded-full bg-white/90 p-2 text-[#5a4234] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f7ede3]"
+              aria-label="Close personalization"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
-            {/* Left Side - Soft Product Display */}
-            <div className="w-full md:w-1/2 bg-[#fcfaf6] relative flex flex-col items-center justify-center p-8 md:p-12 border-r border-[#d4b497]/20 flex-shrink-0">
-               {/* Decorative background elements inside modal */}
-               <img src="/cloud-watercolor-pink.png" className="absolute top-10 left-10 w-24 opacity-60 mix-blend-multiply" alt=""/>
-               <img src="/toy-wooden-star-solid.png" className="absolute bottom-16 right-12 w-12 opacity-50 mix-blend-multiply rotate-12" alt=""/>
+            <div className="relative hidden w-1/2 flex-shrink-0 flex-col items-center justify-center border-r border-[#d4b497]/20 bg-[#fcfaf6] p-12 md:flex">
+              <img src="/cloud-watercolor-pink.png" className="absolute left-10 top-10 w-24 opacity-60 mix-blend-multiply" alt="" />
+              <img src="/toy-wooden-star-solid.png" className="absolute bottom-16 right-12 w-12 rotate-12 opacity-50 mix-blend-multiply" alt="" />
 
-               <motion.div 
-                 key={selectedProduct.id}
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 className="relative z-10 w-full flex flex-col items-center mt-8 md:mt-0"
-               >
-	                 <img src={selectedProduct.imageUrl} className="w-64 h-64 object-contain drop-shadow-xl" alt={selectedProduct.name} />
+              <motion.div
+                key={selectedProduct.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative z-10 flex w-full flex-col items-center"
+              >
+                <img src={selectedProduct.imageUrl} className="h-64 w-64 object-contain drop-shadow-xl" alt={selectedProduct.name} />
 
-                 {/* Live Preview Text overlay if name is typed */}
-	                 {previewText && (
-	                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full mt-4">
-		                      <span
-		                        className="text-2xl opacity-80"
-		                        style={{
-	                          color: previewColor || '#3a251a',
-	                          fontFamily: personalizationData.fontStyle === 'Classic Script' ? 'cursive' : 'serif'
-	                        }}
-	                      >
-	                        {previewText}
-	                      </span>
-	                    </div>
-	                 )}
+                {previewText && (
+                  <div className="absolute left-1/2 top-1/2 mt-4 w-full -translate-x-1/2 -translate-y-1/2 text-center">
+                    <span
+                      className="text-2xl opacity-80"
+                      style={{
+                        color: previewColor || '#3a251a',
+                        fontFamily: personalizationData.fontStyle === 'Classic Script' ? 'cursive' : 'serif',
+                      }}
+                    >
+                      {previewText}
+                    </span>
+                  </div>
+                )}
 
-                 <div className="text-center mt-8">
-                   <h2 className="font-serif text-2xl text-[#3a251a] mb-2">{selectedProduct.name}</h2>
-                   <p className="text-[#5a4234] font-medium opacity-80">${selectedProduct.price.toFixed(2)}</p>
-                 </div>
-               </motion.div>
+                <div className="mt-8 text-center">
+                  <h2 className="mb-2 font-serif text-2xl text-[#3a251a]">{selectedProduct.name}</h2>
+                  <p className="font-medium text-[#5a4234] opacity-80">${selectedProduct.price.toFixed(2)}</p>
+                </div>
+              </motion.div>
             </div>
 
-            {/* Right Side - Steps */}
-            <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col h-full overflow-y-auto">
-              
-              <div className="flex items-center justify-between mb-8">
+            <div className="flex min-h-0 w-full flex-1 flex-col md:w-1/2">
+              <div className="flex flex-shrink-0 items-center justify-between px-6 pb-5 pt-7 sm:px-8 md:px-10 md:pt-10">
                 <div className="flex gap-2">
-                  {[1, 2, 3].map((s) => (
-                    <div 
-                      key={s} 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${s === step ? 'w-8 bg-[#d4b497]' : s < step ? 'w-4 bg-[#d4b497]/60' : 'w-4 bg-[#f7ede3]'}`} 
+                  {[1, 2, 3].map((itemStep) => (
+                    <div
+                      key={itemStep}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${itemStep === step ? 'w-8 bg-[#d4b497]' : itemStep < step ? 'w-4 bg-[#d4b497]/60' : 'w-4 bg-[#f7ede3]'}`}
                     />
                   ))}
                 </div>
-                <div className="text-[#d4b497] flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3 h-3" /> Step {step} of 3
+                <div className="mr-10 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#d4b497] sm:mr-8">
+                  <Sparkles className="h-3 w-3" /> Step {step} of 3
                 </div>
               </div>
 
-              <div className="flex-1">
+              <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 sm:px-8 md:px-10">
                 <AnimatePresence mode="wait">
                   {step === 1 && (
                     <motion.div
@@ -216,13 +251,12 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-	                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Who is this gift for?</h3>
-	                        <p className="text-[#5a4234] text-sm opacity-80">Start with the first detail for this personalized gift.</p>
-	                      </div>
-
-	                      {firstField && renderField(firstField)}
-	                    </motion.div>
-	                  )}
+                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Who is this gift for?</h3>
+                        <p className="text-sm text-[#5a4234] opacity-80">Start with the first detail for this personalized gift.</p>
+                      </div>
+                      {firstField && renderField(firstField)}
+                    </motion.div>
+                  )}
 
                   {step === 2 && (
                     <motion.div
@@ -233,15 +267,16 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-	                        <h3 className="font-serif text-[1.4rem] text-[#3a251a] mb-2">Choose your style</h3>
-	                        <p className="text-[#5a4234] text-sm opacity-80">Complete the remaining details for {previewText || 'this gift'}.</p>
-	                      </div>
-
-	                      <div className="flex flex-col gap-5">
-	                        {secondaryFields.length ? secondaryFields.map((field) => <div key={field.id}>{renderField(field)}</div>) : <p className="rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5 text-sm text-[#5a4234]">No extra details are needed for this gift.</p>}
-	                      </div>
-	                    </motion.div>
-	                  )}
+                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Choose your style</h3>
+                        <p className="text-sm text-[#5a4234] opacity-80">Complete the remaining details for {previewText || 'this gift'}.</p>
+                      </div>
+                      <div className="flex flex-col gap-5">
+                        {secondaryFields.length
+                          ? secondaryFields.map((field) => <div key={field.id}>{renderField(field)}</div>)
+                          : <p className="rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5 text-sm text-[#5a4234]">No extra details are needed for this gift.</p>}
+                      </div>
+                    </motion.div>
+                  )}
 
                   {step === 3 && (
                     <motion.div
@@ -251,53 +286,59 @@ export const PersonalizationModal = () => {
                       exit={{ opacity: 0, x: -20 }}
                       className="flex flex-col gap-6"
                     >
-                      <div className="flex flex-col items-center justify-center text-center py-6">
-                        <div className="w-16 h-16 bg-[#f7ede3] rounded-full flex items-center justify-center mb-6">
-                          <Sparkles className="w-8 h-8 text-[#d4b497]" />
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7ede3]">
+                          <Sparkles className="h-8 w-8 text-[#d4b497]" />
                         </div>
-                        <h3 className="font-serif text-2xl text-[#3a251a] mb-2">Beautifully crafted!</h3>
-                        <p className="text-[#5a4234] text-sm opacity-80 max-w-xs">Your personalized {selectedProduct.name.toLowerCase()} is ready to be made with love.</p>
+                        <h3 className="mb-2 font-serif text-2xl text-[#3a251a]">Beautifully crafted!</h3>
+                        <p className="max-w-xs text-sm text-[#5a4234] opacity-80">Your personalized {selectedProduct.name.toLowerCase()} is ready to be made with love.</p>
                       </div>
 
-                      <div className="bg-[#fcfaf6] rounded-2xl p-5 border border-[#d4b497]/20 flex flex-col gap-3">
-                        {Object.entries(personalizationData).map(([key, val]) => (
-                          <div key={key} className="flex justify-between items-center py-2 border-b border-[#d4b497]/10 last:border-0 last:pb-0">
-	                            <span className="text-xs font-bold text-[#5a4234] uppercase tracking-wider capitalize">{fieldByKey.get(key)?.label || key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                            <span className="font-serif font-medium text-[#3a251a]">{val as string}</span>
-                          </div>
-                        ))}
+                      <div className="flex flex-col gap-3 rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5">
+                        {fields.map((field) => {
+                          const value = getFieldValue(field);
+                          if (!value) return null;
+
+                          return (
+                            <div key={field.fieldKey} className="flex items-center justify-between border-b border-[#d4b497]/10 py-2 last:border-0 last:pb-0">
+                              <span className="text-xs font-bold uppercase tracking-wider text-[#5a4234]">{fieldByKey.get(field.fieldKey)?.label || field.label}</span>
+                              <span className="font-serif font-medium text-[#3a251a]">{value}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-[#d4b497]/20 flex items-center justify-between">
+              <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-[#d4b497]/20 bg-white px-6 py-4 shadow-[0_-8px_24px_rgba(58,37,26,0.06)] sm:px-8 md:px-10 md:py-5">
                 {step > 1 ? (
-                  <button 
-                    onClick={() => setStep(step - 1)}
-                    className="text-[#5a4234] font-bold text-sm tracking-wide hover:text-[#3a251a]"
+                  <button
+                    type="button"
+                    onClick={() => setStep((currentStep) => currentStep - 1)}
+                    className="text-sm font-bold tracking-wide text-[#5a4234] hover:text-[#3a251a]"
                   >
                     Back
                   </button>
-                ) : <div></div>}
-                
-                <button
-                  onClick={() => {
-	                    if (!isStepValid) return;
-                    if (isLastStep) {
-                      handleAddToCart();
-                    } else {
-                      setStep(step + 1);
-                    }
-                  }}
-	                  disabled={!isStepValid}
-                  className="bg-[#3a251a] text-white px-8 py-3.5 rounded-full font-bold tracking-wide flex items-center gap-2 hover:bg-[#4a3328] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                >
-                  {isLastStep ? 'Add to Gift Bag' : 'Next Step'} <ChevronRight className="w-4 h-4" />
-                </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-3">
+                  {!isStepValid && <span className="hidden max-w-32 text-right text-xs text-[#9b6f55] sm:block">Complete all required choices.</span>}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isStepValid) return;
+                      if (isLastStep) handleAddToCart();
+                      else setStep((currentStep) => currentStep + 1);
+                    }}
+                    disabled={!isStepValid}
+                    className="flex items-center gap-2 rounded-full bg-[#3a251a] px-6 py-3.5 font-bold tracking-wide text-white shadow-md transition-colors hover:bg-[#4a3328] disabled:cursor-not-allowed disabled:opacity-50 sm:px-8"
+                  >
+                    {isLastStep ? 'Add to Gift Bag' : 'Next Step'} <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              
             </div>
           </motion.div>
         </div>

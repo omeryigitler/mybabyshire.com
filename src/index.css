@@ -143,3 +143,12 @@ body {
 .cloud-card.blue { background: linear-gradient(135deg, #eaf4f7 0%, #d8eaf1 100%); }
 .cloud-card.pink { background: linear-gradient(135deg, #fef4ee 0%, #fadbd0 100%); }
 .cloud-card.green { background: linear-gradient(135deg, #f0f4ea 0%, #e1ebd6 100%); }
+
+/* Storefront sort menu must start directly below its trigger and match its exact width. */
+.min-w-\[190px\] > .min-w-\[225px\] {
+  left: 0 !important;
+  right: auto !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}

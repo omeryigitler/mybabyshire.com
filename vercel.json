@@ -48,6 +48,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/catalog/:name.webp", "destination": "/api/catalog-image?name=:name" },
     { "source": "/api/admin-google-start", "destination": "/api/admin/login?authMode=admin-google" },
     { "source": "/api/admin-google-callback", "destination": "/api/admin/login?authMode=admin-google" },
     { "source": "/api/account/google/start", "destination": "/api/admin/login" },

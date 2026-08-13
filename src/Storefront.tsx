@@ -6,6 +6,9 @@ import { CartDrawer } from './components/CartDrawer';
 import { PersonalizationModal } from './components/PersonalizationModal';
 import { ProductCard } from './components/ProductCard';
 import { BrandLogo } from './components/BrandLogo';
+import { HomeHero } from './components/HomeHero';
+import { HomeFeaturedGifts } from './components/HomeFeaturedGifts';
+import { HomeShopMoments } from './components/HomeShopMoments';
 import { useSeo } from './utils/seo';
 
 const SORT_OPTIONS = [
@@ -14,19 +17,6 @@ const SORT_OPTIONS = [
   { value: 'price-desc', label: 'Price: High to Low' },
   { value: 'rating', label: 'Top Rated' },
 ] as const;
-
-const DecorativeElement = ({ src, className, size = "w-20 md:w-24 h-auto", rotate = "0deg" }: any) => (
-  <div
-    className={`absolute pointer-events-none z-0 ${className}`}
-    style={{
-      filter: src.includes('cloud')
-        ? 'drop-shadow(0 12px 14px rgba(58, 37, 26, 0.12)) drop-shadow(0 2px 4px rgba(58, 37, 26, 0.08))'
-        : 'drop-shadow(var(--shadow-soft-subtle))',
-    }}
-  >
-    <img src={src} className={`${size} object-contain mix-blend-multiply`} style={{ transform: `rotate(${rotate})` }} alt="" />
-  </div>
-);
 
 export default function Storefront() {
   const { openCart, cartItems, products, loadProducts, productsLoading } = useStore();
@@ -50,6 +40,13 @@ export default function Storefront() {
   const focusSearch = () => {
     scrollToSection('shop');
     window.setTimeout(() => searchInputRef.current?.focus(), 350);
+  };
+
+  const applySearchFilter = (query: string) => {
+    setSearchTerm(query);
+    setActiveCategory('all');
+    setSortBy('featured');
+    window.requestAnimationFrame(() => scrollToSection('shop'));
   };
 
   const categories = useMemo(() => {
@@ -125,7 +122,7 @@ export default function Storefront() {
       <header className="relative z-30 flex min-h-[82px] w-full items-center justify-between border-b border-boutique-brown/5 bg-boutique-bg/80 px-4 py-0 backdrop-blur-md sm:px-6 md:min-h-[104px] md:px-12 lg:min-h-[112px]">
         <nav className="relative z-20 hidden max-w-[38%] items-center gap-5 text-sm font-medium text-boutique-brown-light lg:flex lg:gap-7">
           <button type="button" onClick={() => scrollToSection('shop')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Shop <img src="/cloud-watercolor-pink.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
-          <button type="button" onClick={() => scrollToSection('personalization')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Personalization <img src="/cloud-watercolor-blue-light.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
+          <button type="button" onClick={() => scrollToSection('featured-gifts')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Personalization <img src="/cloud-watercolor-blue-light.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
           <button type="button" onClick={() => scrollToSection('gifts')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Gifts <img src="/cloud-watercolor-blue-dense.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
           <button type="button" onClick={() => scrollToSection('our-story')} className="hover:text-boutique-wood transition-colors">Our Story</button>
         </nav>
@@ -139,7 +136,7 @@ export default function Storefront() {
           <Link to="/account" className="hover:text-boutique-wood transition-colors p-2" aria-label="Member account">
             <UserRound size={22} strokeWidth={1.5} />
           </Link>
-          <button type="button" onClick={openCart} className="hover:text-boutique-wood transition-colors p-2 relative">
+          <button type="button" onClick={openCart} className="hover:text-boutique-wood transition-colors p-2 relative" aria-label="Open gift bag">
             <ShoppingBag size={22} strokeWidth={1.5} />
             {cartItemCount > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-boutique-brown text-white text-[10px] font-bold rounded-full flex items-center justify-center">{cartItemCount}</span>}
           </button>
@@ -147,88 +144,21 @@ export default function Storefront() {
       </header>
 
       <main className="flex-1 relative z-10 flex flex-col items-center justify-start pb-8 md:pb-0 overflow-visible">
-        <section id="gifts" className="scroll-mt-24 relative z-10 w-full max-w-[1500px] px-3 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10">
-          <div className="relative overflow-hidden rounded-[1.9rem] border border-boutique-brown/10 bg-white/55 shadow-[0_20px_65px_rgba(58,37,26,0.10)] backdrop-blur-[2px] md:rounded-[2.5rem]">
-            <DecorativeElement src="/cloud-watercolor-pink.png" className="-left-14 top-8 opacity-45 sm:-left-10 sm:top-12" rotate="5deg" size="w-36 sm:w-48 md:w-60" />
-            <DecorativeElement src="/cloud-watercolor-blue-light.png" className="-right-16 top-10 opacity-45 sm:-right-8 md:top-5" rotate="-6deg" size="w-40 sm:w-52 md:w-72" />
-            <DecorativeElement src="/decorative-moon-star.png" className="right-[44%] top-8 hidden opacity-50 lg:block" rotate="-12deg" size="w-24" />
-
-            <div className="relative z-10 grid items-center lg:grid-cols-[0.88fr_1.12fr]">
-              <div className="order-1 px-5 pb-5 pt-8 text-center sm:px-8 sm:pt-10 md:px-10 lg:px-12 lg:py-14 lg:text-left xl:px-16 xl:py-16">
-                <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-boutique-brown/12 bg-[#fffaf3]/85 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm sm:text-[11px]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-boutique-wood" /> Made just for them
-                </span>
-
-                <h1 className="font-serif text-[42px] leading-[1.03] tracking-[-0.025em] text-boutique-brown sm:text-[50px] md:text-[58px] lg:text-[62px] xl:text-[68px]">
-                  Personalized Baby Gifts<br className="hidden sm:block" /> Made with Love
-                </h1>
-
-                <p className="mx-auto mt-4 max-w-[620px] font-sans text-[16px] leading-relaxed text-boutique-brown-light sm:text-[18px] lg:mx-0 lg:max-w-[560px] lg:text-[19px]">
-                  Thoughtful keepsakes, soft baby essentials, and meaningful gifts personalized with their name and made to treasure.
-                </p>
-
-                <div className="mx-auto mt-6 flex w-full max-w-[620px] flex-col items-center gap-2.5 sm:mt-7 sm:flex-row sm:justify-center sm:gap-3 lg:mx-0 lg:justify-start">
-                  <button type="button" onClick={() => scrollToSection('shop')} className="group relative flex h-[66px] w-full min-w-0 cursor-pointer items-center justify-center transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:w-auto sm:min-w-[286px] md:h-[68px] md:min-w-[300px]">
-                    <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-md transition-all group-active:drop-shadow-sm" alt="" />
-                    <span className="relative z-10 px-7 text-center text-[16px] font-bold leading-tight text-boutique-brown sm:text-[17px] md:text-lg">Shop Personalized Gifts</span>
-                  </button>
-
-                  <button type="button" onClick={() => scrollToSection('shop')} className="group relative flex h-[58px] w-full min-w-0 cursor-pointer items-center justify-center opacity-85 transition-all hover:-translate-y-0.5 hover:opacity-100 active:translate-y-0 sm:w-auto sm:min-w-[246px] md:h-[62px]">
-                    <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-sm transition-all group-active:drop-shadow-none" alt="" />
-                    <span className="relative z-10 px-6 text-center text-[15px] font-semibold leading-tight text-boutique-brown-light sm:text-[16px]">Explore New Arrivals</span>
-                  </button>
-                </div>
-
-                <p className="mt-4 text-[12px] font-medium tracking-[0.02em] text-boutique-brown-light/80 sm:text-[13px]">
-                  Choose a gift, add their name, and make it unmistakably theirs.
-                </p>
-              </div>
-
-              <div className="order-2 relative min-h-[320px] overflow-hidden border-t border-boutique-brown/8 bg-[radial-gradient(circle_at_50%_44%,rgba(255,255,255,0.96),rgba(247,231,212,0.58)_62%,rgba(228,205,178,0.25)_100%)] sm:min-h-[390px] lg:min-h-[560px] lg:border-l lg:border-t-0">
-                <img src="/cloud-watercolor-blue-dense.png" className="pointer-events-none absolute -right-10 top-5 w-40 object-contain opacity-25 mix-blend-multiply sm:w-52 lg:w-64" alt="" />
-                <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute left-[9%] top-[14%] w-10 rotate-[-12deg] object-contain opacity-45 mix-blend-multiply sm:w-12" alt="" />
-                <img src="/toy-teddy-ring-teether.png" className="pointer-events-none absolute bottom-[7%] right-[7%] z-20 w-20 rotate-[7deg] object-contain opacity-90 drop-shadow-md sm:w-24 lg:w-28" alt="" />
-                <img
-                  src="/product-blanket-cutout-v1.png"
-                  alt="Personalized baby blanket"
-                  loading="eager"
-                  fetchPriority="high"
-                  className="absolute left-1/2 top-1/2 z-10 w-[92%] max-w-[720px] -translate-x-1/2 -translate-y-[48%] object-contain drop-shadow-[0_22px_30px_rgba(58,37,26,0.20)] sm:w-[88%] lg:w-[94%]"
-                />
-
-                <div className="absolute bottom-4 left-4 z-20 max-w-[190px] rounded-[1.2rem] border border-boutique-brown/12 bg-[#fffaf3]/88 px-3.5 py-2.5 text-left shadow-[0_12px_32px_rgba(58,37,26,0.12)] backdrop-blur-md sm:bottom-6 sm:left-6 sm:max-w-none sm:px-4 sm:py-3">
-                  <p className="font-serif text-[16px] leading-tight text-boutique-brown sm:text-[18px]">A gift with their name on it</p>
-                  <p className="mt-1 text-[11px] leading-snug text-boutique-brown-light sm:text-[12px]">Personalized details make every piece feel one of a kind.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-20 mx-2 -mt-px grid grid-cols-1 overflow-hidden rounded-b-[1.45rem] border border-t-0 border-boutique-brown/10 bg-[#fffaf3]/92 shadow-[0_12px_32px_rgba(58,37,26,0.07)] backdrop-blur-md sm:mx-5 sm:grid-cols-3 md:mx-8">
-            {[
-              ['Hand Embroidered', 'Care in every stitch'],
-              ['Gift-Ready Packaging', 'Thoughtfully prepared'],
-              ['Ships Across the US', 'Made for gifting nationwide'],
-            ].map(([title, detail], index) => (
-              <div key={title} className={`flex min-h-[68px] items-center gap-3 px-4 py-3 sm:min-h-[76px] sm:justify-center sm:px-5 ${index > 0 ? 'border-t border-boutique-brown/10 sm:border-l sm:border-t-0' : ''}`}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-boutique-wood/25 bg-white/75 text-boutique-wood shadow-sm">
-                  <Check className="h-4 w-4" strokeWidth={2} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[12px] font-bold text-boutique-brown sm:text-[13px]">{title}</span>
-                  <span className="mt-0.5 block text-[10px] leading-tight text-boutique-brown-light/75 sm:text-[11px]">{detail}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <HomeHero products={products} />
 
         {productsLoading && <p className="relative z-20 mb-2 mt-6 text-sm text-boutique-brown-light">Loading products...</p>}
 
-        <div id="shop" className="scroll-mt-24 relative z-20 mx-auto mt-8 w-full max-w-[1620px] px-4 md:mt-12 md:px-8">
+        {!productsLoading && (
+          <>
+            <HomeFeaturedGifts products={products} onShopAll={() => scrollToSection('shop')} />
+            <HomeShopMoments products={products} onSearch={applySearchFilter} />
+          </>
+        )}
+
+        <div id="shop" className="scroll-mt-24 relative z-20 mx-auto mt-12 w-full max-w-[1620px] px-4 md:mt-16 md:px-8">
           <div className="mb-7 text-center">
-            <h2 className="font-serif text-3xl text-boutique-brown md:text-[40px]">Shop the Collection</h2>
-            <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Personalized gifts, ready to make their own.</p>
+            <h2 className="font-serif text-3xl text-boutique-brown md:text-[40px]">Shop All Gifts</h2>
+            <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Browse the full collection with the existing product options, pricing and personalization flow.</p>
           </div>
 
           <div className="mb-9 flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
@@ -342,19 +272,19 @@ export default function Storefront() {
           <div className="flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SHOP <div className="flex items-end gap-2 translate-y-[-2px]"><img src="/toy-abc-blocks.png" className="w-[42px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /><img src="/toy-wooden-train.png" className="w-[63px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /></div></h4>
             <div className="flex flex-col gap-2">
-              <button type="button" onClick={() => scrollToSection('shop')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">New Arrivals</button>
+              <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">New Arrivals</button>
               <button type="button" onClick={() => scrollToSection('shop')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Personalized Gifts</button>
             </div>
           </div>
 
-          <div id="personalization" className="scroll-mt-24 flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
+          <div id="personalization-support" className="scroll-mt-24 flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SUPPORT <img src="/toy-drum-blue.png" className="w-[60px] h-auto object-contain mix-blend-multiply translate-y-[-2px] drop-shadow-sm" alt="" /></h4>
             <div className="flex flex-col gap-2">
               <Link to="/account" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">My Account</Link>
               <Link to="/track-order" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Track Your Order</Link>
               <Link to="/policies/shipping" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Shipping</Link>
               <Link to="/policies/returns" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Returns &amp; Refunds</Link>
-              <button type="button" onClick={() => scrollToSection('personalization')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Personalization Help</button>
+              <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Personalization Help</button>
             </div>
           </div>
 
@@ -389,11 +319,5 @@ export default function Storefront() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L13.8 8.2L22 10L13.8 11.8L12 20L10.2 11.8L2 10L10.2 8.2L12 0Z" fill="#d9b691"/><path d="M5 16L5.6 18.4L8 19L5.6 19.6L5 22L4.4 19.6L2 19L4.4 18.4L5 16Z" fill="#d9b691"/></svg>
   );
 }

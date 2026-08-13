@@ -67,7 +67,7 @@ export default function App() {
           <Route path="/policies/returns" element={<RefundPolicyPage />} />
           <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/policies/terms" element={<TermsPage />} />
-          <Route path="/admin-wizard-preview" element={<ProductWizardDesignPreview />} />
+          <Route path="/admin/wizard-preview" element={<ProductWizardDesignPreview />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />

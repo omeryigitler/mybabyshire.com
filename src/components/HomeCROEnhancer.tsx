@@ -44,17 +44,23 @@ export function HomeCROEnhancer() {
       }
     });
 
-    const textChanges: Array<{ node: Element; value: string }> = [];
+    const textChanges: Array<{ node: Node; value: string }> = [];
     const replaceExactText = (selector: string, from: string, to: string) => {
       document.querySelectorAll(selector).forEach((node) => {
         if (node.textContent?.trim() === from) {
-          textChanges.push({ node, value: node.textContent });
+          textChanges.push({ node, value: node.textContent || '' });
           node.textContent = to;
         }
       });
     };
 
-    replaceExactText('header button', 'Personalization', 'Made for Them');
+    const headerButton = Array.from(document.querySelectorAll('header button')).find((node) => node.textContent?.trim() === 'Personalization');
+    const headerTextNode = headerButton ? Array.from(headerButton.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.includes('Personalization')) : null;
+    if (headerTextNode) {
+      textChanges.push({ node: headerTextNode, value: headerTextNode.textContent || '' });
+      headerTextNode.textContent = (headerTextNode.textContent || '').replace('Personalization', 'Made for Them');
+    }
+
     replaceExactText('footer button', 'Personalized Gifts', 'Made-for-you Gifts');
     replaceExactText('footer button', 'Personalization Help', 'Made-for-you Help');
 

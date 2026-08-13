@@ -48,6 +48,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/admin/remove-bg-upload", "destination": "/api/removed-upload-route" },
     { "source": "/api/admin-google-start", "destination": "/api/admin/login?authMode=admin-google" },
     { "source": "/api/admin-google-callback", "destination": "/api/admin/login?authMode=admin-google" },
     { "source": "/api/account/google/start", "destination": "/api/admin/login" },

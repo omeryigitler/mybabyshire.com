@@ -18,10 +18,10 @@ export const WizardCleanUploader = ({ onUploaded }: { onUploaded: (image: Produc
     if (file.size > 8 * 1024 * 1024) return alert('Please upload an image smaller than 8MB.');
     setBusy(true);
     try {
-      const response = await fetch('/api/product-image-upload-clean', {
+      const response = await fetch('/api/admin/upload-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAdminToken()}` },
-        body: JSON.stringify({ file: await fileToDataUrl(file) }),
+        body: JSON.stringify({ file: await fileToDataUrl(file), mode: 'clean' }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Background cleaning failed.');

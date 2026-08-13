@@ -137,19 +137,19 @@ export function HomeHero({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <div className="relative z-20 mx-2 -mt-px grid grid-cols-1 overflow-hidden rounded-b-[1.45rem] border border-t-0 border-boutique-brown/10 bg-[#fffaf3]/92 shadow-[0_12px_32px_rgba(58,37,26,0.07)] backdrop-blur-md sm:mx-5 sm:grid-cols-3 md:mx-8">
+      <div className="relative z-20 mx-2 -mt-px grid grid-cols-3 overflow-hidden rounded-b-[1.45rem] border border-t-0 border-boutique-brown/10 bg-[#fffaf3]/92 shadow-[0_12px_32px_rgba(58,37,26,0.07)] backdrop-blur-md sm:mx-5 md:mx-8">
         {[
           ['Personalized with Care', 'Name, size and detail options'],
           ['Gift-Ready Packaging', 'Included with every order'],
           ['Ships Across the US', 'Made for gifting nationwide'],
         ].map(([title, detail], index) => (
-          <div key={title} className={`flex min-h-[68px] items-center gap-3 px-4 py-3 sm:min-h-[76px] sm:justify-center sm:px-5 ${index > 0 ? 'border-t border-boutique-brown/10 sm:border-l sm:border-t-0' : ''}`}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-boutique-wood/25 bg-white/75 text-boutique-wood shadow-sm">
-              <Check className="h-4 w-4" strokeWidth={2} />
+          <div key={title} className={`flex min-h-[88px] flex-col items-center justify-center gap-2 px-2 py-3 text-center sm:min-h-[76px] sm:flex-row sm:gap-3 sm:px-5 sm:text-left ${index > 0 ? 'border-l border-boutique-brown/10' : ''}`}>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-boutique-wood/25 bg-white/75 text-boutique-wood shadow-sm sm:h-8 sm:w-8">
+              <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2} />
             </span>
             <span className="min-w-0">
-              <span className="block text-[12px] font-bold text-boutique-brown sm:text-[13px]">{title}</span>
-              <span className="mt-0.5 block text-[10px] leading-tight text-boutique-brown-light/75 sm:text-[11px]">{detail}</span>
+              <span className="block text-[10px] font-bold leading-tight text-boutique-brown sm:text-[13px]">{title}</span>
+              <span className="mt-0.5 hidden text-[11px] leading-tight text-boutique-brown-light/75 sm:block">{detail}</span>
             </span>
           </div>
         ))}

@@ -8,18 +8,13 @@ dotenv.config();
 async function startServer() {
   const { default: apiRoutes } = await import("./server/api.js");
   const { default: accountRoutes } = await import("./server/accountApi.js");
-  const { getCatalogArtwork } = await import("./lib/catalogArtwork.js");
-  const {
-    ensureCuratedCatalog,
-    isCuratedCatalogReadRequest,
-  } = await import("./lib/curatedCatalog.js");
   const app = express();
   const PORT = Number(process.env.PORT || 3000);
 
   app.use((req, res, next) => {
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com https://flagcdn.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://api.cloudinary.com https://api.remove.bg https://api.resend.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com https://flagcdn.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.stripe.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://api.cloudinary.com https://api.resend.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -29,32 +24,8 @@ async function startServer() {
 
   app.use(express.json());
 
-  app.get("/catalog/:name.webp", (req, res) => {
-    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    return res.status(200).send(getCatalogArtwork(req.params.name));
-  });
-
-  app.use(async (req, res, next) => {
-    if (!isCuratedCatalogReadRequest(req.method, req.path)) {
-      return next();
-    }
-
-    try {
-      const result = await ensureCuratedCatalog();
-      if (result.applied) {
-        console.info("Curated catalog applied", result);
-      }
-      return next();
-    } catch (error) {
-      console.error("Curated catalog synchronization failed", error);
-      return res.status(500).json({
-        error: "The product catalog could not be prepared. Please try again shortly.",
-      });
-    }
-  });
-
-  // Mount API paths
+  // Mount API paths. Product images have one source of truth:
+  // admin upload -> Cloudinary -> database -> storefront API.
   app.use("/api", apiRoutes);
   app.use("/api", accountRoutes);
 
@@ -67,10 +38,10 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 

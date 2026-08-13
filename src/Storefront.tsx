@@ -6,7 +6,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { PersonalizationModal } from './components/PersonalizationModal';
 import { ProductCard } from './components/ProductCard';
 import { BrandLogo } from './components/BrandLogo';
-import { HomeHero } from './components/HomeHero';
+import { HomeFirstHelloHero as HomeHero } from './components/HomeFirstHelloHero';
 import { HomeFeaturedGifts } from './components/HomeFeaturedGifts';
 import { HomeShopMoments } from './components/HomeShopMoments';
 import { useSeo } from './utils/seo';
@@ -122,7 +122,7 @@ export default function Storefront() {
       <header className="relative z-30 flex min-h-[82px] w-full items-center justify-between border-b border-boutique-brown/5 bg-boutique-bg/80 px-4 py-0 backdrop-blur-md sm:px-6 md:min-h-[104px] md:px-12 lg:min-h-[112px]">
         <nav className="relative z-20 hidden max-w-[38%] items-center gap-5 text-sm font-medium text-boutique-brown-light lg:flex lg:gap-7">
           <button type="button" onClick={() => scrollToSection('shop')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Shop <img src="/cloud-watercolor-pink.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
-          <button type="button" onClick={() => scrollToSection('featured-gifts')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Personalization <img src="/cloud-watercolor-blue-light.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
+          <button type="button" onClick={() => scrollToSection('featured-gifts')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Made for Them <img src="/cloud-watercolor-blue-light.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
           <button type="button" onClick={() => scrollToSection('gifts')} className="hover:text-boutique-wood transition-colors flex items-center gap-2">Gifts <img src="/cloud-watercolor-blue-dense.png" className="w-6 object-contain opacity-85 drop-shadow-[0_3px_5px_rgba(58,37,26,0.18)]" alt=""/></button>
           <button type="button" onClick={() => scrollToSection('our-story')} className="hover:text-boutique-wood transition-colors">Our Story</button>
         </nav>
@@ -158,7 +158,7 @@ export default function Storefront() {
         <div id="shop" className="scroll-mt-24 relative z-20 mx-auto mt-12 w-full max-w-[1620px] px-4 md:mt-16 md:px-8">
           <div className="mb-7 text-center">
             <h2 className="font-serif text-3xl text-boutique-brown md:text-[40px]">Shop All Gifts</h2>
-            <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Browse the full collection with the existing product options, pricing and personalization flow.</p>
+            <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Browse the full collection with the existing product options, pricing and made-for-you detail flow.</p>
           </div>
 
           <div className="mb-9 flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
@@ -266,14 +266,14 @@ export default function Storefront() {
              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group/logo text-left" aria-label="Back to MY BABY SHIRE home">
                <BrandLogo variant="footer" className="!w-[140px] sm:!w-[160px] md:!w-[180px]" />
              </button>
-             <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[12px] opacity-90">Crafting expertly personalized baby gifts and nursery essentials with love and care.</p>
+             <p className="font-sans text-boutique-brown-light leading-relaxed max-w-[260px] text-[12px] opacity-90">Thoughtful baby gifts and keepsakes made with warmth, care and special details.</p>
           </div>
 
           <div className="flex flex-col gap-2 py-2.5 md:py-1 md:px-10">
             <h4 className="font-serif tracking-[0.1em] text-boutique-brown text-sm md:text-[14px] uppercase flex items-center gap-3 mb-1">SHOP <div className="flex items-end gap-2 translate-y-[-2px]"><img src="/toy-abc-blocks.png" className="w-[42px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /><img src="/toy-wooden-train.png" className="w-[63px] h-auto object-contain mix-blend-multiply opacity-90 drop-shadow-sm" alt="" /></div></h4>
             <div className="flex flex-col gap-2">
               <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">New Arrivals</button>
-              <button type="button" onClick={() => scrollToSection('shop')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Personalized Gifts</button>
+              <button type="button" onClick={() => scrollToSection('shop')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Made Just for Them</button>
             </div>
           </div>
 
@@ -284,7 +284,7 @@ export default function Storefront() {
               <Link to="/track-order" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Track Your Order</Link>
               <Link to="/policies/shipping" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Shipping</Link>
               <Link to="/policies/returns" className="hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Returns &amp; Refunds</Link>
-              <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Personalization Help</button>
+              <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left hover:text-boutique-wood transition-colors text-boutique-brown-light opacity-90 text-[13px] md:text-[14px]">Custom Details Help</button>
             </div>
           </div>
 

@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Edit, Package, Plus, RefreshCcw, Search, Sparkles, Star, Tags, Trash, Wand2 } from 'lucide-react';
+import { Edit, Package, Plus, RefreshCcw, Search, Sparkles, Star, Trash, Wand2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { CardDesignFrame } from '../components/CardDesignFrame';
 import { Button, PageHeader, StatCard } from './ui';
+import { ProductCreateWizard } from './ProductCreateWizard';
+import { clearProductWizardDraft, readProductWizardDraft } from './productWizardDraft';
+import { saveProductWizardDraft } from './saveProductWizardDraft';
 
 const StatusBadge = ({ status }: { status?: string }) => {
   const value = status || 'active';
@@ -23,6 +26,8 @@ export const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
 
   const loadProducts = async () => {
     setIsLoading(true);
@@ -70,9 +75,61 @@ export const AdminProducts = () => {
 
   useEffect(() => { loadProducts(); }, []);
 
+  useEffect(() => {
+    if (!isCreateOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isCreateOpen]);
+
   const activeProducts = products.filter((product) => (product.status || 'active') !== 'draft').length;
   const draftProducts = products.filter((product) => product.status === 'draft').length;
   const personalizedProducts = products.filter((product: any) => product.personalizationRequired || product.personalizationEnabled || product.personalizationFields?.length > 0).length;
+
+  const closeCreate = () => {
+    const draft = readProductWizardDraft();
+    const hasProgress = Boolean(draft.name || draft.description || draft.images.length || draft.price);
+    if (hasProgress && !window.confirm('Discard this product draft?')) return;
+    clearProductWizardDraft();
+    setIsCreateOpen(false);
+  };
+
+  const handleWizardClickCapture = async (event: React.MouseEvent<HTMLDivElement>) => {
+    const button = (event.target as HTMLElement).closest('button');
+    if (!button) return;
+    const label = button.textContent?.trim() || '';
+
+    if (label === 'Cancel' || label === 'Products') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeCreate();
+      return;
+    }
+
+    if (!label.includes('Save Product')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (isSavingProduct) return;
+
+    const draft = readProductWizardDraft();
+    if (!draft.name.trim() || !draft.description.trim() || !draft.images.length || !draft.price) {
+      window.alert('Name, description, image and price are required.');
+      return;
+    }
+
+    setIsSavingProduct(true);
+    try {
+      await saveProductWizardDraft(draft);
+      clearProductWizardDraft();
+      setIsCreateOpen(false);
+      await loadProducts();
+    } catch (error) {
+      console.error(error);
+      window.alert((error as Error).message);
+    } finally {
+      setIsSavingProduct(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -81,7 +138,7 @@ export const AdminProducts = () => {
         icon={Sparkles}
         title="Products"
         description="Manage MY BABY SHIRE gifts, product images, pricing, visibility, and personalization readiness."
-        actions={<Link to="/admin/products/new"><Button variant="primary" icon={Plus}>Add Product</Button></Link>}
+        actions={<Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>Add Product</Button>}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -129,7 +186,7 @@ export const AdminProducts = () => {
                         {(product as any).featured && <FeatureBadge>Featured</FeatureBadge>}
                         {((product as any).newArrival || (product as any).isNewArrival) && <FeatureBadge>New arrival</FeatureBadge>}
                         {((product as any).bestseller || (product as any).isBestseller) && <FeatureBadge>Bestseller</FeatureBadge>}
-                        {((product as any).personalizationRequired || (product as any).personalizationEnabled || (product as any).personalizationFields?.length > 0) && <FeatureBadge>Personalized</FeatureBadge>}
+                        {((product as any).personalizationRequired || (product as any).personalizationEnabled || (product as any).personalizationFields?.length > 0) && <FeatureBadge>Made for them</FeatureBadge>}
                       </div>
                     </div>
                   </div>
@@ -156,6 +213,17 @@ export const AdminProducts = () => {
           </tbody>
         </table>
       </div>
+
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1c13]/45 p-3 backdrop-blur-[5px] sm:p-6">
+          <div onClickCapture={handleWizardClickCapture} className="relative max-h-[calc(100vh-1.5rem)] w-full max-w-[1240px] overflow-y-auto rounded-[2rem] border border-white/60 bg-[#fbf6ef] p-3 shadow-[0_35px_100px_rgba(45,28,18,0.34)] sm:max-h-[calc(100vh-3rem)] sm:p-5">
+            <button type="button" onClick={closeCreate} className="absolute right-4 top-4 z-[120] inline-flex h-11 w-11 items-center justify-center rounded-full border border-boutique-brown/10 bg-white/95 text-boutique-brown shadow-md hover:bg-[#fff4df]" aria-label="Close add product">
+              <X className="h-5 w-5" />
+            </button>
+            <ProductCreateWizard />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -11,6 +11,7 @@ import PayPalSuccessPage from './PayPalSuccessPage';
 import AccountLoginPage from './account/AccountLoginPage';
 import AccountPage from './account/AccountPage';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
+import { HomeCROEnhancer } from './components/HomeCROEnhancer';
 import { ShippingPolicyPage, RefundPolicyPage, PrivacyPolicyPage, TermsPage } from './legal/LegalPages';
 
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
@@ -46,7 +47,7 @@ export default function App() {
       <RouteAnalytics />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<Storefront />} />
+          <Route path="/" element={<><Storefront /><HomeCROEnhancer /></>} />
           <Route path="/products/:slug" element={<ProductDetailPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />

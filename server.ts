@@ -24,12 +24,15 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Mount API paths. Product images have one source of truth:
-  // admin upload -> Cloudinary -> database -> storefront API.
+  // Legacy alternate upload path is intentionally disabled. Product images use
+  // /api/admin/upload-image -> Cloudinary -> database -> storefront API.
+  app.all("/api/admin/remove-bg-upload", (_req, res) =>
+    res.status(404).json({ error: "Not found" }),
+  );
+
   app.use("/api", apiRoutes);
   app.use("/api", accountRoutes);
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({

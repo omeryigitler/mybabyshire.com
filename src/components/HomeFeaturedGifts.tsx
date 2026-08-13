@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock3, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { ProductCard } from './ProductCard';
 
@@ -18,6 +19,33 @@ const getProductPriority = (product: Product) =>
   + (hasNamePersonalization(product) ? 40 : 0)
   + (product.newArrival ? 20 : 0)
   + Math.min(product.ratingCount ?? 0, 10);
+
+const reassuranceItems = [
+  {
+    title: 'Made-to-order timing',
+    detail: 'Personalized items are typically prepared in 2–5 business days; product-specific timing takes priority.',
+    icon: Clock3,
+    to: '/policies/shipping',
+  },
+  {
+    title: 'USPS shipping in the US',
+    detail: 'Ground Advantage and Priority Mail options are documented in our shipping policy.',
+    icon: Truck,
+    to: '/policies/shipping',
+  },
+  {
+    title: 'Stripe & PayPal checkout',
+    detail: 'Payments are processed by Stripe or PayPal; the store does not keep your full card number.',
+    icon: ShieldCheck,
+    to: '/policies/privacy',
+  },
+  {
+    title: 'Clear custom-item policy',
+    detail: 'Personalized items cannot be returned once production starts; damaged or incorrect orders are covered by policy.',
+    icon: RotateCcw,
+    to: '/policies/returns',
+  },
+] as const;
 
 export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]; onShopAll: () => void }) {
   const featuredProducts = useMemo(
@@ -52,6 +80,28 @@ export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]
         ))}
       </div>
       <p className="mt-1 text-center text-[11px] font-medium text-boutique-brown-light/70 md:hidden">Swipe to explore more gifts.</p>
+
+      <div className="mt-8 rounded-[1.8rem] border border-boutique-brown/10 bg-[#fffaf3]/72 px-4 py-5 shadow-[0_12px_36px_rgba(58,37,26,0.06)] sm:px-5 md:mt-10 md:px-6 md:py-6">
+        <div className="mb-4 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-boutique-wood sm:text-[11px]">Good to know before you order</p>
+          <p className="mt-1 text-xs text-boutique-brown-light sm:text-sm">Short answers pulled from the store’s current policies — no invented guarantees.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {reassuranceItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.title} to={item.to} className="group rounded-[1.25rem] border border-boutique-brown/10 bg-white/72 p-4 text-left transition-transform hover:-translate-y-0.5 hover:bg-white">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-boutique-wood/20 bg-[#fffaf3] text-boutique-wood">
+                  <Icon className="h-4 w-4" strokeWidth={1.8} />
+                </span>
+                <p className="mt-3 text-sm font-bold text-boutique-brown">{item.title}</p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-boutique-brown-light sm:text-xs">{item.detail}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-boutique-brown-light transition-colors group-hover:text-boutique-wood">Read policy <ArrowRight className="h-3 w-3" /></span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }

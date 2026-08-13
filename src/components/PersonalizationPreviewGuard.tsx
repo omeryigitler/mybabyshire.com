@@ -1,9 +1,0 @@
-import React from 'react';
-
-export const PersonalizationPreviewGuard = () => (
-  <style>{`
-    .fixed.inset-0.z-50 div[class*="absolute left-1/2 top-1/2 mt-4 w-full"] {
-      display: none !important;
-    }
-  `}</style>
-);

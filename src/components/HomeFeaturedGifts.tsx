@@ -20,6 +20,76 @@ const getProductPriority = (product: Product) =>
   + (product.newArrival ? 20 : 0)
   + Math.min(product.ratingCount ?? 0, 10);
 
+const previewProducts: Product[] = [
+  {
+    id: 'preview-newborn-ivory',
+    name: 'Ivory Tulle Newborn Tutu & Flower Headband Set',
+    description: 'A soft ivory set made for newborn portraits, baby showers and special announcements.',
+    price: 34,
+    imageUrl: '/catalog/ivory-tulle-newborn-tutu.webp',
+    bgImage: 'card-design:classic:rounded:peach',
+    badge: 'New',
+    personalizationRequired: true,
+    newArrival: true,
+    ageRange: 'Newborn to 3-6 months',
+  },
+  {
+    id: 'preview-dinosaur',
+    name: 'Dinosaur Birthday Number Shirt',
+    description: 'A colorful name-and-number birthday shirt made for parties, portraits and cake-smash memories.',
+    price: 29,
+    imageUrl: '/catalog/personalized-dinosaur-birthday-number-shirt.webp',
+    bgImage: 'card-design:classic:rounded:blue',
+    badge: 'New',
+    personalizationRequired: true,
+    newArrival: true,
+  },
+  {
+    id: 'preview-heirloom-romper',
+    name: 'White Lace Heirloom Romper & Headband Set',
+    description: 'A refined white romper set for newborn portraits, dedications and keepsake photographs.',
+    price: 36,
+    imageUrl: '/catalog/white-lace-heirloom-romper-headband.webp',
+    bgImage: 'card-design:classic:rounded:butter',
+    badge: 'New',
+    personalizationRequired: true,
+    newArrival: true,
+  },
+  {
+    id: 'preview-ladybug',
+    name: 'Ladybug First Birthday Tutu Set',
+    description: 'A name-and-number birthday outfit with a full tutu and coordinating floral headband.',
+    price: 46,
+    imageUrl: '/catalog/personalized-ladybug-first-birthday-tutu-set.webp',
+    bgImage: 'card-design:classic:rounded:rose',
+    badge: 'Bestseller',
+    personalizationRequired: true,
+    bestseller: true,
+  },
+  {
+    id: 'preview-blue-gingham',
+    name: 'Blue Gingham First Birthday Shirt',
+    description: 'A classic gingham number-one shirt made with the child’s name for first birthday celebrations.',
+    price: 29,
+    imageUrl: '/catalog/personalized-blue-gingham-first-birthday-shirt.webp',
+    bgImage: 'card-design:classic:rounded:mint',
+    badge: 'New',
+    personalizationRequired: true,
+    newArrival: true,
+  },
+  {
+    id: 'preview-newborn-colors',
+    name: 'Newborn Tutu & Bow Photo Outfit Color Collection',
+    description: 'A soft newborn portrait set offered in ivory, white, blush and lavender.',
+    price: 34,
+    imageUrl: '/catalog/newborn-tutu-bow-photo-outfit-color-collection.webp',
+    bgImage: 'card-design:classic:rounded:peach',
+    badge: 'New',
+    personalizationRequired: true,
+    newArrival: true,
+  },
+];
+
 const reassuranceItems = [
   {
     title: 'Made-to-order timing',
@@ -48,14 +118,13 @@ const reassuranceItems = [
 ] as const;
 
 export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]; onShopAll: () => void }) {
+  const isPreviewFallback = products.length === 0;
   const featuredProducts = useMemo(
-    () => [...products]
-      .sort((a, b) => getProductPriority(b) - getProductPriority(a))
-      .slice(0, 6),
+    () => products.length
+      ? [...products].sort((a, b) => getProductPriority(b) - getProductPriority(a)).slice(0, 6)
+      : previewProducts,
     [products],
   );
-
-  if (!featuredProducts.length) return null;
 
   return (
     <section id="featured-gifts" className="scroll-mt-24 relative z-20 mx-auto mt-7 w-full max-w-[1560px] px-4 sm:px-6 md:mt-10 md:px-8">
@@ -72,10 +141,14 @@ export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]
         </button>
       </div>
 
+      {isPreviewFallback && (
+        <p className="mb-3 text-center text-[11px] text-boutique-brown-light/70 md:text-left">Preview uses a read-only visual snapshot of the current catalog. Live storefront products remain API-driven.</p>
+      )}
+
       <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-3">
         {featuredProducts.map((product) => (
           <div key={product.id} className="flex w-[86vw] max-w-[520px] flex-none snap-center md:w-auto md:max-w-none">
-            <ProductCard product={product} />
+            <ProductCard product={product} preview={isPreviewFallback} />
           </div>
         ))}
       </div>

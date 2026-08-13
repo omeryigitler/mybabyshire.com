@@ -11,7 +11,7 @@ const items = [
 
 export function HomeOrderReassurance() {
   return (
-    <section className="relative z-20 mx-auto mt-10 w-full max-w-[1560px] px-4 sm:px-6 md:mt-14 md:px-8" aria-label="Order reassurance">
+    <section className="order-[10] relative z-20 mx-auto mt-10 w-full max-w-[1560px] px-4 sm:px-6 md:mt-14 md:px-8" aria-label="Order reassurance">
       <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-[#fffaf3]/78 px-4 py-5 shadow-[0_12px_36px_rgba(58,37,26,0.06)] backdrop-blur-sm sm:px-5 md:px-6">
         <div className="mb-4 text-center md:text-left">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-boutique-wood sm:text-[11px]">Good to know before you order</p>

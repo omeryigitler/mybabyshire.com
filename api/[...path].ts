@@ -5,10 +5,6 @@ import { Buffer } from 'node:buffer';
 import apiRoutes from '../server/api.js';
 import { prisma } from '../lib/prisma.js';
 import {
-  ensureCuratedCatalog,
-  isCuratedCatalogReadRequest,
-} from './catalogSyncMiddleware.js';
-import {
   buildVerifiedCheckout,
   createPendingOrderFromCheckout,
   getBaseUrl,
@@ -20,25 +16,6 @@ import { sendPaymentConfirmedEmail } from '../lib/email.js';
 const app = express();
 
 app.use(express.json({ limit: '25mb' }));
-
-app.use(async (req, res, next) => {
-  if (!isCuratedCatalogReadRequest(req.method, req.path)) {
-    return next();
-  }
-
-  try {
-    const result = await ensureCuratedCatalog();
-    if (result.applied) {
-      console.info('Curated catalog applied', result);
-    }
-    return next();
-  } catch (error) {
-    console.error('Curated catalog synchronization failed', error);
-    return res.status(500).json({
-      error: 'The product catalog could not be prepared. Please try again shortly.',
-    });
-  }
-});
 
 const getPayPalBaseUrl = () => process.env.PAYPAL_ENV === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 

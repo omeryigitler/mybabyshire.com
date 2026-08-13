@@ -146,48 +146,86 @@ export default function Storefront() {
         </div>
       </header>
 
-      <main className="flex-1 relative z-10 flex flex-col items-center justify-start pt-12 md:pt-16 pb-8 md:pb-0 overflow-visible">
-        <DecorativeElement src="/decorative-moon-star.png" className="hidden sm:block top-[2%] left-[4%] md:left-[8%] opacity-90 drop-shadow-md" rotate="-15deg" size="w-32 md:w-48" />
-        <DecorativeElement src="/cloud-watercolor-pink.png" className="hidden sm:block top-[20%] left-[8%] md:left-[11%] opacity-95" rotate="5deg" size="w-40 md:w-64" />
-        <DecorativeElement src="/toy-teddy-ring-teether.png" className="top-[35%] left-[2%] md:left-[8%] opacity-90 drop-shadow-md" rotate="-5deg" size="w-24 md:w-36" />
-        <DecorativeElement src="/toy-wooden-star-solid.png" className="hidden sm:block top-[50%] left-[16%] md:left-[22%] opacity-80 drop-shadow-sm" rotate="15deg" size="w-12 md:w-16" />
-        <DecorativeElement src="/cloud-watercolor-blue-light.png" className="hidden sm:block top-[5%] right-[2%] md:right-[4%] opacity-95" rotate="-5deg" size="w-48 md:w-72" />
-        <DecorativeElement src="/toy-wooden-star-teether.png" className="hidden sm:block top-[26%] right-[12%] md:right-[18%] opacity-90 drop-shadow-md" rotate="15deg" size="w-16 md:w-24" />
-        <DecorativeElement src="/toy-wooden-star-solid.png" className="hidden sm:block top-[40%] right-[6%] md:right-[10%] opacity-80 drop-shadow-sm" rotate="-20deg" size="w-12 md:w-16" />
-        <DecorativeElement src="/toy-pull-duck.png" className="top-[45%] right-[2%] md:right-[10%] opacity-90 drop-shadow-md" rotate="-2deg" size="w-28 md:w-44" />
+      <main className="flex-1 relative z-10 flex flex-col items-center justify-start pb-8 md:pb-0 overflow-visible">
+        <section id="gifts" className="scroll-mt-24 relative z-10 w-full max-w-[1500px] px-3 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10">
+          <div className="relative overflow-hidden rounded-[1.9rem] border border-boutique-brown/10 bg-white/55 shadow-[0_20px_65px_rgba(58,37,26,0.10)] backdrop-blur-[2px] md:rounded-[2.5rem]">
+            <DecorativeElement src="/cloud-watercolor-pink.png" className="-left-14 top-8 opacity-45 sm:-left-10 sm:top-12" rotate="5deg" size="w-36 sm:w-48 md:w-60" />
+            <DecorativeElement src="/cloud-watercolor-blue-light.png" className="-right-16 top-10 opacity-45 sm:-right-8 md:top-5" rotate="-6deg" size="w-40 sm:w-52 md:w-72" />
+            <DecorativeElement src="/decorative-moon-star.png" className="right-[44%] top-8 hidden opacity-50 lg:block" rotate="-12deg" size="w-24" />
 
-        <div id="gifts" className="scroll-mt-24 text-center max-w-4xl px-6 mb-6 md:mb-4 relative z-10 mt-0">
-          <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/70 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown-light shadow-sm backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-boutique-wood" /> Handmade · Personalized keepsakes
-          </span>
-          <h1 className="font-serif text-[44px] leading-[1.08] md:text-[68px] text-boutique-brown mb-5 md:mb-4 tracking-[-0.01em]">
-            <span className="relative inline-block">Personalized Baby Gifts<span className="absolute -right-10 -top-2 scale-75 md:scale-100"><SparkleIcon /></span></span><br/>Made with Love
-          </h1>
-          <p className="font-sans text-lg md:text-[20px] text-boutique-brown-light max-w-2xl mx-auto leading-relaxed">Bespoke heirlooms, exquisitely soft blankets, and heartfelt keepsakes — embroidered with your little one's name and made to treasure.</p>
-        </div>
+            <div className="relative z-10 grid items-center lg:grid-cols-[0.88fr_1.12fr]">
+              <div className="order-1 px-5 pb-5 pt-8 text-center sm:px-8 sm:pt-10 md:px-10 lg:px-12 lg:py-14 lg:text-left xl:px-16 xl:py-16">
+                <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-boutique-brown/12 bg-[#fffaf3]/85 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm sm:text-[11px]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-boutique-wood" /> Made just for them
+                </span>
 
-        <div className="flex flex-col sm:flex-row gap-6 mb-5 md:mb-0 justify-center w-full max-w-2xl px-4 relative z-10">
-          <button type="button" onClick={() => scrollToSection('shop')} className="relative flex items-center justify-center cursor-pointer min-w-[280px] md:min-w-[300px] h-[72px] md:h-[68px] hover:-translate-y-1 transition-transform group">
-            <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 w-full h-full object-fill drop-shadow-md group-active:drop-shadow-sm transition-all" alt="" />
-            <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown text-[17px] md:text-lg px-8 text-center leading-tight">Shop Personalized Gifts</span>
-          </button>
-          <button type="button" onClick={() => scrollToSection('shop')} className="relative flex items-center justify-center cursor-pointer min-w-[280px] md:min-w-[300px] h-[72px] md:h-[68px] hover:-translate-y-1 transition-transform group">
-            <img src="/btn-paw-blank-cream.png" className="absolute inset-0 w-full h-full object-fill drop-shadow-md group-active:drop-shadow-sm transition-all" alt="" />
-            <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown text-[17px] md:text-lg px-8 text-center leading-tight">Explore New Arrivals</span>
-          </button>
-        </div>
+                <h1 className="font-serif text-[42px] leading-[1.03] tracking-[-0.025em] text-boutique-brown sm:text-[50px] md:text-[58px] lg:text-[62px] xl:text-[68px]">
+                  Personalized Baby Gifts<br className="hidden sm:block" /> Made with Love
+                </h1>
 
-        <div className="relative z-10 mb-8 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 text-[13px] font-medium text-boutique-brown-light md:mb-4">
-          <span className="inline-flex items-center gap-1.5">🧵 Hand-embroidered</span>
-          <span className="hidden h-1 w-1 rounded-full bg-boutique-brown/25 sm:inline-block" />
-          <span className="inline-flex items-center gap-1.5">🇺🇸 Ships across the US</span>
-          <span className="hidden h-1 w-1 rounded-full bg-boutique-brown/25 sm:inline-block" />
-          <span className="inline-flex items-center gap-1.5">🎁 Gift-ready packaging</span>
-        </div>
+                <p className="mx-auto mt-4 max-w-[620px] font-sans text-[16px] leading-relaxed text-boutique-brown-light sm:text-[18px] lg:mx-0 lg:max-w-[560px] lg:text-[19px]">
+                  Thoughtful keepsakes, soft baby essentials, and meaningful gifts personalized with their name and made to treasure.
+                </p>
 
-        {productsLoading && <p className="text-boutique-brown-light text-sm mb-6 relative z-20">Loading products...</p>}
+                <div className="mx-auto mt-6 flex w-full max-w-[620px] flex-col items-center gap-2.5 sm:mt-7 sm:flex-row sm:justify-center sm:gap-3 lg:mx-0 lg:justify-start">
+                  <button type="button" onClick={() => scrollToSection('shop')} className="group relative flex h-[66px] w-full min-w-0 cursor-pointer items-center justify-center transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:w-auto sm:min-w-[286px] md:h-[68px] md:min-w-[300px]">
+                    <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-md transition-all group-active:drop-shadow-sm" alt="" />
+                    <span className="relative z-10 px-7 text-center text-[16px] font-bold leading-tight text-boutique-brown sm:text-[17px] md:text-lg">Shop Personalized Gifts</span>
+                  </button>
 
-        <div id="shop" className="scroll-mt-24 w-full max-w-[1620px] mx-auto px-4 md:px-8 z-20 relative">
+                  <button type="button" onClick={() => scrollToSection('shop')} className="group relative flex h-[58px] w-full min-w-0 cursor-pointer items-center justify-center opacity-85 transition-all hover:-translate-y-0.5 hover:opacity-100 active:translate-y-0 sm:w-auto sm:min-w-[246px] md:h-[62px]">
+                    <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-sm transition-all group-active:drop-shadow-none" alt="" />
+                    <span className="relative z-10 px-6 text-center text-[15px] font-semibold leading-tight text-boutique-brown-light sm:text-[16px]">Explore New Arrivals</span>
+                  </button>
+                </div>
+
+                <p className="mt-4 text-[12px] font-medium tracking-[0.02em] text-boutique-brown-light/80 sm:text-[13px]">
+                  Choose a gift, add their name, and make it unmistakably theirs.
+                </p>
+              </div>
+
+              <div className="order-2 relative min-h-[320px] overflow-hidden border-t border-boutique-brown/8 bg-[radial-gradient(circle_at_50%_44%,rgba(255,255,255,0.96),rgba(247,231,212,0.58)_62%,rgba(228,205,178,0.25)_100%)] sm:min-h-[390px] lg:min-h-[560px] lg:border-l lg:border-t-0">
+                <img src="/cloud-watercolor-blue-dense.png" className="pointer-events-none absolute -right-10 top-5 w-40 object-contain opacity-25 mix-blend-multiply sm:w-52 lg:w-64" alt="" />
+                <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute left-[9%] top-[14%] w-10 rotate-[-12deg] object-contain opacity-45 mix-blend-multiply sm:w-12" alt="" />
+                <img src="/toy-teddy-ring-teether.png" className="pointer-events-none absolute bottom-[7%] right-[7%] z-20 w-20 rotate-[7deg] object-contain opacity-90 drop-shadow-md sm:w-24 lg:w-28" alt="" />
+                <img
+                  src="/product-blanket-cutout-v1.png"
+                  alt="Personalized baby blanket"
+                  loading="eager"
+                  fetchPriority="high"
+                  className="absolute left-1/2 top-1/2 z-10 w-[92%] max-w-[720px] -translate-x-1/2 -translate-y-[48%] object-contain drop-shadow-[0_22px_30px_rgba(58,37,26,0.20)] sm:w-[88%] lg:w-[94%]"
+                />
+
+                <div className="absolute bottom-4 left-4 z-20 max-w-[190px] rounded-[1.2rem] border border-boutique-brown/12 bg-[#fffaf3]/88 px-3.5 py-2.5 text-left shadow-[0_12px_32px_rgba(58,37,26,0.12)] backdrop-blur-md sm:bottom-6 sm:left-6 sm:max-w-none sm:px-4 sm:py-3">
+                  <p className="font-serif text-[16px] leading-tight text-boutique-brown sm:text-[18px]">A gift with their name on it</p>
+                  <p className="mt-1 text-[11px] leading-snug text-boutique-brown-light sm:text-[12px]">Personalized details make every piece feel one of a kind.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-20 mx-2 -mt-px grid grid-cols-1 overflow-hidden rounded-b-[1.45rem] border border-t-0 border-boutique-brown/10 bg-[#fffaf3]/92 shadow-[0_12px_32px_rgba(58,37,26,0.07)] backdrop-blur-md sm:mx-5 sm:grid-cols-3 md:mx-8">
+            {[
+              ['Hand Embroidered', 'Care in every stitch'],
+              ['Gift-Ready Packaging', 'Thoughtfully prepared'],
+              ['Ships Across the US', 'Made for gifting nationwide'],
+            ].map(([title, detail], index) => (
+              <div key={title} className={`flex min-h-[68px] items-center gap-3 px-4 py-3 sm:min-h-[76px] sm:justify-center sm:px-5 ${index > 0 ? 'border-t border-boutique-brown/10 sm:border-l sm:border-t-0' : ''}`}>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-boutique-wood/25 bg-white/75 text-boutique-wood shadow-sm">
+                  <Check className="h-4 w-4" strokeWidth={2} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-bold text-boutique-brown sm:text-[13px]">{title}</span>
+                  <span className="mt-0.5 block text-[10px] leading-tight text-boutique-brown-light/75 sm:text-[11px]">{detail}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {productsLoading && <p className="relative z-20 mb-2 mt-6 text-sm text-boutique-brown-light">Loading products...</p>}
+
+        <div id="shop" className="scroll-mt-24 relative z-20 mx-auto mt-8 w-full max-w-[1620px] px-4 md:mt-12 md:px-8">
           <div className="mb-7 text-center">
             <h2 className="font-serif text-3xl text-boutique-brown md:text-[40px]">Shop the Collection</h2>
             <p className="mt-2 text-sm text-boutique-brown-light md:text-base">Personalized gifts, ready to make their own.</p>

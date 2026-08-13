@@ -30,48 +30,74 @@ const getPayPalAccessToken = async () => {
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   const response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      intent: 'CAPTURE',
-      purchase_units: [{
-        reference_id: order.order_number,
-        description: `MY BABY SHIRE order ${order.order_number}`,
-        amount: {
-          currency_code: checkout.currency,
-          value: checkout.total.toFixed(2),
-          breakdown: {
-            item_total: { currency_code: checkout.currency, value: checkout.subtotal.toFixed(2) },
-            shipping: { currency_code: checkout.currency, value: checkout.shipping.toFixed(2) },
-          },
-        },
-        items: checkout.items.map((item) => ({
-          name: String(item.name).slice(0, 127),
-          quantity: String(item.quantity),
-          unit_amount: { currency_code: checkout.currency, value: item.price.toFixed(2) },
-        })),
-      }],
-      payment_source: {
-        paypal: {
-          experience_context: {
-            brand_name: 'MY BABY SHIRE',
-            locale: 'en-US',
-            shipping_preference: 'NO_SHIPPING',
-            user_action: 'PAY_NOW',
-            return_url: `${baseUrl}/paypal-success?order=${encodeURIComponent(order.order_number)}`,
-            cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
-          },
-        },
-      },
-    }),
+    headers: { Authorization: `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials',
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || data.name || 'PayPal order could not be created.');
+  if (!response.ok) throw new Error(data.error_description || data.error || 'PayPal access token could not be created.');
+  return data.access_token as string;
+};
 
-  const approvalUrl = data.links?.find((link: any) => link.rel === 'payer-action' || link.rel === 'approve')?.href;
-  await prisma.orders.update({ where: { id: order.id }, data: { payment_reference: data.id } });
+const createPayPalOrderHandler = async (req: express.Request, res: express.Response) => {
+  try {
+    const checkout = await buildVerifiedCheckout(req.body);
+    const order = await createPendingOrderFromCheckout(checkout, 'paypal');
+    const baseUrl = getBaseUrl(req);
 
-  return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl, shippingMethod: checkout.shippingMethod });
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          reference_id: order.order_number,
+          description: `MY BABY SHIRE order ${order.order_number}`,
+          amount: {
+            currency_code: checkout.currency,
+            value: checkout.total.toFixed(2),
+            breakdown: {
+              item_total: { currency_code: checkout.currency, value: checkout.subtotal.toFixed(2) },
+              shipping: { currency_code: checkout.currency, value: checkout.shipping.toFixed(2) },
+            },
+          },
+          items: checkout.items.map((item) => ({
+            name: String(item.name).slice(0, 127),
+            quantity: String(item.quantity),
+            unit_amount: { currency_code: checkout.currency, value: item.price.toFixed(2) },
+          })),
+        }],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: 'MY BABY SHIRE',
+              locale: 'en-US',
+              shipping_preference: 'NO_SHIPPING',
+              user_action: 'PAY_NOW',
+              return_url: `${baseUrl}/paypal-success?order=${encodeURIComponent(order.order_number)}`,
+              cancel_url: `${baseUrl}/payment-cancel?order=${encodeURIComponent(order.order_number)}`,
+            },
+          },
+        },
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || data.name || 'PayPal order could not be created.');
+
+    const approvalUrl = data.links?.find((link: any) => link.rel === 'payer-action' || link.rel === 'approve')?.href;
+    await prisma.orders.update({ where: { id: order.id }, data: { payment_reference: data.id } });
+
+    return res.status(200).json({ success: true, orderId: order.order_number, databaseId: order.id, paypalOrderId: data.id, approvalUrl, shippingMethod: checkout.shippingMethod });
+  } catch (error) {
+    if (isCheckoutValidationError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    console.error('PayPal checkout failed', error);
+    return res.status(500).json({ error: 'PayPal checkout failed. Please try again.' });
+  }
 };
 
 const capturePayPalOrderHandler = async (req: express.Request, res: express.Response) => {

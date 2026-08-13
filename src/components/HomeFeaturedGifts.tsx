@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { ProductCard } from './ProductCard';
 
-const hasNamePersonalization = (product: Product) =>
+const hasNameDetail = (product: Product) =>
   Boolean(
     product.personalizationFields?.some((field) => {
       const fieldKey = String(field.fieldKey || '').toLowerCase();
@@ -16,14 +16,14 @@ const hasNamePersonalization = (product: Product) =>
 const getProductPriority = (product: Product) =>
   (product.bestseller ? 100 : 0)
   + (product.featured ? 60 : 0)
-  + (hasNamePersonalization(product) ? 40 : 0)
+  + (hasNameDetail(product) ? 40 : 0)
   + (product.newArrival ? 20 : 0)
   + Math.min(product.ratingCount ?? 0, 10);
 
 const reassuranceItems = [
   {
     title: 'Made-to-order timing',
-    detail: 'Personalized items are typically prepared in 2–5 business days; product-specific timing takes priority.',
+    detail: 'Custom items are typically prepared in 2–5 business days; product-specific timing takes priority.',
     icon: Clock3,
     to: '/policies/shipping',
   },
@@ -41,7 +41,7 @@ const reassuranceItems = [
   },
   {
     title: 'Clear custom-item policy',
-    detail: 'Personalized items cannot be returned once production starts; damaged or incorrect orders are covered by policy.',
+    detail: 'Made-for-you items cannot be returned once production starts; damaged or incorrect orders are covered by policy.',
     icon: RotateCcw,
     to: '/policies/returns',
   },
@@ -58,13 +58,13 @@ export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]
   if (!featuredProducts.length) return null;
 
   return (
-    <section id="featured-gifts" className="scroll-mt-24 relative z-20 mx-auto mt-10 w-full max-w-[1560px] px-4 sm:px-6 md:mt-14 md:px-8">
-      <div className="mb-6 flex flex-col gap-3 text-center md:mb-8 md:flex-row md:items-end md:justify-between md:text-left">
+    <section id="featured-gifts" className="scroll-mt-24 relative z-20 mx-auto mt-7 w-full max-w-[1560px] px-4 sm:px-6 md:mt-10 md:px-8">
+      <div className="mb-5 flex flex-col gap-3 text-center md:mb-7 md:flex-row md:items-end md:justify-between md:text-left">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-boutique-wood sm:text-[11px]">Start with the gifts that show personalization best</span>
-          <h2 className="mt-2 font-serif text-3xl text-boutique-brown md:text-[42px]">Featured Personalized Gifts</h2>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-boutique-wood sm:text-[11px]">Little gifts for very big moments</span>
+          <h2 className="mt-2 font-serif text-3xl text-boutique-brown md:text-[42px]">Gifts Made Just for Them</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-boutique-brown-light md:mx-0 md:text-base">
-            Real products from the current collection, with the same prices, options and product pages you will see when you shop.
+            Start with the pieces families reach for first — then choose the name, size or special details that make the gift theirs.
           </p>
         </div>
         <button type="button" onClick={onShopAll} className="mx-auto inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light transition-colors hover:text-boutique-wood md:mx-0">
@@ -74,12 +74,12 @@ export function HomeFeaturedGifts({ products, onShopAll }: { products: Product[]
 
       <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-3">
         {featuredProducts.map((product) => (
-          <div key={product.id} className="flex w-[88vw] max-w-[540px] flex-none snap-center md:w-auto md:max-w-none">
+          <div key={product.id} className="flex w-[86vw] max-w-[520px] flex-none snap-center md:w-auto md:max-w-none">
             <ProductCard product={product} />
           </div>
         ))}
       </div>
-      <p className="mt-1 text-center text-[11px] font-medium text-boutique-brown-light/70 md:hidden">Swipe to explore more gifts.</p>
+      <p className="mt-1 text-center text-[11px] font-medium text-boutique-brown-light/70 md:hidden">Swipe to meet more little favorites.</p>
 
       <div className="mt-8 rounded-[1.8rem] border border-boutique-brown/10 bg-[#fffaf3]/72 px-4 py-5 shadow-[0_12px_36px_rgba(58,37,26,0.06)] sm:px-5 md:mt-10 md:px-6 md:py-6">
         <div className="mb-4 text-center">

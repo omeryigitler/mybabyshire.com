@@ -1,1 +1,1 @@
-export { HomeRealFeaturedGifts as HomeFeaturedGifts } from './HomeRealFeaturedGifts';
+export { HomeFeaturedFlow as HomeFeaturedGifts } from './HomeFeaturedFlow';

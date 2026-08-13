@@ -33,10 +33,9 @@ const readUploadResponse = async (response: Response) => {
   };
 };
 
-export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUploaderProps) => {
+export const ImageUploader = ({ images, onImagesChange, maxImages = 1 }: ImageUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [cleanImage, setCleanImage] = useState(false);
   const canUploadMore = images.length < maxImages;
 
   const handleUpload = async (file: File) => {
@@ -59,11 +58,10 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
     try {
       const token = getAdminToken();
       const fileDataUrl = await fileToDataUrl(file);
-      const endpoint = cleanImage ? '/api/admin/remove-bg-upload' : '/api/admin/upload-image';
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/admin/upload-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ file: fileDataUrl, folder: 'mybabyshire/products' }),
+        body: JSON.stringify({ file: fileDataUrl }),
       });
       const data = await readUploadResponse(response);
       if (!response.ok) throw new Error(data.details || data.error || 'Image upload failed.');
@@ -83,19 +81,11 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
     if (e.dataTransfer.files && e.dataTransfer.files[0]) handleUpload(e.dataTransfer.files[0]);
   };
 
-  const removeImage = (id: string) => onImagesChange(images.filter(img => img.id !== id));
+  const removeImage = (id: string) => onImagesChange(images.filter((img) => img.id !== id));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <label className="block text-sm font-medium text-gray-700">Product Images</label>
-        <button type="button" onClick={() => setCleanImage(!cleanImage)} aria-pressed={cleanImage} className="flex items-center gap-2 text-xs font-medium text-gray-600">
-          <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${cleanImage ? 'bg-gray-900' : 'bg-gray-300'}`}>
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${cleanImage ? 'translate-x-4' : 'translate-x-0.5'}`} />
-          </span>
-          Clean image before upload
-        </button>
-      </div>
+      <label className="block text-sm font-medium text-gray-700">Product Image</label>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {images.map((img, idx) => (
           <div key={img.id} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
@@ -109,11 +99,11 @@ export const ImageUploader = ({ images, onImagesChange, maxImages = 6 }: ImageUp
         {canUploadMore && (
           <label className={`relative aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${dragActive ? 'border-gray-900 bg-gray-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50/50'}`} onDragOver={(e) => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={handleDrop}>
             <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp" onChange={(e) => { if (e.target.files && e.target.files[0]) handleUpload(e.target.files[0]); e.currentTarget.value = ''; }} />
-            {isUploading ? <div className="text-gray-400 text-sm font-medium animate-pulse">Uploading...</div> : <><Upload className="w-6 h-6 text-gray-400 mb-2" /><span className="text-xs text-gray-500 font-medium text-center px-4">{cleanImage ? 'Clean Upload' : 'Normal Upload'}</span></>}
+            {isUploading ? <div className="text-gray-400 text-sm font-medium animate-pulse">Uploading...</div> : <><Upload className="w-6 h-6 text-gray-400 mb-2" /><span className="text-xs text-gray-500 font-medium text-center px-4">Upload Product Image</span></>}
           </label>
         )}
       </div>
-      <p className="text-xs text-gray-400">Normal upload uses Cloudinary. Clean upload removes the background first, then uploads the transparent PNG. Max {maxImages} image{maxImages === 1 ? '' : 's'}.</p>
+      <p className="text-xs text-gray-400">Images are uploaded to Cloudinary and saved to the product record. Max {maxImages} image{maxImages === 1 ? '' : 's'}.</p>
     </div>
   );
 };

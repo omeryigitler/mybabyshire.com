@@ -21,6 +21,8 @@ const TermsPage = lazy(() => import('./legal/LegalPages').then((module) => ({ de
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
 const AdminProducts = lazy(() => import('./admin/AdminProducts').then((module) => ({ default: module.AdminProducts })));
+const ProductCreateWizard = lazy(() => import('./admin/ProductCreateWizard').then((module) => ({ default: module.ProductCreateWizard })));
+const ProductWizardDesignPreview = lazy(() => import('./admin/ProductWizardDesignPreview').then((module) => ({ default: module.ProductWizardDesignPreview })));
 const ProductForm = lazy(() => import('./admin/ProductForm').then((module) => ({ default: module.ProductForm })));
 const AdminOrders = lazy(() => import('./admin/AdminOrders').then((module) => ({ default: module.AdminOrders })));
 const AdminReviews = lazy(() => import('./admin/AdminReviews').then((module) => ({ default: module.AdminReviews })));
@@ -65,10 +67,11 @@ export default function App() {
           <Route path="/policies/returns" element={<RefundPolicyPage />} />
           <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/policies/terms" element={<TermsPage />} />
+          <Route path="/admin/wizard-preview" element={<ProductWizardDesignPreview />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
-            <Route path="products/new" element={<ProductForm />} />
+            <Route path="products/new" element={<ProductCreateWizard />} />
             <Route path="products/:id/edit" element={<ProductForm />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="templates" element={<PersonalizationTemplateManager />} />

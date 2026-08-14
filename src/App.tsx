@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { initAnalytics, trackPageView } from './utils/analytics';
 import Storefront from './Storefront';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
-import { HomeCROEnhancer } from './components/HomeCROEnhancer';
 
 const ProductDetailPage = lazy(() => import('./ProductDetailPage'));
 const CheckoutPage = lazy(() => import('./CheckoutPage'));
@@ -51,7 +50,7 @@ export default function App() {
       <RouteAnalytics />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<><Storefront /><HomeCROEnhancer /></>} />
+          <Route path="/" element={<Storefront />} />
           <Route path="/products/:slug" element={<ProductDetailPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />

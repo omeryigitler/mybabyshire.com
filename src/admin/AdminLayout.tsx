@@ -4,10 +4,28 @@ import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { clearAdminSession, getStoredAdminToken } from './adminAuth';
 import { BrandLogo } from '../components/BrandLogo';
+import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
 
 export const AdminLayout = () => {
   const isAuthenticated = Boolean(getStoredAdminToken());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notice, setNotice] = useState<AdminNotice | null>(null);
+
+  useEffect(() => {
+    const originalAlert = window.alert;
+    window.alert = (message?: any) => {
+      setNotice({
+        kind: 'error',
+        title: 'Action needs attention',
+        message: 'Review the information below and try again.',
+        issues: [String(message || 'Please review this action.')],
+      });
+    };
+
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -67,6 +85,7 @@ export const AdminLayout = () => {
           <Outlet />
         </div>
       </main>
+      {notice && <AdminNoticeDialog notice={notice} onClose={() => setNotice(null)} />}
     </div>
   );
 };

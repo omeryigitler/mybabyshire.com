@@ -13,6 +13,8 @@ import { WizardPersonalizationStep } from './WizardPersonalizationStep';
 import { WizardReviewStep } from './WizardReviewStep';
 import { useProductWizardState } from './useProductWizardState';
 import { saveProductWizardDraft } from './saveProductWizardDraft';
+import { validateProductWizardStep, validateProductWizardThrough } from './productWizardDraft';
+import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
 
 type Category = { id: string; name: string };
 
@@ -20,9 +22,22 @@ export const ProductCreateWizard = () => {
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<AdminNotice | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<null | (() => void)>(null);
+  const [navigateAfterNotice, setNavigateAfterNotice] = useState(false);
   const { draft, update, clear } = useProductWizardState();
   const { addProduct } = useStore();
   const navigate = useNavigate();
+
+  const showIssues = (targetStep: number, issues: string[]) => {
+    setStep(targetStep);
+    setNotice({
+      kind: 'error',
+      title: `Complete step ${targetStep} first`,
+      message: 'Every required field must be complete before you can move forward.',
+      issues,
+    });
+  };
 
   useEffect(() => {
     if (step !== 5 || categories.length) return;
@@ -30,42 +45,101 @@ export const ProductCreateWizard = () => {
       try {
         const response = await fetch('/api/admin/categories', { headers: { Authorization: `Bearer ${getAdminToken()}` } });
         const data = await response.json();
-        if (response.ok) setCategories(Array.isArray(data) ? data : []);
-      } catch (error) { console.error(error); }
+        if (!response.ok) throw new Error(data.error || 'Categories could not be loaded.');
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error(error);
+        setNotice({
+          kind: 'error',
+          title: 'Categories could not be loaded',
+          message: 'Nothing was changed. Try again before continuing.',
+          issues: [(error as Error).message],
+        });
+      }
     })();
   }, [step, categories.length]);
 
   const categoryName = useMemo(() => categories.find((category) => category.id === draft.categoryId)?.name || 'No category', [categories, draft.categoryId]);
 
-  const validate = () => {
-    if (step === 1 && (!draft.name.trim() || !draft.description.trim())) return 'Add a product name and description.';
-    if (step === 2 && !draft.images.length) return 'Upload one product image.';
-    if (step === 3 && (!draft.price || Number(draft.price) <= 0)) return 'Enter a valid product price.';
-    return '';
-  };
-
   const next = () => {
-    const error = validate();
-    if (error) return alert(error);
+    const issues = validateProductWizardStep(draft, step);
+    if (issues.length) return showIssues(step, issues);
     setStep((current) => Math.min(8, current + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const changeStep = (targetStep: number) => {
+    if (targetStep <= step) return setStep(targetStep);
+    for (let candidate = 1; candidate < targetStep; candidate += 1) {
+      const issues = validateProductWizardStep(draft, candidate);
+      if (issues.length) return showIssues(candidate, issues);
+    }
+    setStep(targetStep);
+  };
+
+  const discard = () => {
+    clear();
+    navigate('/admin/products');
+  };
+
   const cancel = () => {
-    if (confirm('Discard this product draft?')) { clear(); navigate('/admin/products'); }
+    const hasProgress = Boolean(
+      draft.name.trim() || draft.description.trim() || draft.images.length || draft.price || draft.ageRange.trim()
+      || draft.material.trim() || draft.preparationTime.trim() || draft.careInstructions.trim() || draft.categoryId,
+    );
+    if (!hasProgress) return discard();
+    setPendingConfirm(() => discard);
+    setNotice({
+      kind: 'confirm',
+      title: 'Discard this product draft?',
+      message: 'All information entered in the 8-step wizard will be cleared.',
+    });
   };
 
   const save = async () => {
-    if (!draft.name.trim() || !draft.description.trim() || !draft.images.length || !draft.price) return alert('Name, description, image and price are required.');
+    const allIssues = validateProductWizardThrough(draft, 7);
+    if (allIssues.length) {
+      for (let candidate = 1; candidate <= 7; candidate += 1) {
+        const issues = validateProductWizardStep(draft, candidate);
+        if (issues.length) return showIssues(candidate, issues);
+      }
+      return;
+    }
+
     setSaving(true);
     try {
       const products = await saveProductWizardDraft(draft);
       products.forEach(addProduct);
       clear();
-      alert('Product saved successfully.');
+      setNavigateAfterNotice(true);
+      setNotice({ kind: 'success', title: 'Product saved', message: 'The product is now stored in the catalog.' });
+    } catch (error) {
+      console.error(error);
+      setNotice({
+        kind: 'error',
+        title: 'Product could not be saved',
+        message: 'Nothing was published. Fix the issue and try again.',
+        issues: [(error as Error).message],
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const closeNotice = () => {
+    setNotice(null);
+    setPendingConfirm(null);
+    if (navigateAfterNotice) {
+      setNavigateAfterNotice(false);
       navigate('/admin/products');
-    } catch (error) { console.error(error); alert((error as Error).message); }
-    finally { setSaving(false); }
+    }
+  };
+
+  const confirmNotice = () => {
+    const action = pendingConfirm;
+    setNotice(null);
+    setPendingConfirm(null);
+    action?.();
   };
 
   const content = step === 1 ? <WizardBasicsStep draft={draft} update={update} />
@@ -77,5 +151,17 @@ export const ProductCreateWizard = () => {
     : step === 7 ? <WizardPersonalizationStep draft={draft} update={update} />
     : <WizardReviewStep draft={draft} categoryName={categoryName} />;
 
-  return <ProductWizardPage step={step} onCancel={cancel} onBack={() => setStep((current) => Math.max(1, current - 1))} onNext={next} onStepChange={setStep} finalAction={<button type="button" onClick={save} disabled={saving} className="rounded-full bg-boutique-brown px-6 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-50">{saving ? 'Saving...' : 'Save Product'}</button>}>{content}</ProductWizardPage>;
+  return <>
+    <ProductWizardPage
+      step={step}
+      onCancel={cancel}
+      onBack={() => setStep((current) => Math.max(1, current - 1))}
+      onNext={next}
+      onStepChange={changeStep}
+      finalAction={<button type="button" onClick={save} disabled={saving} className="rounded-full bg-boutique-brown px-6 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-50">{saving ? 'Saving...' : 'Save Product'}</button>}
+    >
+      {content}
+    </ProductWizardPage>
+    {notice && <AdminNoticeDialog notice={notice} onClose={closeNotice} onConfirm={notice.kind === 'confirm' ? confirmNotice : undefined} />}
+  </>;
 };

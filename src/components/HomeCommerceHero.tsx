@@ -139,15 +139,15 @@ export function HomeCommerceHero({
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="mx-auto grid w-[calc(100%-1.5rem)] max-w-[1420px] grid-cols-2 overflow-hidden rounded-b-[1.45rem] border-x border-b border-boutique-brown/10 bg-white/72 shadow-[0_12px_34px_rgba(58,37,26,.06)] sm:grid-cols-4">
-        {trustItems.map(({ label, icon: Icon }, index) => (
-          <div key={label} className={`flex min-h-[62px] items-center justify-center gap-2 px-3 text-center ${index % 2 ? 'border-l border-boutique-brown/10' : ''} ${index >= 2 ? 'border-t border-boutique-brown/10 sm:border-t-0' : ''} ${index > 0 ? 'sm:border-l sm:border-boutique-brown/10' : ''}`}>
-            <Icon className="h-4 w-4 shrink-0 text-boutique-wood" strokeWidth={1.8} />
-            <span className="text-[10px] font-bold leading-tight text-boutique-brown sm:text-[11px]">{label}</span>
-          </div>
-        ))}
+        <div className="relative z-20 grid grid-cols-2 border-t border-boutique-brown/10 bg-white/58 sm:grid-cols-4">
+          {trustItems.map(({ label, icon: Icon }, index) => (
+            <div key={label} className={`flex min-h-[56px] items-center justify-center gap-2 px-3 text-center ${index % 2 ? 'border-l border-boutique-brown/10' : ''} ${index >= 2 ? 'border-t border-boutique-brown/10 sm:border-t-0' : ''} ${index > 0 ? 'sm:border-l sm:border-boutique-brown/10' : ''}`}>
+              <Icon className="h-4 w-4 shrink-0 text-boutique-wood" strokeWidth={1.8} />
+              <span className="text-[10px] font-bold leading-tight text-boutique-brown sm:text-[11px]">{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

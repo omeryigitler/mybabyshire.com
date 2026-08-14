@@ -11,14 +11,15 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
-  const actionLabel = product.personalizationRequired ? 'Personalize' : 'View Details';
+  const hasDetails = Boolean(product.personalizationRequired || product.personalizationFields?.length);
+  const actionLabel = hasDetails ? 'Choose Details' : 'View Details';
   const backgroundImage = product.bgImage || '/product-card-cloud-blue.png';
   const detailPath = `/products/${product.slug || product.id}`;
 
   const handleAction = (event: React.MouseEvent) => {
     if (preview) return;
 
-    if (product.personalizationRequired) {
+    if (hasDetails) {
       event.preventDefault();
       openPersonalizationModal(product);
     }

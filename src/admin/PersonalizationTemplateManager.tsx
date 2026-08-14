@@ -3,6 +3,7 @@ import { Layers3, Plus, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import { Button, PageHeader } from './ui';
 import { DEFAULT_PRODUCT_FIELDS, PersonalizationFieldBuilder, type FieldType, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 import { getAdminToken } from './adminAuth';
+import { requestAdminConfirm } from './adminDialogs';
 
 type Template = {
   id: string;
@@ -14,48 +15,31 @@ type Template = {
 
 const FIELD_TYPES: FieldType[] = ['text', 'color', 'select', 'date'];
 
-const cloneDefaultFields = () =>
-  DEFAULT_PRODUCT_FIELDS.map((field) => ({
-    ...field,
-    options: field.options ? [...field.options] : undefined,
-  }));
+const cloneDefaultFields = () => DEFAULT_PRODUCT_FIELDS.map((field) => ({ ...field, options: field.options ? [...field.options] : undefined }));
 
 const normalizeFields = (fields: any[]): PersonalizationBuilderField[] => {
   if (!Array.isArray(fields) || fields.length === 0) return cloneDefaultFields();
-
-  const normalized = fields
-    .map((field, index) => {
-      const label = String(field?.label || '').trim();
-      const fieldKey = String(field?.fieldKey || field?.field_key || '').trim();
-      const type = FIELD_TYPES.includes(field?.type || field?.field_type) ? (field?.type || field?.field_type) : 'text';
-      if (!label || !fieldKey) return null;
-
-      return {
-        id: String(field?.id || `${fieldKey}-${index}`),
-        fieldKey,
-        type,
-        label,
-        placeholder: field?.placeholder || '',
-        helpText: field?.helpText || field?.help_text || '',
-        maxLength: field?.maxLength ?? field?.max_length ?? null,
-        options: Array.isArray(field?.options) ? field.options.map(String).filter(Boolean) : [],
-        required: Boolean(field?.required),
-      };
-    })
-    .filter(Boolean) as PersonalizationBuilderField[];
-
+  const normalized = fields.map((field, index) => {
+    const label = String(field?.label || '').trim();
+    const fieldKey = String(field?.fieldKey || field?.field_key || '').trim();
+    const type = FIELD_TYPES.includes(field?.type || field?.field_type) ? (field?.type || field?.field_type) : 'text';
+    if (!label || !fieldKey) return null;
+    return {
+      id: String(field?.id || `${fieldKey}-${index}`),
+      fieldKey,
+      type,
+      label,
+      placeholder: field?.placeholder || '',
+      helpText: field?.helpText || field?.help_text || '',
+      maxLength: field?.maxLength ?? field?.max_length ?? null,
+      options: Array.isArray(field?.options) ? field.options.map(String).filter(Boolean) : [],
+      required: Boolean(field?.required),
+    };
+  }).filter(Boolean) as PersonalizationBuilderField[];
   return normalized.length ? normalized : cloneDefaultFields();
 };
 
-const fieldLabels = (fields: PersonalizationBuilderField[]) =>
-  fields
-    .map((field) => {
-      if (field.type === 'color') return 'Colors';
-      if (field.type === 'select') return 'Select';
-      if (field.type === 'date') return 'Date';
-      return 'Text';
-    })
-    .filter((value, index, list) => list.indexOf(value) === index);
+const fieldLabels = (fields: PersonalizationBuilderField[]) => fields.map((field) => field.type === 'color' ? 'Colors' : field.type === 'select' ? 'Select' : field.type === 'date' ? 'Date' : 'Text').filter((value, index, list) => list.indexOf(value) === index);
 
 export const PersonalizationTemplateManager = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -81,14 +65,10 @@ export const PersonalizationTemplateManager = () => {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const response = await fetch('/api/admin/templates', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch('/api/admin/templates', { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Could not load templates.');
-      const nextTemplates = Array.isArray(data)
-        ? data.map((template) => ({ ...template, fields: normalizeFields(template.fields) }))
-        : [];
+      const nextTemplates = Array.isArray(data) ? data.map((template) => ({ ...template, fields: normalizeFields(template.fields) })) : [];
       setTemplates(nextTemplates);
       if (nextTemplates.length) selectTemplate(nextTemplates[0]);
     } catch (error) {
@@ -107,15 +87,8 @@ export const PersonalizationTemplateManager = () => {
       const token = getAdminToken();
       const response = await fetch('/api/admin/templates', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: 'New Personalization Template',
-          description: 'Describe where this template should be used.',
-          fields: cloneDefaultFields(),
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: 'New Personalization Template', description: 'Describe where this template should be used.', fields: cloneDefaultFields() }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Template could not be created.');
@@ -134,7 +107,6 @@ export const PersonalizationTemplateManager = () => {
   const saveTemplate = async () => {
     const cleanName = templateName.trim() || 'Untitled Template';
     const cleanDescription = templateDescription.trim();
-
     if (!selectedTemplateId) {
       alert('Create a template first.');
       return;
@@ -145,15 +117,8 @@ export const PersonalizationTemplateManager = () => {
       const token = getAdminToken();
       const response = await fetch(`/api/admin/templates?id=${encodeURIComponent(selectedTemplateId)}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: cleanName,
-          description: cleanDescription,
-          fields: templateFields,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: cleanName, description: cleanDescription, fields: templateFields }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Template could not be saved.');
@@ -171,16 +136,16 @@ export const PersonalizationTemplateManager = () => {
 
   const deleteTemplate = async () => {
     if (!selectedTemplate) return;
-    const confirmed = window.confirm(`Delete "${selectedTemplate.name}"?`);
+    const confirmed = await requestAdminConfirm({
+      title: `Delete ${selectedTemplate.name}?`,
+      message: 'This personalization template will be permanently removed. Products already using saved fields are not changed by this action.',
+    });
     if (!confirmed) return;
 
     setIsSaving(true);
     try {
       const token = getAdminToken();
-      const response = await fetch(`/api/admin/templates?id=${encodeURIComponent(selectedTemplate.id)}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(`/api/admin/templates?id=${encodeURIComponent(selectedTemplate.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Template could not be deleted.');
       const nextTemplates = templates.filter((template) => template.id !== selectedTemplate.id);
@@ -203,13 +168,7 @@ export const PersonalizationTemplateManager = () => {
 
   return (
     <div className="space-y-6 pb-20">
-      <PageHeader
-        eyebrow="Custom gift setup"
-        icon={Sparkles}
-        title="Personalization Templates"
-        description="Create reusable fields for names, colors, dates and special gift details."
-        actions={<Button variant="primary" icon={Plus} onClick={createTemplate} disabled={isSaving}>New Template</Button>}
-      />
+      <PageHeader eyebrow="Custom gift setup" icon={Sparkles} title="Personalization Templates" description="Create reusable fields for names, colors, dates and special gift details." actions={<Button variant="primary" icon={Plus} onClick={createTemplate} disabled={isSaving}>New Template</Button>} />
 
       <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
         <aside className="rounded-[2rem] border border-boutique-brown/10 bg-white/82 p-4 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
@@ -219,13 +178,11 @@ export const PersonalizationTemplateManager = () => {
             {!isLoading && templates.length === 0 && <div className="rounded-[1.3rem] border border-boutique-brown/10 bg-[#fffaf3] p-4 text-sm text-boutique-brown-light">No templates yet. Create one to begin.</div>}
             {templates.map((template) => {
               const isActive = selectedTemplateId === template.id;
-              return (
-                <button key={template.id} type="button" onClick={() => selectTemplate(template)} className={`w-full rounded-[1.3rem] border p-4 text-left transition-all ${isActive ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fffaf3]'}`}>
-                  <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-boutique-brown">{template.name}</h3><p className="mt-1 text-xs text-boutique-brown-light">Used on {template.used || 0} products</p></div>{isActive && <Wand2 className="h-4 w-4 text-boutique-brown" />}</div>
-                  <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">{template.description || 'No description yet.'}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">{fieldLabels(template.fields).map((field) => <span key={field} className="rounded-full border border-boutique-brown/10 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-boutique-brown-light shadow-sm">{field}</span>)}</div>
-                </button>
-              );
+              return <button key={template.id} type="button" onClick={() => selectTemplate(template)} className={`w-full rounded-[1.3rem] border p-4 text-left transition-all ${isActive ? 'border-boutique-brown bg-[#fff4df] shadow-sm' : 'border-boutique-brown/10 bg-white hover:bg-[#fffaf3]'}`}>
+                <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-boutique-brown">{template.name}</h3><p className="mt-1 text-xs text-boutique-brown-light">Used on {template.used || 0} products</p></div>{isActive && <Wand2 className="h-4 w-4 text-boutique-brown" />}</div>
+                <p className="mt-2 text-xs leading-relaxed text-boutique-brown-light">{template.description || 'No description yet.'}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">{fieldLabels(template.fields).map((field) => <span key={field} className="rounded-full border border-boutique-brown/10 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-boutique-brown-light shadow-sm">{field}</span>)}</div>
+              </button>;
             })}
           </div>
         </aside>
@@ -237,10 +194,7 @@ export const PersonalizationTemplateManager = () => {
                 <div><label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55">Template name</label><input type="text" value={templateName} disabled={!selectedTemplateId} onChange={(event) => setTemplateName(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/10 bg-white px-4 py-3 font-serif text-2xl text-boutique-brown outline-none focus:ring-2 focus:ring-boutique-wood/25 disabled:opacity-50" /></div>
                 <div><label className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-boutique-brown/55">Description</label><textarea rows={2} value={templateDescription} disabled={!selectedTemplateId} onChange={(event) => setTemplateDescription(event.target.value)} className="w-full rounded-2xl border border-boutique-brown/10 bg-white px-4 py-3 text-sm text-boutique-brown outline-none focus:ring-2 focus:ring-boutique-wood/25 disabled:opacity-50" /></div>
               </div>
-              <div className="flex gap-2">
-                {selectedTemplateId && <button onClick={deleteTemplate} disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-full border border-red-100 bg-white px-5 py-3 text-sm font-bold text-red-600 shadow-sm hover:bg-red-50 disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete</button>}
-                <button onClick={saveTemplate} disabled={isSaving || !selectedTemplateId} className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-wood disabled:opacity-50"><Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}</button>
-              </div>
+              <div className="flex gap-2">{selectedTemplateId && <button onClick={deleteTemplate} disabled={isSaving} className="inline-flex items-center justify-center gap-2 rounded-full border border-red-100 bg-white px-5 py-3 text-sm font-bold text-red-600 shadow-sm hover:bg-red-50 disabled:opacity-50"><Trash2 className="h-4 w-4" /> Delete</button>}<button onClick={saveTemplate} disabled={isSaving || !selectedTemplateId} className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-wood disabled:opacity-50"><Save className="h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}</button></div>
             </div>
             {lastSaved && <p className="mt-3 rounded-full bg-white px-4 py-2 text-xs font-bold text-boutique-brown-light">{lastSaved}</p>}
           </div>

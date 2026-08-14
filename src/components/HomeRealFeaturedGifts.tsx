@@ -16,12 +16,12 @@ export function HomeRealFeaturedGifts({ products, onShopAll }: { products: Produ
   );
 
   return (
-    <section id="featured-gifts" className="scroll-mt-24 relative z-20 mx-auto mt-7 w-full max-w-[1560px] px-4 sm:px-6 md:mt-10 md:px-8">
-      <div className="mb-5 flex flex-col gap-3 text-center md:mb-7 md:flex-row md:items-end md:justify-between md:text-left">
+    <section id="featured-gifts" className="scroll-mt-24 relative z-20 mx-auto mt-4 w-full max-w-[1560px] px-4 sm:px-6 md:mt-6 md:px-8">
+      <div className="mb-4 flex flex-col gap-2.5 text-center md:mb-5 md:flex-row md:items-end md:justify-between md:text-left">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-boutique-wood sm:text-[11px]">Start with something special</span>
-          <h2 className="mt-2 font-serif text-3xl text-boutique-brown md:text-[42px]">Gifts Made Just for Them</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-boutique-brown-light md:mx-0 md:text-base">Real pieces from the storefront catalog, with the same price and options you will see when you shop.</p>
+          <h2 className="mt-1.5 font-serif text-3xl text-boutique-brown md:text-[38px]">Gifts Made Just for Them</h2>
+          <p className="mx-auto mt-1.5 max-w-2xl text-sm leading-relaxed text-boutique-brown-light md:mx-0 md:text-[15px]">Real pieces from the storefront catalog, with the same price and options you will see when you shop.</p>
         </div>
         <button type="button" onClick={onShopAll} className="mx-auto inline-flex items-center gap-2 text-sm font-bold text-boutique-brown-light transition-colors hover:text-boutique-wood md:mx-0">Shop all gifts <ArrowRight className="h-4 w-4" /></button>
       </div>

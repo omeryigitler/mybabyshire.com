@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Clock3, Gift, Plus, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
@@ -30,6 +30,15 @@ const trustItems = [
   { label: 'Made to order', icon: Clock3 },
 ];
 
+const carouselVideoChunks = Array.from({ length: 6 }, (_, index) => `/media/carousel/carousel-${index}.txt`);
+
+const decodeBase64Video = (encoded: string) => {
+  const binary = window.atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new Blob([bytes], { type: 'video/mp4' });
+};
+
 export function HomeCommerceHero({
   products,
   onShop,
@@ -43,12 +52,56 @@ export function HomeCommerceHero({
   onChooseProduct: (product: Product) => void;
   onAddProduct: (product: Product) => void;
 }) {
+  const [carouselVideoSrc, setCarouselVideoSrc] = useState<string | null>(null);
   const picks = useMemo(
     () => [...products].filter((product) => product.imageUrl).sort((a, b) => score(b) - score(a)).slice(0, 3),
     [products],
   );
   const main = picks[0];
   const more = picks.slice(1);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(min-width: 1024px) and (prefers-reduced-motion: no-preference)');
+    let objectUrl: string | null = null;
+    let cancelled = false;
+
+    const loadVideo = async () => {
+      if (!motionQuery.matches) {
+        setCarouselVideoSrc(null);
+        return;
+      }
+
+      try {
+        const responses = await Promise.all(carouselVideoChunks.map((path) => fetch(path)));
+        if (responses.some((response) => !response.ok)) return;
+        const encoded = (await Promise.all(responses.map((response) => response.text()))).join('');
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(decodeBase64Video(encoded));
+        setCarouselVideoSrc(objectUrl);
+      } catch {
+        setCarouselVideoSrc(null);
+      }
+    };
+
+    const handleChange = () => {
+      if (!motionQuery.matches) {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+        setCarouselVideoSrc(null);
+        return;
+      }
+      if (!objectUrl) void loadVideo();
+    };
+
+    void loadVideo();
+    motionQuery.addEventListener('change', handleChange);
+
+    return () => {
+      cancelled = true;
+      motionQuery.removeEventListener('change', handleChange);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
 
   const runQuickAction = (product: Product) => {
     if (needsDetails(product)) onChooseProduct(product);
@@ -58,27 +111,44 @@ export function HomeCommerceHero({
   return (
     <section id="gifts" className="relative z-10 w-full max-w-[1540px] px-3 pt-3 sm:px-6 md:px-8 lg:px-10">
       <div className="relative overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-[#fffaf3]/90 shadow-[0_24px_70px_rgba(58,37,26,.11)] md:rounded-[2.6rem]">
-        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-20 top-8 w-56 opacity-25 mix-blend-multiply" alt="" />
+        <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-20 top-8 w-56 opacity-25 mix-blend-multiply lg:opacity-10" alt="" />
         <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-20 -top-10 w-72 opacity-25 mix-blend-multiply" alt="" />
 
         <div className="relative z-10 grid lg:grid-cols-[.8fr_1.2fr]">
-          <div className="flex flex-col justify-center px-5 py-7 text-center sm:px-8 sm:py-8 lg:px-10 lg:py-8 lg:text-left xl:px-12">
-            <span className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[.2em] text-boutique-brown-light shadow-sm lg:mx-0">
-              <Sparkles className="h-3.5 w-3.5 text-boutique-wood" /> For the first hello
-            </span>
-            <h1 className="mt-4 font-serif text-[40px] leading-[.98] tracking-[-.035em] text-boutique-brown sm:text-[48px] lg:text-[54px] xl:text-[58px]">
-              <span className="whitespace-nowrap">Baby Gifts Made</span><br />Just for Them
-            </h1>
-            <p className="mx-auto mt-4 max-w-[540px] text-[14px] leading-relaxed text-boutique-brown-light sm:text-[16px] lg:mx-0 lg:text-[17px]">Thoughtful pieces for newborn arrivals, baby showers and first celebrations — with names, sizes and special details chosen just for them.</p>
-            <div className="mx-auto mt-5 flex w-full max-w-[510px] flex-col gap-2 sm:flex-row lg:mx-0">
-              <button type="button" onClick={onShop} className="group relative flex h-[56px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-md" alt="" />
-                <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
-              </button>
-              <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex h-[54px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-sm" alt="" />
-                <span className="relative z-10 text-sm font-semibold text-boutique-brown-light">See New Arrivals</span>
-              </button>
+          <div className="relative flex flex-col justify-center overflow-hidden px-5 py-7 text-center sm:px-8 sm:py-8 lg:px-10 lg:py-8 lg:text-left xl:px-12">
+            {carouselVideoSrc && (
+              <video
+                aria-hidden="true"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="auto"
+                src={carouselVideoSrc}
+                className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.72] lg:block"
+              />
+            )}
+            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.88)_0%,rgba(255,250,243,.79)_48%,rgba(255,250,243,.67)_100%)] lg:block" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/75 to-transparent lg:block" />
+
+            <div className="relative z-10">
+              <span className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm lg:mx-0">
+                <Sparkles className="h-3.5 w-3.5 text-boutique-wood" /> For the first hello
+              </span>
+              <h1 className="mt-4 font-serif text-[40px] leading-[.98] tracking-[-.035em] text-boutique-brown sm:text-[48px] lg:text-[54px] xl:text-[58px]">
+                <span className="whitespace-nowrap">Baby Gifts Made</span><br />Just for Them
+              </h1>
+              <p className="mx-auto mt-4 max-w-[540px] text-[14px] leading-relaxed text-boutique-brown-light sm:text-[16px] lg:mx-0 lg:text-[17px]">Thoughtful pieces for newborn arrivals, baby showers and first celebrations — with names, sizes and special details chosen just for them.</p>
+              <div className="mx-auto mt-5 flex w-full max-w-[510px] flex-col gap-2 sm:flex-row lg:mx-0">
+                <button type="button" onClick={onShop} className="group relative flex h-[56px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
+                  <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-md" alt="" />
+                  <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
+                </button>
+                <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex h-[54px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
+                  <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-sm" alt="" />
+                  <span className="relative z-10 text-sm font-semibold text-boutique-brown-light">See New Arrivals</span>
+                </button>
+              </div>
             </div>
           </div>
 

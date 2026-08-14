@@ -125,11 +125,11 @@ export function HomeCommerceHero({
                 playsInline
                 preload="auto"
                 src={carouselVideoSrc}
-                className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.72] lg:block"
+                className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.86] lg:block"
               />
             )}
-            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.88)_0%,rgba(255,250,243,.79)_48%,rgba(255,250,243,.67)_100%)] lg:block" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/75 to-transparent lg:block" />
+            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.72)_0%,rgba(255,250,243,.60)_48%,rgba(255,250,243,.48)_100%)] lg:block" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/55 to-transparent lg:block" />
 
             <div className="relative z-10">
               <span className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm lg:mx-0">

@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Edit, Package, Plus, RefreshCcw, Search, Sparkles, Star, Trash, Wand2, X } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { CardDesignFrame } from '../components/CardDesignFrame';
 import { Button, PageHeader, StatCard } from './ui';
 import { ProductCreateWizard } from './ProductCreateWizard';
+import { ProductEditWizard } from './ProductEditWizard';
 import { clearProductWizardDraft, readProductWizardDraft, validateProductWizardStep, validateProductWizardThrough } from './productWizardDraft';
 import { saveProductWizardDraft } from './saveProductWizardDraft';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
@@ -26,6 +27,7 @@ export const AdminProducts = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [confirmAction, setConfirmAction] = useState<null | (() => void)>(null);
@@ -75,19 +77,23 @@ export const AdminProducts = () => {
   useEffect(() => { loadProducts(); }, []);
 
   useEffect(() => {
-    if (searchParams.get('create') !== '1') return;
-    setIsCreateOpen(true);
+    const shouldCreate = searchParams.get('create') === '1';
+    const editId = searchParams.get('edit');
+    if (!shouldCreate && !editId) return;
+    if (shouldCreate) setIsCreateOpen(true);
+    if (editId) setEditingProductId(editId);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('create');
+    nextParams.delete('edit');
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!isCreateOpen) return;
+    if (!isCreateOpen && !editingProductId) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
-  }, [isCreateOpen]);
+  }, [isCreateOpen, editingProductId]);
 
   const activeProducts = products.filter((product) => (product.status || 'active') !== 'draft').length;
   const draftProducts = products.filter((product) => product.status === 'draft').length;
@@ -100,6 +106,8 @@ export const AdminProducts = () => {
     if (!hasProgress) return discardCreate();
     askConfirmation('Discard this product draft?', 'All information entered in the 8-step wizard will be cleared.', discardCreate);
   };
+
+  const closeEdit = () => askConfirmation('Close product editor?', 'Any unsaved changes in this wizard will be discarded.', () => setEditingProductId(null));
 
   const currentWizardStep = (root: HTMLDivElement) => {
     const stepText = Array.from(root.querySelectorAll('p')).map((node) => node.textContent?.trim() || '').find((text) => /^Step \d+ of 8$/.test(text));
@@ -185,13 +193,16 @@ export const AdminProducts = () => {
             {!isLoading && filteredProducts.map((product) => <tr key={product.id} className="transition-colors hover:bg-[#fffaf3]/70">
               <td className="px-6 py-4"><div className="flex items-center gap-4"><div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-[1.4rem] border border-boutique-brown/10 bg-[#fffaf3] shadow-sm">{product.bgImage && <CardDesignFrame value={product.bgImage} className="absolute inset-0 h-full w-full opacity-40" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-40" />}<img src={product.imageUrl} className="relative z-10 h-full w-full object-contain p-2" alt="" /></div><div className="min-w-0"><h3 className="font-serif text-xl leading-tight text-boutique-brown">{product.name}</h3><p className="mt-1 max-w-sm truncate text-xs text-boutique-brown-light">{product.description}</p><div className="mt-2 flex flex-wrap gap-1.5">{(product as any).featured && <FeatureBadge>Featured</FeatureBadge>}{((product as any).newArrival || (product as any).isNewArrival) && <FeatureBadge>New arrival</FeatureBadge>}{((product as any).bestseller || (product as any).isBestseller) && <FeatureBadge>Bestseller</FeatureBadge>}{((product as any).personalizationRequired || (product as any).personalizationEnabled || (product as any).personalizationFields?.length > 0) && <FeatureBadge>Made for them</FeatureBadge>}</div></div></div></td>
               <td className="px-6 py-4"><StatusBadge status={product.status} /></td><td className="px-6 py-4"><div className="relative h-12 w-28 overflow-hidden rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] shadow-sm"><CardDesignFrame value={product.bgImage} className="h-full w-full opacity-80" legacyClassName="h-full w-full object-cover opacity-80" /></div></td><td className="px-6 py-4 font-bold text-boutique-brown">${product.price.toFixed(2)}</td>
-              <td className="px-6 py-4 text-right"><div className="flex items-center justify-end gap-2"><Link to={`/admin/products/${product.id}/edit`} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-boutique-brown/10 bg-white text-boutique-brown shadow-sm hover:bg-[#fff4df]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></Link><button onClick={() => handleDelete(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button></div></td>
+              <td className="px-6 py-4 text-right"><div className="flex items-center justify-end gap-2"><button type="button" onClick={() => setEditingProductId(product.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-boutique-brown/10 bg-white text-boutique-brown shadow-sm hover:bg-[#fff4df]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></button><button onClick={() => handleDelete(product)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button></div></td>
             </tr>)}
           </tbody>
         </table>
       </div>
 
       {isCreateOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1c13]/45 p-3 backdrop-blur-[5px] sm:p-6"><div onClickCapture={handleWizardClickCapture} className="relative max-h-[calc(100vh-1.5rem)] w-full max-w-[1240px] overflow-y-auto rounded-[2rem] border border-white/60 bg-[#fbf6ef] p-3 shadow-[0_35px_100px_rgba(45,28,18,0.34)] sm:max-h-[calc(100vh-3rem)] sm:p-5"><button type="button" onClick={closeCreate} className="absolute right-4 top-4 z-[120] inline-flex h-11 w-11 items-center justify-center rounded-full border border-boutique-brown/10 bg-white/95 text-boutique-brown shadow-md hover:bg-[#fff4df]" aria-label="Close add product"><X className="h-5 w-5" /></button><ProductCreateWizard /></div></div>}
+
+      {editingProductId && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1c13]/45 p-3 backdrop-blur-[5px] sm:p-6"><div className="relative max-h-[calc(100vh-1.5rem)] w-full max-w-[1240px] overflow-y-auto rounded-[2rem] border border-white/60 bg-[#fbf6ef] p-3 shadow-[0_35px_100px_rgba(45,28,18,0.34)] sm:max-h-[calc(100vh-3rem)] sm:p-5"><button type="button" onClick={closeEdit} className="absolute right-4 top-4 z-[120] inline-flex h-11 w-11 items-center justify-center rounded-full border border-boutique-brown/10 bg-white/95 text-boutique-brown shadow-md hover:bg-[#fff4df]" aria-label="Close edit product"><X className="h-5 w-5" /></button><ProductEditWizard productId={editingProductId} onCancel={() => setEditingProductId(null)} onSaved={async () => { setEditingProductId(null); await loadProducts(); setNotice({ kind: 'success', title: 'Product updated', message: 'The product list now reflects your saved changes.' }); }} /></div></div>}
+
       {notice && <AdminNoticeDialog notice={notice} onClose={() => { setNotice(null); setConfirmAction(null); }} onConfirm={notice.kind === 'confirm' ? runConfirmation : undefined} />}
     </div>
   );

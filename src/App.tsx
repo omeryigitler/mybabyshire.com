@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { initAnalytics, trackPageView } from './utils/analytics';
 import Storefront from './Storefront';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
@@ -20,7 +20,6 @@ const TermsPage = lazy(() => import('./legal/LegalPages').then((module) => ({ de
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
 const AdminProducts = lazy(() => import('./admin/AdminProducts').then((module) => ({ default: module.AdminProducts })));
-const ProductForm = lazy(() => import('./admin/ProductForm').then((module) => ({ default: module.ProductForm })));
 const AdminOrders = lazy(() => import('./admin/AdminOrders').then((module) => ({ default: module.AdminOrders })));
 const AdminReviews = lazy(() => import('./admin/AdminReviews').then((module) => ({ default: module.AdminReviews })));
 const AdminCoupons = lazy(() => import('./admin/AdminCoupons').then((module) => ({ default: module.AdminCoupons })));
@@ -41,6 +40,11 @@ function RouteAnalytics() {
   useEffect(() => { initAnalytics(); }, []);
   useEffect(() => { trackPageView(location.pathname + location.search); }, [location.pathname, location.search]);
   return null;
+}
+
+function AdminProductEditRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/admin/products?edit=${encodeURIComponent(id || '')}`} replace />;
 }
 
 export default function App() {
@@ -68,7 +72,7 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/new" element={<Navigate to="/admin/products?create=1" replace />} />
-            <Route path="products/:id/edit" element={<ProductForm />} />
+            <Route path="products/:id/edit" element={<AdminProductEditRedirect />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="templates" element={<PersonalizationTemplateManager />} />
             <Route path="orders" element={<AdminOrders />} />

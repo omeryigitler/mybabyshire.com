@@ -80,7 +80,7 @@ export const AdminDashboard = () => {
         actions={
           <>
             <Button variant="secondary" icon={RefreshCcw} onClick={loadDashboard} disabled={isLoading}>Refresh</Button>
-            <Link to="/admin/products/new"><Button variant="primary" icon={Plus}>Add Product</Button></Link>
+            <Link to="/admin/products?create=1"><Button variant="primary" icon={Plus}>Add Product</Button></Link>
           </>
         }
       />
@@ -150,7 +150,7 @@ export const AdminDashboard = () => {
             <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-20 mix-blend-screen" alt="" />
             <div className="relative z-10 mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5" /><h2 className="text-[15px] font-bold tracking-tight">Quick Actions</h2></div>
             <div className="relative z-10 space-y-2">
-              <Link to="/admin/products/new" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Add a new product <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/admin/products?create=1" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Add a new product <ArrowRight className="h-4 w-4" /></Link>
               <Link to="/admin/orders" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Review orders <ArrowRight className="h-4 w-4" /></Link>
               <Link to="/admin/reviews" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Moderate reviews <ArrowRight className="h-4 w-4" /></Link>
               <Link to="/admin/coupons" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Manage coupons <ArrowRight className="h-4 w-4" /></Link>

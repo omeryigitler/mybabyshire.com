@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Edit, Package, Plus, RefreshCcw, Search, Sparkles, Star, Trash, Wand2, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { CardDesignFrame } from '../components/CardDesignFrame';
@@ -29,6 +29,7 @@ export const AdminProducts = () => {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [confirmAction, setConfirmAction] = useState<null | (() => void)>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const showError = (title: string, message: string, issues?: string[]) => setNotice({ kind: 'error', title, message, issues });
   const askConfirmation = (title: string, message: string, action: () => void) => {
@@ -74,12 +75,18 @@ export const AdminProducts = () => {
   useEffect(() => { loadProducts(); }, []);
 
   useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+    setIsCreateOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('create');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
     if (!isCreateOpen) return;
     const previousOverflow = document.body.style.overflow;
-    const previousAlert = window.alert;
     document.body.style.overflow = 'hidden';
-    window.alert = (message?: any) => showError('Action needs attention', 'Complete the required information before continuing.', [String(message || 'Please review this step.')]);
-    return () => { document.body.style.overflow = previousOverflow; window.alert = previousAlert; };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [isCreateOpen]);
 
   const activeProducts = products.filter((product) => (product.status || 'active') !== 'draft').length;
@@ -166,7 +173,7 @@ export const AdminProducts = () => {
 
       <div className="overflow-hidden rounded-[2rem] border border-boutique-brown/10 bg-white/82 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4 border-b border-boutique-brown/10 p-5">
-          <div className="relative max-w-sm flex-1"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-boutique-brown/35" /><input type="text" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search products..." className="w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] py-3 pl-12 pr-4 text-sm text-boutique-brown outline-none transition-all placeholder:text-boutique-brown/45 focus:ring-2 focus:ring-boutique-wood/25" /></div>
+          <div className="relative max-w-sm flex-1"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-boutique-brown/35" /><input type="text" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search products..." className="w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] py-3 pl-12 pr-4 text-sm text-boutique-brown shadow-sm outline-none placeholder:text-boutique-brown/45 focus:ring-2 focus:ring-boutique-wood/25" /></div>
           <button onClick={loadProducts} disabled={isLoading} className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-4 py-3 text-sm font-bold text-boutique-brown shadow-sm hover:bg-[#fff4df] disabled:opacity-50"><RefreshCcw className="h-4 w-4" /> Refresh</button>
         </div>
 

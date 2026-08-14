@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { clearAdminSession, getStoredAdminToken } from './adminAuth';
 import { BrandLogo } from '../components/BrandLogo';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
+import { ADMIN_CONFIRM_EVENT, type AdminConfirmEventDetail } from './adminDialogs';
 
 export const AdminLayout = () => {
   const isAuthenticated = Boolean(getStoredAdminToken());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
+  const confirmResolver = useRef<((confirmed: boolean) => void) | null>(null);
 
   useEffect(() => {
     const originalAlert = window.alert;
@@ -22,8 +24,20 @@ export const AdminLayout = () => {
       });
     };
 
+    const handleConfirmRequest = (event: Event) => {
+      const detail = (event as CustomEvent<AdminConfirmEventDetail>).detail;
+      if (!detail) return;
+      confirmResolver.current?.(false);
+      confirmResolver.current = detail.resolve;
+      setNotice({ kind: 'confirm', title: detail.title, message: detail.message });
+    };
+
+    window.addEventListener(ADMIN_CONFIRM_EVENT, handleConfirmRequest);
     return () => {
       window.alert = originalAlert;
+      window.removeEventListener(ADMIN_CONFIRM_EVENT, handleConfirmRequest);
+      confirmResolver.current?.(false);
+      confirmResolver.current = null;
     };
   }, []);
 
@@ -53,6 +67,18 @@ export const AdminLayout = () => {
     window.location.assign('/login');
   };
 
+  const closeNotice = () => {
+    if (notice?.kind === 'confirm') confirmResolver.current?.(false);
+    confirmResolver.current = null;
+    setNotice(null);
+  };
+
+  const confirmNotice = () => {
+    confirmResolver.current?.(true);
+    confirmResolver.current = null;
+    setNotice(null);
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-boutique-bg font-sans text-boutique-brown">
       <div className="fixed inset-0 pointer-events-none z-0 opacity-35 bg-pattern bg-[length:420px_420px]"></div>
@@ -62,30 +88,18 @@ export const AdminLayout = () => {
       <img src="/toy-abc-blocks.png" className="pointer-events-none fixed right-10 bottom-14 z-0 hidden w-20 -rotate-6 opacity-30 mix-blend-multiply xl:block" alt="" />
 
       <header className="fixed inset-x-0 top-0 z-30 flex min-h-[74px] items-center justify-between border-b border-boutique-brown/10 bg-white/86 px-4 shadow-[0_12px_34px_rgba(58,37,26,0.08)] backdrop-blur-xl md:hidden">
-        <button
-          type="button"
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] text-boutique-brown shadow-sm"
-          aria-label="Open admin menu"
-          aria-expanded={isMobileMenuOpen}
-        >
+        <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] text-boutique-brown shadow-sm" aria-label="Open admin menu" aria-expanded={isMobileMenuOpen}>
           <Menu className="h-5 w-5" />
         </button>
         <BrandLogo variant="nav" className="!h-[42px] !max-w-[210px]" />
         <span className="h-11 w-11" aria-hidden="true" />
       </header>
 
-      <AdminSidebar
-        isMobileOpen={isMobileMenuOpen}
-        onNavigate={() => setIsMobileMenuOpen(false)}
-        onSignOut={handleSignOut}
-      />
+      <AdminSidebar isMobileOpen={isMobileMenuOpen} onNavigate={() => setIsMobileMenuOpen(false)} onSignOut={handleSignOut} />
       <main className="relative z-10 min-h-screen px-4 pb-7 pt-24 sm:px-5 md:ml-64 md:px-8 md:py-8 xl:px-10 2xl:px-12">
-        <div className="mx-auto w-full max-w-[1440px]">
-          <Outlet />
-        </div>
+        <div className="mx-auto w-full max-w-[1440px]"><Outlet /></div>
       </main>
-      {notice && <AdminNoticeDialog notice={notice} onClose={() => setNotice(null)} />}
+      {notice && <AdminNoticeDialog notice={notice} onClose={closeNotice} onConfirm={notice.kind === 'confirm' ? confirmNotice : undefined} />}
     </div>
   );
 };

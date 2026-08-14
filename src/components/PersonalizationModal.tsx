@@ -70,12 +70,7 @@ export const PersonalizationModal = () => {
   const fields = getFieldsForProduct();
   const firstField = fields[0];
   const secondaryFields = fields.slice(1);
-  const fieldByKey = new Map(fields.map((field) => [field.fieldKey, field]));
-  const previewTextField = fields.find((field) => field.type === 'text') || firstField;
-  const previewColorField = fields.find((field) => field.type === 'color');
   const getFieldValue = (field: PersonalizationField) => String(personalizationData[field.fieldKey] ?? field.defaultValue ?? '');
-  const previewText = previewTextField ? getFieldValue(previewTextField) : '';
-  const previewColor = previewColorField ? getFieldValue(previewColorField) : undefined;
   const isLastStep = step === 3;
   const isFieldMissing = (field: PersonalizationField) => field.required && !getFieldValue(field).trim();
   const isStepValid = step === 1
@@ -164,6 +159,23 @@ export const PersonalizationModal = () => {
     );
   };
 
+  const detailsSummary = (
+    <div className="w-full rounded-2xl border border-[#d4b497]/20 bg-white/75 p-4 text-left shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d4b497]">Your details</p>
+      <div className="mt-3 space-y-2.5">
+        {fields.map((field) => {
+          const value = getFieldValue(field);
+          return (
+            <div key={field.fieldKey} className="flex items-start justify-between gap-4 border-b border-[#d4b497]/10 pb-2.5 last:border-0 last:pb-0">
+              <span className="text-[11px] font-bold text-[#5a4234]">{field.label}</span>
+              <span className={`max-w-[58%] break-words text-right text-sm font-medium ${value ? 'text-[#3a251a]' : 'text-[#b69a84]'}`}>{value || 'Not selected yet'}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <AnimatePresence>
       {isPersonalizationModalOpen && (
@@ -187,12 +199,12 @@ export const PersonalizationModal = () => {
               type="button"
               onClick={handleClose}
               className="absolute right-4 top-4 z-20 rounded-full bg-white/90 p-2 text-[#5a4234] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f7ede3]"
-              aria-label="Close personalization"
+              aria-label="Close choose details"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="relative hidden w-1/2 flex-shrink-0 flex-col items-center justify-center border-r border-[#d4b497]/20 bg-[#fcfaf6] p-12 md:flex">
+            <div className="relative hidden w-1/2 flex-shrink-0 flex-col items-center justify-center border-r border-[#d4b497]/20 bg-[#fcfaf6] p-10 md:flex">
               <img src="/cloud-watercolor-pink.png" className="absolute left-10 top-10 w-24 opacity-60 mix-blend-multiply" alt="" />
               <img src="/toy-wooden-star-solid.png" className="absolute bottom-16 right-12 w-12 rotate-12 opacity-50 mix-blend-multiply" alt="" />
 
@@ -202,26 +214,12 @@ export const PersonalizationModal = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="relative z-10 flex w-full flex-col items-center"
               >
-                <img src={selectedProduct.imageUrl} className="h-64 w-64 object-contain drop-shadow-xl" alt={selectedProduct.name} />
-
-                {previewText && (
-                  <div className="absolute left-1/2 top-1/2 mt-4 w-full -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span
-                      className="text-2xl opacity-80"
-                      style={{
-                        color: previewColor || '#3a251a',
-                        fontFamily: personalizationData.fontStyle === 'Classic Script' ? 'cursive' : 'serif',
-                      }}
-                    >
-                      {previewText}
-                    </span>
-                  </div>
-                )}
-
-                <div className="mt-8 text-center">
+                <img src={selectedProduct.imageUrl} className="h-60 w-60 object-contain drop-shadow-xl" alt={selectedProduct.name} />
+                <div className="mt-6 text-center">
                   <h2 className="mb-2 font-serif text-2xl text-[#3a251a]">{selectedProduct.name}</h2>
                   <p className="font-medium text-[#5a4234] opacity-80">${selectedProduct.price.toFixed(2)}</p>
                 </div>
+                <div className="mt-6 w-full max-w-sm">{detailsSummary}</div>
               </motion.div>
             </div>
 
@@ -241,6 +239,11 @@ export const PersonalizationModal = () => {
               </div>
 
               <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 sm:px-8 md:px-10">
+                <div className="mb-5 flex items-center gap-4 rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-3 md:hidden">
+                  <img src={selectedProduct.imageUrl} className="h-20 w-20 shrink-0 object-contain" alt={selectedProduct.name} />
+                  <div className="min-w-0"><p className="line-clamp-2 font-serif text-lg text-[#3a251a]">{selectedProduct.name}</p><p className="mt-1 text-sm font-bold text-[#5a4234]">${selectedProduct.price.toFixed(2)}</p></div>
+                </div>
+
                 <AnimatePresence mode="wait">
                   {step === 1 && (
                     <motion.div
@@ -251,8 +254,8 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Who is this gift for?</h3>
-                        <p className="text-sm text-[#5a4234] opacity-80">Start with the first detail for this personalized gift.</p>
+                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Choose the first detail</h3>
+                        <p className="text-sm text-[#5a4234] opacity-80">Your choices are stored with the order. The product photo stays true to the catalog image.</p>
                       </div>
                       {firstField && renderField(firstField)}
                     </motion.div>
@@ -267,8 +270,8 @@ export const PersonalizationModal = () => {
                       className="flex flex-col gap-6"
                     >
                       <div>
-                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Choose your style</h3>
-                        <p className="text-sm text-[#5a4234] opacity-80">Complete the remaining details for {previewText || 'this gift'}.</p>
+                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Complete the details</h3>
+                        <p className="text-sm text-[#5a4234] opacity-80">Choose the remaining options for this gift.</p>
                       </div>
                       <div className="flex flex-col gap-5">
                         {secondaryFields.length
@@ -286,27 +289,14 @@ export const PersonalizationModal = () => {
                       exit={{ opacity: 0, x: -20 }}
                       className="flex flex-col gap-6"
                     >
-                      <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7ede3]">
+                      <div className="flex flex-col items-center justify-center py-4 text-center">
+                        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7ede3]">
                           <Sparkles className="h-8 w-8 text-[#d4b497]" />
                         </div>
-                        <h3 className="mb-2 font-serif text-2xl text-[#3a251a]">Beautifully crafted!</h3>
-                        <p className="max-w-xs text-sm text-[#5a4234] opacity-80">Your personalized {selectedProduct.name.toLowerCase()} is ready to be made with love.</p>
+                        <h3 className="mb-2 font-serif text-2xl text-[#3a251a]">Review your details</h3>
+                        <p className="max-w-sm text-sm text-[#5a4234] opacity-80">We will prepare the order using the choices below. No generated preview is used.</p>
                       </div>
-
-                      <div className="flex flex-col gap-3 rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5">
-                        {fields.map((field) => {
-                          const value = getFieldValue(field);
-                          if (!value) return null;
-
-                          return (
-                            <div key={field.fieldKey} className="flex items-center justify-between border-b border-[#d4b497]/10 py-2 last:border-0 last:pb-0">
-                              <span className="text-xs font-bold uppercase tracking-wider text-[#5a4234]">{fieldByKey.get(field.fieldKey)?.label || field.label}</span>
-                              <span className="font-serif font-medium text-[#3a251a]">{value}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {detailsSummary}
                     </motion.div>
                   )}
                 </AnimatePresence>

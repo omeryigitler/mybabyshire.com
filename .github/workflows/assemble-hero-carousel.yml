@@ -3,7 +3,7 @@ name: Assemble hero carousel
 on:
   push:
     branches:
-      - fix/hero-carousel-full-video
+      - main
     paths:
       - .github/workflows/assemble-hero-carousel.yml
 
@@ -63,7 +63,7 @@ jobs:
           test "$bytes" = "136428"
           echo "Verified hero carousel: $bytes bytes"
 
-      - name: Commit complete video
+      - name: Commit complete video to main
         shell: bash
         run: |
           set -euo pipefail
@@ -74,5 +74,5 @@ jobs:
             echo "Hero carousel already complete."
             exit 0
           fi
-          git commit -m "Store complete hero carousel video [skip ci]"
-          git push origin HEAD:fix/hero-carousel-full-video
+          git commit -m "Store complete hero carousel video"
+          git push origin HEAD:main

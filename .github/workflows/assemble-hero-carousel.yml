@@ -52,11 +52,20 @@ jobs:
             df04e9ce240048837867a85913462ce57ff13def
           )
 
+          missing=0
           for i in "${!shas[@]}"; do
-            gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content \
-              | tr -d '\n' \
-              | base64 -d > "/tmp/hero-parts/part-$(printf '%02d' "$i").b64"
+            out="/tmp/hero-parts/part-$(printf '%02d' "$i").b64"
+            if gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content 2>/dev/null | tr -d '\n' | base64 -d > "$out"; then
+              echo "SOURCE_OK index=$i sha=${shas[$i]} bytes=$(wc -c < "$out")"
+            else
+              echo "SOURCE_MISSING index=$i sha=${shas[$i]}"
+              rm -f "$out"
+              missing=1
+            fi
           done
+          if [ "$missing" -ne 0 ]; then
+            exit 2
+          fi
 
           cat /tmp/hero-parts/part-*.b64 | tr -d '\n' | base64 -d > public/media/hero-carousel.mp4
           bytes=$(wc -c < public/media/hero-carousel.mp4 | tr -d ' ')

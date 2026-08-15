@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild final MP4 from verified sources
+      - name: Rebuild final MP4 from verified Git sources
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -27,20 +27,25 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hero-parts public/media
 
-          curl -fsSL --retry 3 --retry-delay 2 \
-            https://www.mybabyshire.com/media/hero-carousel.mp4 \
-            -o /tmp/current-hero.mp4
-
-          current_bytes=$(wc -c < /tmp/current-hero.mp4 | tr -d ' ')
-          test "$current_bytes" -ge 12000
-          head -c 12000 /tmp/current-hero.mp4 > /tmp/hero-prefix.bin
-          prefix_sha=$(sha256sum /tmp/hero-prefix.bin | awk '{print $1}')
-          echo "PREFIX_BYTES=12000 PREFIX_SHA256=$prefix_sha"
-          test "$prefix_sha" = "8a821c0c5655bd4de80ce782c20a0a5dc00cf0f15d751a2a07c6b4140f2667c0"
-
-          cp /tmp/hero-prefix.bin public/media/hero-carousel.mp4
+          part0_shas=(
+            b9ed12689aa25499de47579724aaa67c4ae62859
+            81f57bcff3ebbe665f89d8cf613d63d98c705e99
+            26e2859de4d6b329ccfa28e591928f2dcd13e3c3
+            06d730613969c8c01625968047b6b8a3952a95d0
+          )
+          : > /tmp/hero-parts/part-00.b64
+          for sha in "${part0_shas[@]}"; do
+            gh api "repos/$REPO/git/blobs/$sha" --jq .content \
+              | tr -d '\n' \
+              | base64 -d >> /tmp/hero-parts/part-00.b64
+          done
+          test "$(wc -c < /tmp/hero-parts/part-00.b64 | tr -d ' ')" = "8000"
+          part0_hash=$(sha256sum /tmp/hero-parts/part-00.b64 | awk '{print $1}')
+          echo "PART0_SHA256=$part0_hash"
+          test "$part0_hash" = "8aa929d985aa7106dc536d64c2963ffa759529d3cfaa79eae71f3a18370dd8d1"
 
           shas=(
+            99291fe40c6d8a770c07ad15bb7ac27165fb41f9
             fdd0ffcc7321530ef13389ebeb103a86be7f5e44
             deca23ae08c82f8891f45ee46639de1b2f77b5ed
             ce719ff58e35d62a790e75d0c81574c855dec8a5
@@ -65,14 +70,15 @@ jobs:
           )
 
           for i in "${!shas[@]}"; do
-            text_part="/tmp/hero-parts/part-$(printf '%02d' "$((i + 2))").b64"
+            index=$((i + 1))
+            text_part="/tmp/hero-parts/part-$(printf '%02d' "$index").b64"
             gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content \
               | tr -d '\n' \
               | base64 -d > "$text_part"
-            echo "SOURCE_OK index=$((i + 2)) bytes=$(wc -c < "$text_part")"
-            base64 -d "$text_part" >> public/media/hero-carousel.mp4
+            echo "SOURCE_OK index=$index bytes=$(wc -c < "$text_part")"
           done
 
+          cat /tmp/hero-parts/part-*.b64 | tr -d '\n' | base64 -d > public/media/hero-carousel.mp4
           bytes=$(wc -c < public/media/hero-carousel.mp4 | tr -d ' ')
           hash=$(sha256sum public/media/hero-carousel.mp4 | awk '{print $1}')
           echo "VIDEO_BYTES=$bytes VIDEO_SHA256=$hash"

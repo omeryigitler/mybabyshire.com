@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ArrowRight, Clock3, Gift, Plus, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
@@ -30,15 +30,6 @@ const trustItems = [
   { label: 'Made to order', icon: Clock3 },
 ];
 
-const carouselVideoChunks = Array.from({ length: 6 }, (_, index) => `/media/carousel/carousel-${index}.txt`);
-
-const decodeBase64Video = (encoded: string) => {
-  const binary = window.atob(encoded);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  return new Blob([bytes], { type: 'video/mp4' });
-};
-
 export function HomeCommerceHero({
   products,
   onShop,
@@ -52,56 +43,12 @@ export function HomeCommerceHero({
   onChooseProduct: (product: Product) => void;
   onAddProduct: (product: Product) => void;
 }) {
-  const [carouselVideoSrc, setCarouselVideoSrc] = useState<string | null>(null);
   const picks = useMemo(
     () => [...products].filter((product) => product.imageUrl).sort((a, b) => score(b) - score(a)).slice(0, 3),
     [products],
   );
   const main = picks[0];
   const more = picks.slice(1);
-
-  useEffect(() => {
-    const motionQuery = window.matchMedia('(min-width: 1024px) and (prefers-reduced-motion: no-preference)');
-    let objectUrl: string | null = null;
-    let cancelled = false;
-
-    const loadVideo = async () => {
-      if (!motionQuery.matches) {
-        setCarouselVideoSrc(null);
-        return;
-      }
-
-      try {
-        const responses = await Promise.all(carouselVideoChunks.map((path) => fetch(path)));
-        if (responses.some((response) => !response.ok)) return;
-        const encoded = (await Promise.all(responses.map((response) => response.text()))).join('');
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(decodeBase64Video(encoded));
-        setCarouselVideoSrc(objectUrl);
-      } catch {
-        setCarouselVideoSrc(null);
-      }
-    };
-
-    const handleChange = () => {
-      if (!motionQuery.matches) {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
-        objectUrl = null;
-        setCarouselVideoSrc(null);
-        return;
-      }
-      if (!objectUrl) void loadVideo();
-    };
-
-    void loadVideo();
-    motionQuery.addEventListener('change', handleChange);
-
-    return () => {
-      cancelled = true;
-      motionQuery.removeEventListener('change', handleChange);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, []);
 
   const runQuickAction = (product: Product) => {
     if (needsDetails(product)) onChooseProduct(product);
@@ -116,20 +63,19 @@ export function HomeCommerceHero({
 
         <div className="relative z-10 grid lg:grid-cols-[.8fr_1.2fr]">
           <div className="relative flex flex-col justify-center overflow-hidden px-5 py-7 text-center sm:px-8 sm:py-8 lg:px-10 lg:py-8 lg:text-left xl:px-12">
-            {carouselVideoSrc && (
-              <video
-                aria-hidden="true"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                src={carouselVideoSrc}
-                className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.86] lg:block"
-              />
-            )}
-            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.72)_0%,rgba(255,250,243,.60)_48%,rgba(255,250,243,.48)_100%)] lg:block" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/55 to-transparent lg:block" />
+            <video
+              aria-hidden="true"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.88] motion-reduce:hidden lg:block"
+            >
+              <source src="/media/hero-carousel.mp4" type="video/mp4" />
+            </video>
+            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.68)_0%,rgba(255,250,243,.56)_48%,rgba(255,250,243,.44)_100%)] lg:block" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/50 to-transparent lg:block" />
 
             <div className="relative z-10">
               <span className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm lg:mx-0">

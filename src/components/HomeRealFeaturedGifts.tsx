@@ -27,8 +27,8 @@ export function HomeRealFeaturedGifts({ products, onShopAll }: { products: Produ
       </div>
 
       {featuredProducts.length > 0 ? <>
-        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-3">
-          {featuredProducts.map((product) => <div key={product.id} className="flex w-[86vw] max-w-[520px] flex-none snap-center md:w-auto md:max-w-none"><ProductCard product={product} /></div>)}
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:gap-4 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-3">
+          {featuredProducts.map((product) => <div key={product.id} className="flex w-[92vw] max-w-[548px] flex-none snap-center md:w-auto md:max-w-none"><ProductCard product={product} /></div>)}
         </div>
         <p className="mt-1 text-center text-[11px] font-medium text-boutique-brown-light/70 md:hidden">Swipe to explore more gifts.</p>
       </> : <div className="grid gap-4 md:grid-cols-3" aria-label="Product catalog loading preview">

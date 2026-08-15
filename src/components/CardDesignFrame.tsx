@@ -30,6 +30,7 @@ type CardDesignFrameProps = {
   className?: string;
   legacyClassName?: string;
   title?: string;
+  preserveAspectRatio?: 'xMidYMid slice' | 'xMidYMid meet';
 };
 
 export const CardDesignFrame = ({
@@ -38,6 +39,7 @@ export const CardDesignFrame = ({
   className = '',
   legacyClassName,
   title,
+  preserveAspectRatio = 'xMidYMid slice',
 }: CardDesignFrameProps) => {
   const parsedDesign = design || parseCardDesign(value) || DEFAULT_CARD_DESIGN;
   const color = getCardColor(parsedDesign.color);
@@ -61,7 +63,7 @@ export const CardDesignFrame = ({
   return (
     <svg
       viewBox="-28 46 633 350"
-      preserveAspectRatio="xMidYMid slice"
+      preserveAspectRatio={preserveAspectRatio}
       className={className}
       role={title ? 'img' : undefined}
       aria-label={title}

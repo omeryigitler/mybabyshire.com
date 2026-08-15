@@ -108,6 +108,13 @@ body {
   }
 }
 
+/* Keep the storefront header premium but recover vertical space above the hero. */
+@media (min-width: 768px) {
+  header[class*="md:min-h-[104px]"] {
+    min-height: 96px !important;
+  }
+}
+
 /* Custom styles for 3d button effect */
 .btn-wood {
   background: linear-gradient(180deg, #dfc1a1 0%, #d0a57e 100%);

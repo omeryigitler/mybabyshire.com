@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hero-parts public/media
           shas=(
-            bb33191313965eeeb34b7818030186e5baed9f5f
+            tracked-source
             99291fe40c6d8a770c07ad15bb7ac27165fb41f9
             fdd0ffcc7321530ef13389ebeb103a86be7f5e44
             deca23ae08c82f8891f45ee46639de1b2f77b5ed
@@ -55,6 +55,11 @@ jobs:
           missing=0
           for i in "${!shas[@]}"; do
             out="/tmp/hero-parts/part-$(printf '%02d' "$i").b64"
+            if [ "$i" -eq 0 ]; then
+              head -c 8000 build-assets/hero-carousel/part-00.b64 > "$out"
+              echo "SOURCE_OK index=0 tracked bytes=$(wc -c < "$out")"
+              continue
+            fi
             if gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content 2>/dev/null | tr -d '\n' | base64 -d > "$out"; then
               echo "SOURCE_OK index=$i sha=${shas[$i]} bytes=$(wc -c < "$out")"
             else

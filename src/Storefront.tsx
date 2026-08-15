@@ -310,7 +310,7 @@ export default function Storefront() {
           </div>
 
           <div className="relative flex flex-col gap-2 py-2.5 md:py-1 md:pl-10">
-            <h4 className="mb-1 flex items-center gap-3 font-serif text-sm uppercase tracking-[0.1em] text-boutique-brown md:text-[14px]">STAY CONNECTED <img src="/toy-abc-blocks.png" className="h-auto w-[42px] translate-y-[-2px] object-contain opacity-90 mix-blend-multiply drop-shadow-sm" alt="" /></h4>
+            <h4 className="mb-1 flex items-center gap-3 font-serif text-sm uppercase tracking-[0.1em] text-boutique-brown md:text-[14px]">STAY CONNECTED <img src="/toy-abc-blocks.png" className="h-auto w-[84px] translate-y-[-2px] object-contain opacity-90 mix-blend-multiply drop-shadow-sm" alt="" /></h4>
             <p className="max-w-[240px] text-[13px] leading-relaxed text-boutique-brown-light opacity-90 md:text-[14px]">Join our newsletter for magical updates and early access to new collections.</p>
             <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -bottom-10 right-0 z-0 h-auto w-[140px] object-contain opacity-50 mix-blend-multiply md:right-[-10%] md:translate-x-[50%]" alt="" />
           </div>

@@ -1,0 +1,78 @@
+name: Assemble hero carousel
+
+on:
+  push:
+    branches:
+      - fix/hero-carousel-full-video
+    paths:
+      - .github/workflows/assemble-hero-carousel.yml
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild final MP4 from verified Git blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hero-parts public/media
+          shas=(
+            bb33e70330b9575972877a5f43be0d9482ed4efe
+            14d86820fd6a209b6fc317163c45c3f5bed34f3f
+            fdd0ffcc7321530ef13389ebeb103a86be7f5e44
+            deca23ae08c82f8891f45ee46639de1b2f77b5ed
+            ce719ff58e35d62a790e75d0c81574c855dec8a5
+            acc2d0671b3597b9eed908c3eb3aff5219cf2a01
+            d72a0ab4d3ea04a9058ea863b424ed78cd2b2bed
+            c9d804bd8d4aef4abd1c1922e8b1767cd735fdb3
+            33b5e4194d98f622fe957c1fa9d5d07834ea3a9d
+            932a8acbbda636f69ee61477f83ae316b1713695
+            d3eafc40a23a4743a20b0d624b8e2e115b8cb61a
+            fb1f5c13407bc13f59e0ee818499265d66437ee6
+            92316d99aedb610b7dcaa516f00d29df91a6f137
+            6e5958186bb2a10b1cc0ee95dc4f3b5f09d03886
+            1965093ed8d383c707810ccbf36f6a74de138730
+            fbb882961cb64490a37bb3d6af5c34bae90f6223
+            c6d2967b7bc3b9e9c22d3baef95b18ad50f8c1e2
+            cb40e3fab09039d23536f435af9098e3b8908be8
+            06ab80d916399f5629890cf12172277d865f5b6f
+            7f36b76be531a3c71a709cea89d5320415f61c6c
+            bbeb94dc614a395f3f49f7ae18393ac5e15e768f
+            7473e18514206286304806a12ed95fba0e94d246
+            df04e9ce240048837867a85913462ce57ff13def
+          )
+
+          for i in "${!shas[@]}"; do
+            gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content \
+              | tr -d '\n' \
+              | base64 -d > "/tmp/hero-parts/part-$(printf '%02d' "$i").b64"
+          done
+
+          cat /tmp/hero-parts/part-*.b64 | tr -d '\n' | base64 -d > public/media/hero-carousel.mp4
+          bytes=$(wc -c < public/media/hero-carousel.mp4 | tr -d ' ')
+          test "$bytes" = "136428"
+          echo "Verified hero carousel: $bytes bytes"
+
+      - name: Commit complete video
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/media/hero-carousel.mp4
+          if git diff --cached --quiet; then
+            echo "Hero carousel already complete."
+            exit 0
+          fi
+          git commit -m "Store complete hero carousel video [skip ci]"
+          git push origin HEAD:fix/hero-carousel-full-video

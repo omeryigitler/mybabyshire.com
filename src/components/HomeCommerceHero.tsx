@@ -70,12 +70,12 @@ export function HomeCommerceHero({
               loop
               playsInline
               preload="metadata"
-              className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-[0.88] motion-reduce:hidden lg:block"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-[0.50] motion-reduce:hidden sm:opacity-[0.58] lg:opacity-[0.88]"
             >
               <source src="/media/hero-carousel.mp4" type="video/mp4" />
             </video>
-            <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(255,250,243,.68)_0%,rgba(255,250,243,.56)_48%,rgba(255,250,243,.44)_100%)] lg:block" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-28 bg-gradient-to-t from-[#fffaf3]/50 to-transparent lg:block" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,250,243,.62)_0%,rgba(255,250,243,.48)_48%,rgba(255,250,243,.70)_100%)] lg:bg-[linear-gradient(90deg,rgba(255,250,243,.68)_0%,rgba(255,250,243,.56)_48%,rgba(255,250,243,.44)_100%)]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#fffaf3]/70 to-transparent lg:h-28 lg:from-[#fffaf3]/50" />
 
             <div className="relative z-10">
               <span className="mx-auto inline-flex w-fit items-center gap-2 rounded-full border border-boutique-brown/12 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[.2em] text-boutique-brown-light shadow-sm backdrop-blur-sm lg:mx-0">
@@ -87,11 +87,11 @@ export function HomeCommerceHero({
               <p className="mx-auto mt-4 max-w-[540px] text-[14px] leading-relaxed text-boutique-brown-light sm:text-[16px] lg:mx-0 lg:text-[17px]">Thoughtful pieces for newborn arrivals, baby showers and first celebrations — with names, sizes and special details chosen just for them.</p>
               <div className="mx-auto mt-5 flex w-full max-w-[510px] flex-col gap-2 sm:flex-row lg:mx-0">
                 <button type="button" onClick={onShop} className="group relative flex h-[56px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                  <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-md" alt="" />
+                  <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-md" alt="" />
                   <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
                 </button>
                 <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex h-[54px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                  <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-fill drop-shadow-sm" alt="" />
+                  <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm" alt="" />
                   <span className="relative z-10 text-sm font-semibold text-boutique-brown-light">See New Arrivals</span>
                 </button>
               </div>

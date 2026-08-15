@@ -61,7 +61,7 @@ export const CardDesignFrame = ({
   return (
     <svg
       viewBox="-28 46 633 350"
-      preserveAspectRatio="none"
+      preserveAspectRatio="xMidYMid slice"
       className={className}
       role={title ? 'img' : undefined}
       aria-label={title}

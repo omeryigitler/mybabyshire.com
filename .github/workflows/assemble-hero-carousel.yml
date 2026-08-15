@@ -27,29 +27,29 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hero-parts public/media
           shas=(
-            5dbf4ada2feab4f10f7241f36556d6c4ac3fbb90
+            bb33191313965eeeb34b7818030186e5baed9f5f
             99291fe40c6d8a770c07ad15bb7ac27165fb41f9
             fdd0ffcc7321530ef13389ebeb103a86be7f5e44
             deca23ae08c82f8891f45ee46639de1b2f77b5ed
             ce719ff58e35d62a790e75d0c81574c855dec8a5
             acc2d0671b3597b9eed908c3eb3aff5219cf2a01
             d72a0ab4d3ea04a9058ea863b424ed78cd2b2bed
-            c9d804bd8d4aef4abd1c1922e8b1767cd735fdb3
+            98cbf0a4ba6796d9084f9acbb0d7cb4e91e5fcce
             33b5e4194d98f622fe957c1fa9d5d07834ea3a9d
             932a8acbbda636f69ee61477f83ae316b1713695
             d3eafc40a23a4743a20b0d624b8e2e115b8cb61a
             fb1f5c13407bc13f59e0ee818499265d66437ee6
-            92316d99aedb610b7dcaa516f00d29df91a6f137
-            6e5958186bb2a10b1cc0ee95dc4f3b5f09d03886
-            1965093ed8d383c707810ccbf36f6a74de138730
-            fbb882961cb64490a37bb3d6af5c34bae90f6223
-            c6d2967b7bc3b9e9c22d3baef95b18ad50f8c1e2
-            cb40e3fab09039d23536f435af9098e3b8908be8
-            06ab80d916399f5629890cf12172277d865f5b6f
-            7f36b76be531a3c71a709cea89d5320415f61c6c
-            bbeb94dc614a395f3f49f7ae18393ac5e15e768f
-            7473e18514206286304806a12ed95fba0e94d246
-            df04e9ce240048837867a85913462ce57ff13def
+            d4a4a78e0a9c0cc669a469848d7b977bb1262d79
+            64f9ee9cc7236a3650416cf04f444b60b193f7d2
+            791b4cd07bcdc9acc5dcbb81ae51cdd547625432
+            da8f337cc29102a819d2370b659be240759a0a13
+            c6d011e8ab9d068f792d6dbb07ec9da80b9709a6
+            d797cfe08e1c46887295e38021e9073b31fd8fb8
+            effec554c2af7cc3d5660396e39ac6f8c435a8d3
+            b953535582a4f1124e97a301cda4553191c04cb8
+            9ddf97af926a60b9e8b5d48ed4a3b47e8055851e
+            4cb9cc61f4025d498ac75a51260dd6eff038bcff
+            2eb52654f216d133f6f47136e9a9508060d20b68
           )
 
           missing=0
@@ -70,6 +70,7 @@ jobs:
           cat /tmp/hero-parts/part-*.b64 | tr -d '\n' | base64 -d > public/media/hero-carousel.mp4
           bytes=$(wc -c < public/media/hero-carousel.mp4 | tr -d ' ')
           test "$bytes" = "136428"
+          sha256sum public/media/hero-carousel.mp4 | grep -q '^405b3e397f9ba1fe12fd3437b508db864de525ea8d632d535b8eb92259d9b538 '
           echo "Verified hero carousel: $bytes bytes"
 
       - name: Commit complete video to main

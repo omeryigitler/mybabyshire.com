@@ -122,15 +122,15 @@ export function HomeCommerceHero({
             </div>
           </div>
 
-          <div className="relative z-20 border-t border-boutique-brown/10 bg-[#fffaf3]/96 px-4 py-2 sm:hidden">
-            <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-1">
-              <button type="button" onClick={onShop} className="group relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
+          <div className="relative z-20 overflow-visible border-t border-boutique-brown/10 bg-[#fffaf3]/96 px-3 py-2.5 sm:hidden">
+            <div className="mx-auto grid w-full max-w-[312px] grid-cols-2 items-center gap-1.5 overflow-visible">
+              <button type="button" onClick={onShop} className="group relative flex aspect-[866/288] w-full items-center justify-center overflow-visible transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-md" alt="" />
-                <span className="relative z-10 flex items-center gap-1.5 text-[12px] font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-3.5 w-3.5" /></span>
+                <span className="relative z-10 flex items-center gap-1 text-[10px] font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-3 w-3" /></span>
               </button>
-              <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
+              <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex aspect-[866/288] w-full items-center justify-center overflow-visible transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm" alt="" />
-                <span className="relative z-10 text-[11px] font-semibold text-boutique-brown-light">See New Arrivals</span>
+                <span className="relative z-10 text-[10px] font-semibold text-boutique-brown-light">See New Arrivals</span>
               </button>
             </div>
           </div>
@@ -187,8 +187,8 @@ export function HomeCommerceHero({
           </div>
         </div>
 
-        <div className="relative z-20 border-t border-boutique-brown/10 bg-white/42 px-3 py-2 sm:px-5">
-          <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 sm:justify-center sm:overflow-visible">
+        <div className="relative z-20 border-t border-boutique-brown/10 bg-white/42 px-3 pb-2.5 pt-1.5 sm:px-5 sm:py-2">
+          <div className="-mx-1 flex snap-x items-center gap-2 overflow-x-auto px-1 pb-1 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center sm:overflow-visible sm:py-0">
             {discoveryPills.map((pill) => (
               <button
                 key={pill.value}

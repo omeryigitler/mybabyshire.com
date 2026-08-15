@@ -27,8 +27,8 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/hero-parts public/media
           shas=(
-            bb33e70330b9575972877a5f43be0d9482ed4efe
-            14d86820fd6a209b6fc317163c45c3f5bed34f3f
+            5dbf4ada2feab4f10f7241f36556d6c4ac3fbb90
+            99291fe40c6d8a770c07ad15bb7ac27165fb41f9
             fdd0ffcc7321530ef13389ebeb103a86be7f5e44
             deca23ae08c82f8891f45ee46639de1b2f77b5ed
             ce719ff58e35d62a790e75d0c81574c855dec8a5

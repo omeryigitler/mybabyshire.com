@@ -123,14 +123,14 @@ export function HomeCommerceHero({
           </div>
 
           <div className="relative z-20 border-t border-boutique-brown/10 bg-[#fffaf3]/96 px-4 py-3 sm:hidden">
-            <div className="mx-auto flex w-full max-w-[320px] flex-col items-center gap-0.5">
+            <div className="mx-auto flex w-full max-w-[280px] flex-col items-center gap-2">
               <button type="button" onClick={onShop} className="group relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-md" alt="" />
-                <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
+                <span className="relative z-10 flex items-center gap-2 text-[14px] font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
               </button>
               <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm" alt="" />
-                <span className="relative z-10 text-sm font-semibold text-boutique-brown-light">See New Arrivals</span>
+                <span className="relative z-10 text-[13px] font-semibold text-boutique-brown-light">See New Arrivals</span>
               </button>
             </div>
           </div>
@@ -139,9 +139,14 @@ export function HomeCommerceHero({
             <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute left-[4%] top-[7%] w-10 opacity-35" alt="" />
             <img src="/toy-teddy-ring-teether.png" className="pointer-events-none absolute bottom-[3%] right-[2%] z-30 w-16 opacity-75 sm:w-20" alt="" />
             {main ? <>
-              <div className="absolute left-[5%] top-[5%] z-20 rounded-[1rem] border border-boutique-brown/10 bg-[#fffaf3]/94 px-3.5 py-2.5 shadow-sm backdrop-blur-md">
-                <p className="text-[8px] font-bold uppercase tracking-[.18em] text-boutique-wood">Featured gift</p>
-                <div className="mt-1 flex items-center gap-3"><p className="max-w-[220px] truncate text-[11px] font-bold text-boutique-brown">{main.name}</p><span className="font-serif text-[17px] text-boutique-brown">${main.price.toFixed(2)}</span></div>
+              <div className="absolute left-[5%] right-[5%] top-[5%] z-20 min-h-[66px] rounded-[1rem] border border-boutique-brown/10 bg-[#fffaf3]/94 px-3.5 py-2.5 shadow-sm backdrop-blur-md sm:right-auto sm:min-w-[300px]">
+                <div className="grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="min-w-0 self-stretch flex flex-col justify-center">
+                    <p className="text-[8px] font-bold uppercase tracking-[.18em] text-boutique-wood">Featured gift</p>
+                    <p className="mt-1 truncate text-[11px] font-bold text-boutique-brown">{main.name}</p>
+                  </div>
+                  <span className="flex h-full min-w-[64px] items-center justify-center whitespace-nowrap font-serif text-[18px] leading-none text-boutique-brown">${main.price.toFixed(2)}</span>
+                </div>
               </div>
 
               <div className="absolute bottom-[7%] left-[5%] right-[5%] top-[18%] rounded-[1.8rem] border border-white/70 bg-white/48 shadow-[0_20px_50px_rgba(58,37,26,.11)] sm:right-[24%]">

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ArrowRight, Clock3, Gift, Plus, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product } from '../store/useStore';
@@ -49,10 +49,32 @@ export function HomeCommerceHero({
   );
   const main = picks[0];
   const more = picks.slice(1);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoVisible, setVideoVisible] = useState(true);
 
   const runQuickAction = (product: Product) => {
     if (needsDetails(product)) onChooseProduct(product);
     else onAddProduct(product);
+  };
+
+  const handleHeroVideoTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video || !Number.isFinite(video.duration)) return;
+
+    if (video.duration - video.currentTime <= 0.65) {
+      setVideoVisible(false);
+    }
+  };
+
+  const restartHeroVideo = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.currentTime = 0;
+    requestAnimationFrame(() => {
+      void video.play().catch(() => undefined);
+      setVideoVisible(true);
+    });
   };
 
   return (
@@ -64,13 +86,15 @@ export function HomeCommerceHero({
         <div className="relative z-10 grid lg:grid-cols-[.8fr_1.2fr]">
           <div className="relative flex flex-col justify-center overflow-hidden px-5 py-7 text-center sm:px-8 sm:py-8 lg:px-10 lg:py-8 lg:text-left xl:px-12">
             <video
+              ref={videoRef}
               aria-hidden="true"
               autoPlay
               muted
-              loop
               playsInline
               preload="metadata"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-[0.50] motion-reduce:hidden sm:opacity-[0.58] lg:opacity-[0.88]"
+              onTimeUpdate={handleHeroVideoTimeUpdate}
+              onEnded={restartHeroVideo}
+              className={`pointer-events-none absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500 ease-in-out motion-reduce:hidden ${videoVisible ? 'opacity-[0.50] sm:opacity-[0.58] lg:opacity-[0.88]' : 'opacity-0'}`}
             >
               <source src="/media/hero-carousel.mp4" type="video/mp4" />
             </video>
@@ -85,13 +109,13 @@ export function HomeCommerceHero({
                 <span className="whitespace-nowrap">Baby Gifts Made</span><br />Just for Them
               </h1>
               <p className="mx-auto mt-4 max-w-[540px] text-[14px] leading-relaxed text-boutique-brown-light sm:text-[16px] lg:mx-0 lg:text-[17px]">Thoughtful pieces for newborn arrivals, baby showers and first celebrations — with names, sizes and special details chosen just for them.</p>
-              <div className="mx-auto mt-5 flex w-full max-w-[510px] flex-col gap-2 sm:flex-row lg:mx-0">
-                <button type="button" onClick={onShop} className="group relative flex h-[56px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                  <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-md" alt="" />
+              <div className="mx-auto mt-5 flex w-full max-w-[510px] flex-col items-center gap-1.5 sm:flex-row sm:items-stretch sm:gap-2 lg:mx-0">
+                <button type="button" onClick={onShop} className="group relative flex h-[58px] w-full max-w-[310px] items-center justify-center transition-transform hover:-translate-y-0.5 sm:max-w-none sm:flex-1">
+                  <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-cover object-center drop-shadow-md" alt="" />
                   <span className="relative z-10 flex items-center gap-2 font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
                 </button>
-                <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex h-[54px] flex-1 items-center justify-center transition-transform hover:-translate-y-0.5">
-                  <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm" alt="" />
+                <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex h-[58px] w-full max-w-[310px] items-center justify-center transition-transform hover:-translate-y-0.5 sm:max-w-none sm:flex-1">
+                  <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-cover object-center drop-shadow-sm" alt="" />
                   <span className="relative z-10 text-sm font-semibold text-boutique-brown-light">See New Arrivals</span>
                 </button>
               </div>

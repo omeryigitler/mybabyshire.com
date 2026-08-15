@@ -31,7 +31,12 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         preview ? '' : 'group hover:-translate-y-1'
       }`}
     >
-      <CardDesignFrame value={backgroundImage} className="absolute inset-0 -z-10 h-full w-full opacity-95 drop-shadow-[var(--shadow-cloud-float)]" legacyClassName="absolute inset-0 -z-10 h-full w-full object-cover opacity-95 drop-shadow-[var(--shadow-cloud-float)]" />
+      <CardDesignFrame
+        value={backgroundImage}
+        preserveAspectRatio="xMidYMid meet"
+        className="absolute inset-x-0 top-[2px] -z-10 h-[calc(100%-4px)] w-full opacity-95 drop-shadow-[var(--shadow-cloud-float)]"
+        legacyClassName="absolute inset-x-0 top-[2px] -z-10 h-[calc(100%-4px)] w-full object-contain opacity-95 drop-shadow-[var(--shadow-cloud-float)]"
+      />
       <div className="relative z-10 flex h-[132px] w-full max-w-[142px] items-center justify-center self-center sm:h-[146px] sm:max-w-[158px] md:h-[198px] md:max-w-[214px]">
         <div className="absolute inset-2 rounded-[44%_56%_47%_53%/38%_40%_60%_62%] border border-white/55 bg-white/35 shadow-[inset_0_0_30px_rgba(255,255,255,0.55)]"></div>
         <div className={`relative z-10 h-[124px] w-full max-w-[134px] drop-shadow-lg transition-transform duration-500 ease-out sm:h-[138px] sm:max-w-[150px] md:h-[184px] md:max-w-none ${preview ? '' : 'group-hover:scale-105'}`}>
@@ -49,9 +54,9 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
           </div>
         )}
         <p className="mb-1.5 font-sans text-base font-bold text-[#3a251a] md:mb-3 md:text-[1.05rem] xl:text-lg">${product.price.toFixed(2)}</p>
-        <button type="button" onClick={handleAction} disabled={preview} className={`group/btn relative mt-auto flex h-9 w-[136px] items-center justify-center self-start transition-transform sm:h-10 sm:w-[148px] xl:h-11 xl:w-[168px] ${preview ? 'cursor-default' : 'cursor-pointer hover:-translate-y-0.5'}`}>
+        <button type="button" onClick={handleAction} disabled={preview} className={`group/btn relative mt-auto flex aspect-[866/288] w-[124px] items-center justify-center self-start overflow-visible transition-transform sm:w-[136px] xl:w-[150px] ${preview ? 'cursor-default' : 'cursor-pointer hover:-translate-y-0.5'}`}>
           <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm transition-all group-active/btn:drop-shadow-none" alt="" />
-          <span className="relative z-10 flex items-center gap-1.5 text-[11px] font-bold text-[#4a3328] sm:text-xs xl:text-sm">{actionLabel}</span>
+          <span className="relative z-10 flex items-center gap-1.5 text-[10px] font-bold text-[#4a3328] sm:text-[11px] xl:text-xs">{actionLabel}</span>
         </button>
       </div>
     </article>

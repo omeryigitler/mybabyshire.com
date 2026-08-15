@@ -149,8 +149,9 @@ export function HomeCommerceHero({
                 </div>
               </div>
 
-              <div className="absolute bottom-[7%] left-[5%] right-[5%] top-[18%] rounded-[1.8rem] border border-white/70 bg-white/48 shadow-[0_20px_50px_rgba(58,37,26,.11)] sm:right-[24%]">
-                <Link to={`/products/${main.slug || main.id}`} className="group absolute inset-0 flex items-center justify-center rounded-[1.8rem]" aria-label={`View ${main.name}`}>
+              <div className="absolute bottom-[7%] left-[5%] right-[5%] top-[18%] overflow-hidden rounded-[1.8rem] border border-white/70 bg-boutique-bg bg-pattern bg-[length:360px_360px] shadow-[0_20px_50px_rgba(58,37,26,.11)] sm:right-[24%] sm:bg-[length:430px_430px]">
+                <div className="pointer-events-none absolute inset-0 z-0 bg-[#fffaf3]/42" />
+                <Link to={`/products/${main.slug || main.id}`} className="group absolute inset-0 z-10 flex items-center justify-center rounded-[1.8rem]" aria-label={`View ${main.name}`}>
                   <img src={main.imageUrl} alt={main.name} fetchPriority="high" className="h-[90%] w-[92%] object-contain drop-shadow-[0_18px_26px_rgba(58,37,26,.16)] transition-transform duration-500 group-hover:scale-[1.025]" />
                 </Link>
                 <button

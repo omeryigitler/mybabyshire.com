@@ -18,7 +18,7 @@ const headerLogoSrc = '/brand/mybabyshire-header-horizontal-logo_2x-removebg-pre
 
 const logoClasses: Record<BrandLogoVariant, string> = {
   header:
-    'h-[48px] sm:h-[64px] md:h-[82px] lg:h-[90px] w-auto max-w-[min(68vw,540px)] object-contain translate-y-1 md:translate-y-2 drop-shadow-[0_8px_18px_rgba(58,37,26,0.12)]',
+    'h-[48px] sm:h-[64px] md:h-[74px] lg:h-[80px] w-auto max-w-[min(68vw,540px)] object-contain translate-y-1 md:translate-y-1 drop-shadow-[0_8px_18px_rgba(58,37,26,0.12)]',
   footer:
     'w-[170px] sm:w-[200px] md:w-[230px] h-auto object-contain drop-shadow-[0_8px_18px_rgba(58,37,26,0.10)]',
   hero:

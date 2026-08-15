@@ -88,8 +88,8 @@ export default function ProductDetailPage() {
     <div className="relative min-h-screen overflow-x-hidden bg-boutique-bg font-sans text-boutique-brown">
       <CartDrawer />
       <PersonalizationModal />
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-45 bg-pattern bg-[length:400px_400px]"></div>
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.92)_0%,rgba(252,250,246,0.55)_34%,rgba(252,250,246,0)_72%)]"></div>
+      <div className="pointer-events-none fixed inset-0 z-0 bg-pattern bg-[length:400px_400px] opacity-30"></div>
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_12%,rgba(255,255,255,0.95)_0%,rgba(252,250,246,0.68)_38%,rgba(252,250,246,0)_74%)]"></div>
 
       {showSkipModal && product && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3a251a]/25 px-4 backdrop-blur-sm">
@@ -144,7 +144,7 @@ export default function ProductDetailPage() {
         </button>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-7xl px-6 py-8 md:py-14">
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-8 lg:py-10">
         {productLoading && <p className="text-center text-boutique-brown-light">Loading product...</p>}
 
         {!productLoading && !product && (
@@ -157,84 +157,90 @@ export default function ProductDetailPage() {
 
         {product && (
           <>
-          <div className="relative grid gap-8 md:grid-cols-[52%_48%] md:items-center">
-            <img loading="lazy" src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-20 top-0 z-0 hidden w-64 opacity-55 mix-blend-multiply md:block" alt="" />
-            <img loading="lazy" src="/toy-wooden-star-teether.png" className="pointer-events-none absolute right-[8%] top-0 z-0 hidden w-20 rotate-12 opacity-70 mix-blend-multiply md:block" alt="" />
-            <img loading="lazy" src="/toy-pull-duck.png" className="pointer-events-none absolute -right-10 bottom-8 z-0 hidden w-36 -rotate-6 opacity-65 mix-blend-multiply xl:block" alt="" />
+            <div className="relative grid gap-6 md:grid-cols-[52%_48%] md:items-start lg:gap-8">
+              <img loading="lazy" src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-16 top-2 z-0 hidden w-52 opacity-38 mix-blend-multiply md:block" alt="" />
+              <img loading="lazy" src="/toy-wooden-star-teether.png" className="pointer-events-none absolute right-[8%] top-0 z-0 hidden w-16 rotate-12 opacity-55 mix-blend-multiply md:block" alt="" />
+              <img loading="lazy" src="/toy-pull-duck.png" className="pointer-events-none absolute -right-8 bottom-8 z-0 hidden w-32 -rotate-6 opacity-50 mix-blend-multiply xl:block" alt="" />
 
-            <div className="relative z-10 rounded-[2.2rem] border border-boutique-brown/10 bg-white/55 p-5 shadow-[0_24px_70px_rgba(58,37,26,0.10)] backdrop-blur-sm md:p-8">
-              <div className="absolute inset-3 rounded-[1.8rem] border border-dashed border-boutique-brown/10"></div>
-              <CardDesignFrame value={product.bgImage} className="absolute left-1/2 top-1/2 h-[78%] w-[88%] -translate-x-1/2 -translate-y-1/2 opacity-55 drop-shadow-[0_16px_28px_rgba(58,37,26,0.10)]" legacyClassName="absolute left-1/2 top-1/2 h-[78%] w-[88%] -translate-x-1/2 -translate-y-1/2 object-fill opacity-55 drop-shadow-[0_16px_28px_rgba(58,37,26,0.10)]" />
-              <img loading="lazy" src="/toy-wooden-star-solid.png" className="absolute left-8 top-8 w-10 rotate-12 opacity-55 mix-blend-multiply" alt="" />
-              <img loading="lazy" src="/cloud-watercolor-blue-light.png" className="absolute bottom-6 right-6 w-32 opacity-35 mix-blend-multiply" alt="" />
+              <div className="relative z-10 rounded-[2.2rem] border border-boutique-brown/10 bg-white/58 p-4 shadow-[0_24px_70px_rgba(58,37,26,0.08)] backdrop-blur-sm md:p-6">
+                <div className="absolute inset-3 rounded-[1.8rem] border border-dashed border-boutique-brown/10"></div>
+                <CardDesignFrame value={product.bgImage} className="absolute left-1/2 top-1/2 h-[76%] w-[86%] -translate-x-1/2 -translate-y-1/2 opacity-42 drop-shadow-[0_16px_28px_rgba(58,37,26,0.08)]" legacyClassName="absolute left-1/2 top-1/2 h-[76%] w-[86%] -translate-x-1/2 -translate-y-1/2 object-fill opacity-42 drop-shadow-[0_16px_28px_rgba(58,37,26,0.08)]" />
+                <img loading="lazy" src="/toy-wooden-star-solid.png" className="absolute left-7 top-7 w-9 rotate-12 opacity-42 mix-blend-multiply" alt="" />
+                <img loading="lazy" src="/cloud-watercolor-blue-light.png" className="absolute bottom-6 right-6 w-28 opacity-22 mix-blend-multiply" alt="" />
 
-              <div className="relative mx-auto flex aspect-square max-w-[540px] items-center justify-center rounded-[2rem] bg-white/25">
-                <img src={product.imageUrl} className="max-h-[70%] max-w-[70%] object-contain drop-shadow-2xl transition-transform duration-500 hover:scale-105" alt={product.name} />
-                {product.badge && <span className="absolute right-6 top-6 rounded-full border border-[#d4b497]/30 bg-[#fdfaf6] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#3a251a] shadow-sm">{product.badge}</span>}
+                <div className="relative mx-auto flex aspect-square max-w-[560px] items-center justify-center rounded-[2rem] bg-white/18">
+                  <img src={product.imageUrl} className="max-h-[82%] max-w-[82%] object-contain drop-shadow-2xl transition-transform duration-500 hover:scale-[1.03]" alt={product.name} />
+                  {product.badge && <span className="absolute right-5 top-5 rounded-full border border-[#d4b497]/30 bg-[#fdfaf6] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#3a251a] shadow-sm">{product.badge}</span>}
+                </div>
               </div>
-            </div>
 
-            <section className="relative z-10 overflow-hidden rounded-[2.2rem] border border-boutique-brown/10 bg-white/75 p-7 shadow-[0_24px_70px_rgba(58,37,26,0.10)] backdrop-blur-sm md:p-10">
-              <img loading="lazy" src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-16 -top-16 w-56 opacity-35 mix-blend-multiply" alt="" />
-              <div className="relative z-10">
-                {product.personalizationRequired && (
-                  <div className="mb-5 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-boutique-brown-light"><Heart className="h-4 w-4" /> Customizable</span>
+              <section className="relative z-10 overflow-hidden rounded-[2.2rem] border border-boutique-brown/10 bg-white/82 p-6 shadow-[0_24px_70px_rgba(58,37,26,0.08)] backdrop-blur-sm md:p-7 lg:p-8">
+                <img loading="lazy" src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-16 -top-16 w-52 opacity-22 mix-blend-multiply" alt="" />
+                <div className="relative z-10">
+                  {product.personalizationRequired && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-white/90 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-boutique-brown-light"><Heart className="h-3.5 w-3.5" /> Customizable</span>
+                    </div>
+                  )}
+
+                  <h1 className="max-w-[13ch] font-serif text-[2.55rem] leading-[1.04] text-boutique-brown sm:text-5xl md:text-[3.05rem] lg:text-[3.35rem]">{product.name}</h1>
+
+                  {(product.ratingCount ?? 0) > 0 && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <StarRating value={product.ratingAverage ?? 0} size={17} />
+                      <span className="text-sm font-bold text-boutique-brown">{(product.ratingAverage ?? 0).toFixed(1)}</span>
+                      <span className="text-sm text-boutique-brown-light">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
+                    </div>
+                  )}
+
+                  <p className="mt-4 max-w-2xl text-base leading-relaxed text-boutique-brown-light lg:text-[17px]">{product.description}</p>
+
+                  <div className="mt-4 flex items-end gap-3">
+                    <p className="text-3xl font-bold text-boutique-brown lg:text-[2.15rem]">${product.price.toFixed(2)}</p>
+                    {product.salePrice && <p className="pb-1 text-base text-boutique-brown-light line-through">${product.salePrice.toFixed(2)}</p>}
                   </div>
-                )}
 
-                <h1 className="font-serif text-4xl leading-tight text-boutique-brown md:text-6xl">{product.name}</h1>
-
-                {(product.ratingCount ?? 0) > 0 && (
-                  <div className="mt-4 flex items-center gap-2">
-                    <StarRating value={product.ratingAverage ?? 0} size={18} />
-                    <span className="text-sm font-bold text-boutique-brown">{(product.ratingAverage ?? 0).toFixed(1)}</span>
-                    <span className="text-sm text-boutique-brown-light">({product.ratingCount} {product.ratingCount === 1 ? 'review' : 'reviews'})</span>
-                  </div>
-                )}
-
-                <p className="mt-5 text-lg leading-relaxed text-boutique-brown-light">{product.description}</p>
-
-                <div className="mt-6 flex items-end gap-3">
-                  <p className="text-4xl font-bold text-boutique-brown">${product.price.toFixed(2)}</p>
-                  {product.salePrice && <p className="pb-1 text-lg text-boutique-brown-light line-through">${product.salePrice.toFixed(2)}</p>}
-                </div>
-
-                <div className="mt-7 grid gap-3 text-sm text-boutique-brown-light sm:grid-cols-2">
-                  {product.material && <InfoCard label="Material" value={product.material} />}
-                  {product.ageRange && <InfoCard label="Age Range" value={product.ageRange} />}
-                  {product.preparationTime && <InfoCard label="Preparation" value={product.preparationTime} />}
-                  {typeof product.stockQuantity === 'number' && <InfoCard label="Availability" value={product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Made to order'} />}
-                </div>
-
-                {product.careInstructions && (
-                  <div className="mt-6 rounded-2xl border border-boutique-brown/10 bg-boutique-bg/80 p-5">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-boutique-brown">Care Instructions</h2>
-                    <p className="mt-2 text-sm leading-relaxed text-boutique-brown-light">{product.careInstructions}</p>
-                  </div>
-                )}
-
-                <div className="mt-8 rounded-[1.8rem] border border-boutique-brown/10 bg-[#fffaf3]/80 p-4">
-                  <div className="flex flex-col gap-3">
-                    <button type="button" onClick={handlePrimaryAction} className="relative flex h-14 items-center justify-center overflow-hidden rounded-full bg-boutique-brown px-6 text-base font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood">
-                      {product.personalizationRequired ? 'Personalize This Gift' : 'Add to Cart'}
-                    </button>
+                  <div className="mt-5 rounded-[1.6rem] border border-boutique-brown/10 bg-[#fffaf3]/90 p-3.5 shadow-sm">
                     {product.personalizationRequired && (
-                      <button type="button" onClick={() => setShowSkipModal(true)} className="rounded-full border border-boutique-brown/15 bg-white px-6 py-4 text-base font-bold text-boutique-brown shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-bg">
-                        Buy Without Personalization
-                      </button>
+                      <div className="mb-3 flex items-start gap-2 rounded-2xl bg-white/75 px-3 py-2.5 text-xs leading-relaxed text-boutique-brown-light">
+                        <Heart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-boutique-brown" />
+                        <span>Add your custom details in the next step before adding this gift to your cart.</span>
+                      </div>
                     )}
+                    <div className="flex flex-col gap-2.5">
+                      <button type="button" onClick={handlePrimaryAction} className="relative flex h-13 min-h-[52px] items-center justify-center overflow-hidden rounded-full bg-boutique-brown px-6 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-wood sm:text-base">
+                        {product.personalizationRequired ? 'Personalize This Gift' : 'Add to Cart'}
+                      </button>
+                      {product.personalizationRequired && (
+                        <button type="button" onClick={() => setShowSkipModal(true)} className="rounded-full border border-boutique-brown/15 bg-white px-6 py-3 text-sm font-bold text-boutique-brown shadow-sm transition-transform hover:-translate-y-0.5 hover:bg-boutique-bg">
+                          Buy Without Personalization
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-3 grid gap-2 text-[11px] font-medium text-boutique-brown-light sm:grid-cols-3">
+                      <span className="flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> Gift-ready</span>
+                      <span className="flex items-center gap-1"><Truck className="h-3.5 w-3.5" /> USA shipping</span>
+                      <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Secure checkout</span>
+                    </div>
                   </div>
-                  <div className="mt-4 grid gap-2 text-xs font-medium text-boutique-brown-light sm:grid-cols-3">
-                    <span className="flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> Gift-ready</span>
-                    <span className="flex items-center gap-1"><Truck className="h-3.5 w-3.5" /> USA shipping</span>
-                    <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" /> Secure checkout</span>
+
+                  <div className="mt-4 grid gap-2.5 text-sm text-boutique-brown-light sm:grid-cols-2">
+                    {product.material && <InfoCard label="Material" value={product.material} />}
+                    {product.ageRange && <InfoCard label="Age Range" value={product.ageRange} />}
+                    {product.preparationTime && <InfoCard label="Preparation" value={product.preparationTime} />}
+                    {typeof product.stockQuantity === 'number' && <InfoCard label="Availability" value={product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Made to order'} />}
                   </div>
+
+                  {product.careInstructions && (
+                    <div className="mt-4 rounded-2xl border border-boutique-brown/10 bg-boutique-bg/72 p-4">
+                      <h2 className="text-[11px] font-bold uppercase tracking-wider text-boutique-brown">Care Instructions</h2>
+                      <p className="mt-1.5 text-sm leading-relaxed text-boutique-brown-light">{product.careInstructions}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </section>
-          </div>
-          <ProductReviews slug={product.slug || slug || ''} productId={product.id} />
+              </section>
+            </div>
+            <ProductReviews slug={product.slug || slug || ''} productId={product.id} />
           </>
         )}
       </main>
@@ -243,8 +249,8 @@ export default function ProductDetailPage() {
 }
 
 const InfoCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-2xl border border-boutique-brown/10 bg-white/75 p-4 shadow-sm">
-    <p className="text-[11px] font-bold uppercase tracking-wider text-boutique-brown/60">{label}</p>
-    <p className="mt-1 font-medium text-boutique-brown">{value}</p>
+  <div className="rounded-2xl border border-boutique-brown/10 bg-white/78 p-3 shadow-sm">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-boutique-brown/60">{label}</p>
+    <p className="mt-1 text-[13px] font-medium leading-snug text-boutique-brown">{value}</p>
   </div>
 );

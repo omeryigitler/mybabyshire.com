@@ -27,19 +27,19 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
 
   const articleLayout = preview
     ? 'min-h-[206px] grid-cols-[48%_52%] px-4 py-4'
-    : 'min-h-[204px] grid-cols-[48%_52%] px-4 py-4 sm:min-h-[226px] sm:grid-cols-[47%_53%] sm:px-6 sm:py-5 md:min-h-[292px] md:px-8 md:py-8';
+    : 'min-h-[208px] grid-cols-[49%_51%] px-2 py-3 sm:min-h-[228px] sm:grid-cols-[48%_52%] sm:px-4 sm:py-4 md:min-h-[292px] md:grid-cols-[47%_53%] md:px-6 md:py-7';
 
   const imageShellLayout = preview
     ? 'h-[148px] max-w-[160px]'
-    : 'h-[146px] max-w-[158px] sm:h-[166px] sm:max-w-[180px] md:h-[220px] md:max-w-[236px]';
+    : 'h-[150px] max-w-[164px] sm:h-[170px] sm:max-w-[186px] md:h-[224px] md:max-w-[240px]';
 
   const imageLayout = preview
     ? 'h-[140px] max-w-[152px]'
-    : 'h-[138px] max-w-[150px] sm:h-[158px] sm:max-w-[172px] md:h-[208px] md:max-w-[224px]';
+    : 'h-[144px] max-w-[156px] sm:h-[164px] sm:max-w-[178px] md:h-[212px] md:max-w-[228px]';
 
   const contentLayout = preview
     ? 'h-[158px] max-w-[190px] px-0.5'
-    : 'h-[156px] max-w-[190px] px-0.5 sm:h-[176px] sm:max-w-[220px] sm:px-1 md:h-[210px] md:max-w-[252px] md:translate-y-2 md:px-2';
+    : 'h-[160px] max-w-[194px] translate-x-1.5 translate-y-1 px-0.5 sm:h-[178px] sm:max-w-[224px] sm:translate-x-2 sm:translate-y-1.5 sm:px-1 md:h-[212px] md:max-w-[258px] md:translate-x-3 md:translate-y-3 md:px-1';
 
   const titleLayout = preview
     ? 'text-[0.9rem]'
@@ -65,7 +65,11 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
       <div className={`relative z-10 flex w-full items-center justify-center self-center ${imageShellLayout}`}>
         <div className="absolute inset-1.5 rounded-[44%_56%_47%_53%/38%_40%_60%_62%] border border-white/55 bg-white/35 shadow-[inset_0_0_30px_rgba(255,255,255,0.55)]" />
         <div className={`relative z-10 w-full drop-shadow-lg transition-transform duration-500 ease-out ${imageLayout} ${preview ? '' : 'group-hover:scale-[1.04]'}`}>
-          <img src={product.imageUrl} className="h-full w-full scale-[1.07] object-contain" alt={product.name} />
+          <img
+            src={product.imageUrl}
+            className={`h-full w-full object-contain ${preview ? 'scale-[1.07]' : 'scale-[1.10] md:scale-[1.09]'}`}
+            alt={product.name}
+          />
         </div>
         {product.badge && (
           <div className="absolute -bottom-1 right-0 rounded-full border border-[#d4b497]/30 bg-[#fdfaf6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#3a251a] shadow-sm md:-bottom-2 md:px-3 md:text-[10px]">

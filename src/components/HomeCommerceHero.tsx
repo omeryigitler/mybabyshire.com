@@ -122,15 +122,15 @@ export function HomeCommerceHero({
             </div>
           </div>
 
-          <div className="relative z-20 border-t border-boutique-brown/10 bg-[#fffaf3]/96 px-4 py-3 sm:hidden">
-            <div className="mx-auto flex w-full max-w-[280px] flex-col items-center gap-2">
+          <div className="relative z-20 border-t border-boutique-brown/10 bg-[#fffaf3]/96 px-4 py-2 sm:hidden">
+            <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-1">
               <button type="button" onClick={onShop} className="group relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-md" alt="" />
-                <span className="relative z-10 flex items-center gap-2 text-[14px] font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-4 w-4" /></span>
+                <span className="relative z-10 flex items-center gap-1.5 text-[12px] font-bold text-boutique-brown">Shop Baby Gifts <ArrowRight className="h-3.5 w-3.5" /></span>
               </button>
               <button type="button" onClick={() => onFilter('new-arrivals')} className="relative flex aspect-[866/288] w-full items-center justify-center transition-transform active:scale-[0.99]">
                 <img src="/btn-paw-blank-cream.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm" alt="" />
-                <span className="relative z-10 text-[13px] font-semibold text-boutique-brown-light">See New Arrivals</span>
+                <span className="relative z-10 text-[11px] font-semibold text-boutique-brown-light">See New Arrivals</span>
               </button>
             </div>
           </div>

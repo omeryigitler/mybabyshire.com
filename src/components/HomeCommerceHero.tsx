@@ -149,8 +149,9 @@ export function HomeCommerceHero({
                 </div>
               </div>
 
-              <div className="absolute bottom-[5%] left-[5%] right-[5%] top-[19%] overflow-hidden rounded-[1.8rem] border border-white/80 bg-[radial-gradient(circle_at_48%_42%,#fff_0%,#fffcf7_55%,#f8ecdd_100%)] shadow-[0_18px_44px_rgba(58,37,26,.09)] sm:right-[25%]">
-                <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(135deg,rgba(255,255,255,.48),rgba(255,250,243,.08)_55%,rgba(226,201,172,.12))]" />
+              <div className="absolute bottom-[5%] left-[5%] right-[5%] top-[19%] overflow-hidden rounded-[1.8rem] border border-white/80 bg-boutique-bg bg-pattern bg-[length:360px_360px] shadow-[0_18px_44px_rgba(58,37,26,.09)] sm:right-[25%] sm:bg-[length:430px_430px]">
+                <div className="pointer-events-none absolute inset-0 z-0 bg-[#fffaf3]/38" />
+                <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_43%,rgba(255,255,255,.44)_0%,rgba(255,250,243,.16)_58%,rgba(226,201,172,.08)_100%)]" />
                 <Link to={`/products/${main.slug || main.id}`} className="group absolute inset-0 z-10 flex items-center justify-center rounded-[1.8rem]" aria-label={`View ${main.name}`}>
                   <img src={main.imageUrl} alt={main.name} fetchPriority="high" className="h-[98%] w-[98%] object-contain drop-shadow-[0_18px_26px_rgba(58,37,26,.14)] transition-transform duration-500 group-hover:scale-[1.035] sm:h-[102%] sm:w-[102%]" />
                 </Link>

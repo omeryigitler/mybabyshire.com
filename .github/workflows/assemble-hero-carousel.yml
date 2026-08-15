@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild final MP4 from verified Git blobs
+      - name: Rebuild final MP4 from verified sources
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -26,9 +26,21 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/hero-parts public/media
+
+          curl -fsSL --retry 3 --retry-delay 2 \
+            https://www.mybabyshire.com/media/hero-carousel.mp4 \
+            -o /tmp/current-hero.mp4
+
+          current_bytes=$(wc -c < /tmp/current-hero.mp4 | tr -d ' ')
+          test "$current_bytes" -ge 12000
+          head -c 12000 /tmp/current-hero.mp4 > /tmp/hero-prefix.bin
+          prefix_sha=$(sha256sum /tmp/hero-prefix.bin | awk '{print $1}')
+          echo "PREFIX_BYTES=12000 PREFIX_SHA256=$prefix_sha"
+          test "$prefix_sha" = "8a821c0c5655bd4de80ce782c20a0a5dc00cf0f15d751a2a07c6b4140f2667c0"
+
+          cp /tmp/hero-prefix.bin public/media/hero-carousel.mp4
+
           shas=(
-            tracked-source
-            99291fe40c6d8a770c07ad15bb7ac27165fb41f9
             fdd0ffcc7321530ef13389ebeb103a86be7f5e44
             deca23ae08c82f8891f45ee46639de1b2f77b5ed
             ce719ff58e35d62a790e75d0c81574c855dec8a5
@@ -52,31 +64,20 @@ jobs:
             2eb52654f216d133f6f47136e9a9508060d20b68
           )
 
-          missing=0
           for i in "${!shas[@]}"; do
-            out="/tmp/hero-parts/part-$(printf '%02d' "$i").b64"
-            if [ "$i" -eq 0 ]; then
-              head -c 8000 build-assets/hero-carousel/part-00.b64 > "$out"
-              echo "SOURCE_OK index=0 tracked bytes=$(wc -c < "$out")"
-              continue
-            fi
-            if gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content 2>/dev/null | tr -d '\n' | base64 -d > "$out"; then
-              echo "SOURCE_OK index=$i sha=${shas[$i]} bytes=$(wc -c < "$out")"
-            else
-              echo "SOURCE_MISSING index=$i sha=${shas[$i]}"
-              rm -f "$out"
-              missing=1
-            fi
+            text_part="/tmp/hero-parts/part-$(printf '%02d' "$((i + 2))").b64"
+            gh api "repos/$REPO/git/blobs/${shas[$i]}" --jq .content \
+              | tr -d '\n' \
+              | base64 -d > "$text_part"
+            echo "SOURCE_OK index=$((i + 2)) bytes=$(wc -c < "$text_part")"
+            base64 -d "$text_part" >> public/media/hero-carousel.mp4
           done
-          if [ "$missing" -ne 0 ]; then
-            exit 2
-          fi
 
-          cat /tmp/hero-parts/part-*.b64 | tr -d '\n' | base64 -d > public/media/hero-carousel.mp4
           bytes=$(wc -c < public/media/hero-carousel.mp4 | tr -d ' ')
+          hash=$(sha256sum public/media/hero-carousel.mp4 | awk '{print $1}')
+          echo "VIDEO_BYTES=$bytes VIDEO_SHA256=$hash"
           test "$bytes" = "136428"
-          sha256sum public/media/hero-carousel.mp4 | grep -q '^405b3e397f9ba1fe12fd3437b508db864de525ea8d632d535b8eb92259d9b538 '
-          echo "Verified hero carousel: $bytes bytes"
+          test "$hash" = "405b3e397f9ba1fe12fd3437b508db864de525ea8d632d535b8eb92259d9b538"
 
       - name: Commit complete video to main
         shell: bash

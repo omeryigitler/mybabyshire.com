@@ -291,7 +291,7 @@ export default function Storefront() {
           </div>
 
           <div className="flex flex-col gap-2 py-2.5 md:px-10 md:py-1">
-            <h4 className="mb-1 flex items-center gap-3 font-serif text-sm uppercase tracking-[0.1em] text-boutique-brown md:text-[14px]">SHOP <div className="flex translate-y-[-2px] items-end gap-2"><img src="/toy-abc-blocks.png" className="h-auto w-[42px] object-contain opacity-90 mix-blend-multiply drop-shadow-sm" alt="" /><img src="/toy-wooden-train.png" className="h-auto w-[63px] object-contain opacity-90 mix-blend-multiply drop-shadow-sm" alt="" /></div></h4>
+            <h4 className="mb-1 flex items-center gap-3 font-serif text-sm uppercase tracking-[0.1em] text-boutique-brown md:text-[14px]">SHOP <img src="/toy-wooden-train.png" className="h-auto w-[63px] translate-y-[-2px] object-contain opacity-90 mix-blend-multiply drop-shadow-sm" alt="" /></h4>
             <div className="flex flex-col gap-2">
               <button type="button" onClick={() => applyDiscoveryFilter('new-arrivals')} className="text-left text-[13px] text-boutique-brown-light opacity-90 transition-colors hover:text-boutique-wood md:text-[14px]">New Arrivals</button>
               <button type="button" onClick={() => scrollToSection('featured-gifts')} className="text-left text-[13px] text-boutique-brown-light opacity-90 transition-colors hover:text-boutique-wood md:text-[14px]">Made Just for Them</button>

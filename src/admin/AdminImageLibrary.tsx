@@ -1,92 +1,59 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image as ImageIcon, Package, RefreshCcw, Search, Sparkles } from 'lucide-react';
-import { Button, PageHeader } from './ui';
+import { Copy, Image as ImageIcon, Package, RefreshCcw, Search } from 'lucide-react';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
-import { CardDesignFrame } from '../components/CardDesignFrame';
-import { isCardDesignValue } from '../utils/cardDesign';
 
-type LibraryImage = { key: string; label: string; url: string; productName?: string; type: 'Product' | 'Cloud' | 'Decor'; };
+type LibraryImage = { key: string; label: string; url: string; productName: string; sku?: string };
 
 export const AdminImageLibrary = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [copied, setCopied] = useState('');
+  const [error, setError] = useState('');
 
   const loadProducts = async () => {
-    setIsLoading(true);
+    setIsLoading(true); setError('');
     try {
-      const token = getAdminToken();
-      const response = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${getAdminToken()}` } });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.details || data.error || 'Could not load image library.');
-      setProducts(data);
-    } catch (error) {
-      console.error(error);
-      alert((error as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
+      if (!response.ok) throw new Error(data.details || data.error || 'Could not load media library.');
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (loadError) {
+      setError((loadError as Error).message);
+    } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { void loadProducts(); }, []);
 
-  const images = useMemo<LibraryImage[]>(() => {
-    const productImages = products.flatMap((product) => {
-      const list: LibraryImage[] = [];
-      if (product.imageUrl) list.push({ key: `${product.id}-product`, label: 'Primary product image', url: product.imageUrl, productName: product.name, type: 'Product' });
-      if (product.bgImage) list.push({ key: `${product.id}-cloud`, label: 'Storefront cloud background', url: product.bgImage, productName: product.name, type: 'Cloud' });
-      return list;
-    });
-
-    const designImages: LibraryImage[] = [
-      { key: 'pattern', label: 'Storefront pattern', url: '/arka_plan.png', type: 'Decor' },
-      { key: 'blue-cloud', label: 'Blue watercolor cloud', url: '/cloud-watercolor-blue-light.png', type: 'Decor' },
-      { key: 'pink-cloud', label: 'Pink watercolor cloud', url: '/cloud-watercolor-pink.png', type: 'Decor' },
-      { key: 'blocks', label: 'Toy blocks', url: '/toy-abc-blocks.png', type: 'Decor' },
-      { key: 'star', label: 'Wooden star', url: '/toy-wooden-star-solid.png', type: 'Decor' },
-    ];
-
-    return [...productImages, ...designImages];
-  }, [products]);
-
+  const images = useMemo<LibraryImage[]>(() => products.filter((product) => Boolean(product.imageUrl)).map((product) => ({ key: `${product.id}-primary`, label: 'Primary image', url: product.imageUrl, productName: product.name, sku: product.sku })), [products]);
   const filteredImages = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return images;
-    return images.filter((image) => image.label.toLowerCase().includes(query) || image.type.toLowerCase().includes(query) || image.productName?.toLowerCase().includes(query));
+    return images.filter((image) => `${image.productName} ${image.sku || ''} ${image.label}`.toLowerCase().includes(query));
   }, [images, searchTerm]);
 
+  const copy = async (image: LibraryImage) => {
+    await navigator.clipboard?.writeText(image.url);
+    setCopied(image.key);
+    window.setTimeout(() => setCopied(''), 1400);
+  };
+
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Visual assets"
-        icon={Sparkles}
-        title="Image Library"
-        description="Review product images, cloud backgrounds, and brand decoration assets used across the storefront and back office."
-        actions={<Button variant="secondary" icon={RefreshCcw} onClick={loadProducts} disabled={isLoading}>Refresh</Button>}
-      />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Content</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em]">Media</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Primary catalog imagery currently attached to products. Decorative legacy assets are no longer part of the commerce media library.</p></div><button type="button" onClick={() => void loadProducts()} disabled={isLoading} className="commerce-focus inline-flex min-h-11 items-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7] disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh</button></div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-sm"><ImageIcon className="mb-4 h-6 w-6 text-boutique-brown" /><p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Images</p><p className="mt-3 font-serif text-4xl text-boutique-brown">{isLoading ? '—' : images.length}</p></div>
-        <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-sm"><Package className="mb-4 h-6 w-6 text-boutique-brown" /><p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Product images</p><p className="mt-3 font-serif text-4xl text-boutique-brown">{isLoading ? '—' : images.filter((image) => image.type === 'Product').length}</p></div>
-        <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-sm"><Sparkles className="mb-4 h-6 w-6 text-boutique-brown" /><p className="text-xs font-bold uppercase tracking-[0.16em] text-boutique-brown/55">Design assets</p><p className="mt-3 font-serif text-4xl text-boutique-brown">{isLoading ? '—' : images.filter((image) => image.type !== 'Product').length}</p></div>
-      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3"><Metric label="Media items" value={images.length} icon={ImageIcon} /><Metric label="Products" value={products.length} icon={Package} /><Metric label="Products with image" value={products.filter((product) => Boolean(product.imageUrl)).length} icon={ImageIcon} /></div>
+      {error && <div className="rounded-[9px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
 
-      <div className="rounded-[2rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <div className="relative max-w-sm"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-boutique-brown/35" /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search images..." className="w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] py-3 pl-12 pr-4 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/45 focus:ring-2 focus:ring-boutique-wood/25" /></div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {isLoading && <div className="text-sm text-boutique-brown-light">Loading image library...</div>}
-          {!isLoading && filteredImages.map((image) => (
-            <div key={image.key} className="overflow-hidden rounded-[1.5rem] border border-boutique-brown/10 bg-[#fffaf3] shadow-sm">
-              <div className="flex h-40 items-center justify-center bg-white/70 p-4">
-                {isCardDesignValue(image.url) ? <CardDesignFrame value={image.url} className="h-full w-full" /> : <img src={image.url} className="max-h-full max-w-full object-contain" alt="" />}
-              </div>
-              <div className="p-4"><div className="flex items-center justify-between gap-2"><p className="truncate font-bold text-boutique-brown">{image.label}</p><span className="rounded-full border border-boutique-brown/10 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-boutique-brown-light">{image.type}</span></div>{image.productName && <p className="mt-1 truncate text-xs text-boutique-brown-light">{image.productName}</p>}<button onClick={() => navigator.clipboard?.writeText(image.url)} className="mt-3 rounded-full border border-boutique-brown/10 bg-white px-3 py-2 text-xs font-bold text-boutique-brown hover:bg-[#fff4df]">Copy value</button></div>
-            </div>
-          ))}
-          {!isLoading && filteredImages.length === 0 && <div className="text-sm text-boutique-brown-light">No images found.</div>}
-        </div>
-      </div>
+      <section className="rounded-[12px] border border-[#e3e3e3] bg-white p-4 sm:p-5">
+        <div className="relative max-w-sm"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#888]" /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search product or SKU" className="commerce-focus h-11 w-full rounded-[9px] border border-[#dedede] bg-white pl-10 pr-4 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]" /></div>
+        {isLoading && <div className="py-12 text-center text-sm text-[#777]">Loading media...</div>}
+        {!isLoading && filteredImages.length === 0 && <div className="py-12 text-center text-sm text-[#777]">No product images found.</div>}
+        {!isLoading && filteredImages.length > 0 && <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filteredImages.map((image) => <article key={image.key} className="overflow-hidden rounded-[11px] border border-[#e5e5e5] bg-white"><div className="flex aspect-square items-center justify-center bg-[#fafafa] p-4"><img src={image.url} loading="lazy" decoding="async" className="max-h-full max-w-full object-contain" alt="" /></div><div className="border-t border-[#eeeeee] p-4"><p className="truncate text-sm font-semibold">{image.productName}</p><p className="mt-1 text-xs text-[#888]">{image.sku || 'No base SKU'}</p><button type="button" onClick={() => void copy(image)} className="commerce-focus mt-3 inline-flex items-center gap-1.5 rounded-[8px] border border-[#dedede] px-3 py-2 text-xs font-semibold hover:bg-[#f7f7f7]"><Copy className="h-3.5 w-3.5" /> {copied === image.key ? 'Copied' : 'Copy URL'}</button></div></article>)}</div>}
+      </section>
     </div>
   );
 };
+
+const Metric = ({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon: React.ComponentType<{ className?: string }> }) => <div className="rounded-[11px] border border-[#e3e3e3] bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#999]">{label}</p><div className="mt-2 flex items-center gap-2"><Icon className="h-4 w-4 text-[#888]" /><span className="text-xl font-semibold sm:text-2xl">{value}</span></div></div>;

@@ -20,6 +20,7 @@ const TermsPage = lazy(() => import('./legal/LegalPages').then((module) => ({ de
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
 const AdminProducts = lazy(() => import('./admin/AdminProducts').then((module) => ({ default: module.AdminProducts })));
+const AdminInventory = lazy(() => import('./admin/AdminInventory').then((module) => ({ default: module.AdminInventory })));
 const AdminOrders = lazy(() => import('./admin/AdminOrders').then((module) => ({ default: module.AdminOrders })));
 const AdminReviews = lazy(() => import('./admin/AdminReviews').then((module) => ({ default: module.AdminReviews })));
 const AdminCoupons = lazy(() => import('./admin/AdminCoupons').then((module) => ({ default: module.AdminCoupons })));
@@ -30,7 +31,7 @@ const AdminSettings = lazy(() => import('./admin/AdminSettings').then((module) =
 const PersonalizationTemplateManager = lazy(() => import('./admin/PersonalizationTemplateManager').then((module) => ({ default: module.PersonalizationTemplateManager })));
 
 const RouteFallback = () => (
-  <div className="flex min-h-screen items-center justify-center bg-boutique-bg font-sans text-sm font-bold text-boutique-brown">
+  <div className="flex min-h-screen items-center justify-center bg-white font-sans text-sm font-semibold text-[#202020]">
     Loading MY BABY SHIRE...
   </div>
 );
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/new" element={<Navigate to="/admin/products?create=1" replace />} />
             <Route path="products/:id/edit" element={<AdminProductEditRedirect />} />
+            <Route path="inventory" element={<AdminInventory />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="templates" element={<PersonalizationTemplateManager />} />
             <Route path="orders" element={<AdminOrders />} />

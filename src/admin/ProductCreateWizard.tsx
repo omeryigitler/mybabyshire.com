@@ -31,12 +31,7 @@ export const ProductCreateWizard = () => {
 
   const showIssues = (targetStep: number, issues: string[]) => {
     setStep(targetStep);
-    setNotice({
-      kind: 'error',
-      title: `Complete step ${targetStep} first`,
-      message: 'Every required field must be complete before you can move forward.',
-      issues,
-    });
+    setNotice({ kind: 'error', title: `Complete step ${targetStep} first`, message: 'Every required field must be complete before you can move forward.', issues });
   };
 
   useEffect(() => {
@@ -49,12 +44,7 @@ export const ProductCreateWizard = () => {
         setCategories(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error(error);
-        setNotice({
-          kind: 'error',
-          title: 'Categories could not be loaded',
-          message: 'Nothing was changed. Try again before continuing.',
-          issues: [(error as Error).message],
-        });
+        setNotice({ kind: 'error', title: 'Categories could not be loaded', message: 'Nothing was changed. Try again before continuing.', issues: [(error as Error).message] });
       }
     })();
   }, [step, categories.length]);
@@ -77,23 +67,13 @@ export const ProductCreateWizard = () => {
     setStep(targetStep);
   };
 
-  const discard = () => {
-    clear();
-    navigate('/admin/products');
-  };
+  const discard = () => { clear(); navigate('/admin/products'); };
 
   const cancel = () => {
-    const hasProgress = Boolean(
-      draft.name.trim() || draft.description.trim() || draft.images.length || draft.price || draft.ageRange.trim()
-      || draft.material.trim() || draft.preparationTime.trim() || draft.careInstructions.trim() || draft.categoryId,
-    );
+    const hasProgress = Boolean(draft.name.trim() || draft.description.trim() || draft.images.length || draft.price || draft.ageRange.trim() || draft.material.trim() || draft.preparationTime.trim() || draft.careInstructions.trim() || draft.categoryId);
     if (!hasProgress) return discard();
     setPendingConfirm(() => discard);
-    setNotice({
-      kind: 'confirm',
-      title: 'Discard this product draft?',
-      message: 'All information entered in the 8-step wizard will be cleared.',
-    });
+    setNotice({ kind: 'confirm', title: 'Discard this product draft?', message: 'All information entered in the product editor will be cleared.' });
   };
 
   const save = async () => {
@@ -115,12 +95,7 @@ export const ProductCreateWizard = () => {
       setNotice({ kind: 'success', title: 'Product saved', message: 'The product is now stored in the catalog.' });
     } catch (error) {
       console.error(error);
-      setNotice({
-        kind: 'error',
-        title: 'Product could not be saved',
-        message: 'Nothing was published. Fix the issue and try again.',
-        issues: [(error as Error).message],
-      });
+      setNotice({ kind: 'error', title: 'Product could not be saved', message: 'Nothing was published. Fix the issue and try again.', issues: [(error as Error).message] });
     } finally {
       setSaving(false);
     }
@@ -129,10 +104,7 @@ export const ProductCreateWizard = () => {
   const closeNotice = () => {
     setNotice(null);
     setPendingConfirm(null);
-    if (navigateAfterNotice) {
-      setNavigateAfterNotice(false);
-      navigate('/admin/products');
-    }
+    if (navigateAfterNotice) { setNavigateAfterNotice(false); navigate('/admin/products'); }
   };
 
   const confirmNotice = () => {
@@ -152,14 +124,7 @@ export const ProductCreateWizard = () => {
     : <WizardReviewStep draft={draft} categoryName={categoryName} />;
 
   return <>
-    <ProductWizardPage
-      step={step}
-      onCancel={cancel}
-      onBack={() => setStep((current) => Math.max(1, current - 1))}
-      onNext={next}
-      onStepChange={changeStep}
-      finalAction={<button type="button" onClick={save} disabled={saving} className="rounded-full bg-boutique-brown px-6 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-50">{saving ? 'Saving...' : 'Save Product'}</button>}
-    >
+    <ProductWizardPage step={step} onCancel={cancel} onBack={() => setStep((current) => Math.max(1, current - 1))} onNext={next} onStepChange={changeStep} finalAction={<button type="button" onClick={save} disabled={saving} className="commerce-focus min-h-10 rounded-[8px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50">{saving ? 'Saving...' : 'Save Product'}</button>}>
       {content}
     </ProductWizardPage>
     {notice && <AdminNoticeDialog notice={notice} onClose={closeNotice} onConfirm={notice.kind === 'confirm' ? confirmNotice : undefined} />}

@@ -18,9 +18,7 @@ type Category = { id: string; name: string };
 type ApiProduct = Record<string, any>;
 
 const normalizeFields = (fields: any[]): PersonalizationBuilderField[] => {
-  if (!Array.isArray(fields) || !fields.length) {
-    return DEFAULT_PRODUCT_FIELDS.map((field) => ({ ...field, options: field.options ? [...field.options] : undefined }));
-  }
+  if (!Array.isArray(fields) || !fields.length) return DEFAULT_PRODUCT_FIELDS.map((field) => ({ ...field, options: field.options ? [...field.options] : undefined }));
   return fields.map((field, index) => ({
     id: String(field.id || field.fieldKey || `field-${index}`),
     fieldKey: String(field.fieldKey || '').trim(),
@@ -37,26 +35,12 @@ const normalizeFields = (fields: any[]): PersonalizationBuilderField[] => {
 const productToDraft = (product: ApiProduct): ProductWizardDraft => {
   const design = parseCardDesign(product.bgImage);
   return {
-    name: product.name || '',
-    description: product.description || '',
-    images: product.imageUrl ? [{ url: product.imageUrl, publicId: product.publicId, id: product.id }] : [],
-    price: product.price != null ? String(product.price) : '',
-    salePrice: product.salePrice != null ? String(product.salePrice) : '',
-    sku: product.sku || '',
-    stockQuantity: String(product.stockQuantity ?? 0),
-    ageRange: product.ageRange || '',
-    material: product.material || '',
-    preparationTime: product.preparationTime || '',
-    careInstructions: product.careInstructions || '',
-    categoryId: product.categoryId || '',
-    status: product.status === 'draft' ? 'draft' : 'active',
-    promotionBadge: product.bestseller ? 'bestseller' : product.newArrival ? 'newArrival' : product.featured ? 'featured' : 'none',
-    cloudShape: design.cloud,
-    panelShape: design.panel,
-    cardColor: design.color,
-    createCloudVariants: false,
-    personalizationRequired: Boolean(product.personalizationRequired),
-    personalizationFields: normalizeFields(product.personalizationFields),
+    name: product.name || '', description: product.description || '', images: product.imageUrl ? [{ url: product.imageUrl, publicId: product.publicId, id: product.id }] : [],
+    price: product.price != null ? String(product.price) : '', salePrice: product.salePrice != null ? String(product.salePrice) : '', sku: product.sku || '', stockQuantity: String(product.stockQuantity ?? 0),
+    ageRange: product.ageRange || '', material: product.material || '', preparationTime: product.preparationTime || '', careInstructions: product.careInstructions || '', categoryId: product.categoryId || '',
+    status: product.status === 'draft' ? 'draft' : 'active', promotionBadge: product.bestseller ? 'bestseller' : product.newArrival ? 'newArrival' : product.featured ? 'featured' : 'none',
+    cloudShape: design.cloud, panelShape: design.panel, cardColor: design.color, createCloudVariants: false,
+    personalizationRequired: Boolean(product.personalizationRequired), personalizationFields: normalizeFields(product.personalizationFields),
   };
 };
 
@@ -106,11 +90,7 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
   }, [step, categories.length]);
 
   const categoryName = useMemo(() => categories.find((category) => category.id === draft?.categoryId)?.name || 'Current category', [categories, draft?.categoryId]);
-
-  const showIssues = (targetStep: number, issues: string[]) => {
-    setStep(targetStep);
-    setNotice({ kind: 'error', title: `Complete step ${targetStep} first`, message: 'Every required field must be complete before you can move forward.', issues });
-  };
+  const showIssues = (targetStep: number, issues: string[]) => { setStep(targetStep); setNotice({ kind: 'error', title: `Complete step ${targetStep} first`, message: 'Every required field must be complete before you can move forward.', issues }); };
 
   const next = () => {
     if (!draft) return;
@@ -129,10 +109,7 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
     setStep(targetStep);
   };
 
-  const cancel = () => {
-    setPendingConfirm(() => onCancel);
-    setNotice({ kind: 'confirm', title: 'Close product editor?', message: 'Any unsaved changes in this wizard will be discarded.' });
-  };
+  const cancel = () => { setPendingConfirm(() => onCancel); setNotice({ kind: 'confirm', title: 'Close product editor?', message: 'Any unsaved changes will be discarded.' }); };
 
   const save = async () => {
     if (!draft) return;
@@ -185,9 +162,7 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
     action?.();
   };
 
-  if (loading || !draft) {
-    return <div className="flex min-h-[420px] items-center justify-center rounded-[2rem] bg-[#fbf6ef] text-sm font-bold text-boutique-brown-light">Loading product editor...</div>;
-  }
+  if (loading || !draft) return <div className="flex min-h-[420px] items-center justify-center rounded-[12px] border border-[#e2e2e2] bg-white text-sm font-medium text-[#777]">Loading product editor...</div>;
 
   const content = step === 1 ? <WizardBasicsStep draft={draft} update={update} />
     : step === 2 ? <WizardMediaStep images={draft.images} onImagesChange={(images) => update({ images })} />
@@ -199,14 +174,7 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
     : <WizardReviewStep draft={draft} categoryName={categoryName} />;
 
   return <>
-    <ProductWizardPage
-      step={step}
-      onCancel={cancel}
-      onBack={() => setStep((current) => Math.max(1, current - 1))}
-      onNext={next}
-      onStepChange={changeStep}
-      finalAction={<button type="button" onClick={save} disabled={saving} className="rounded-full bg-boutique-brown px-6 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-50">{saving ? 'Updating...' : 'Update Product'}</button>}
-    >
+    <ProductWizardPage step={step} onCancel={cancel} onBack={() => setStep((current) => Math.max(1, current - 1))} onNext={next} onStepChange={changeStep} finalAction={<button type="button" onClick={save} disabled={saving} className="commerce-focus min-h-10 rounded-[8px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50">{saving ? 'Updating...' : 'Update Product'}</button>}>
       {content}
     </ProductWizardPage>
     {notice && <AdminNoticeDialog notice={notice} onClose={closeNotice} onConfirm={notice.kind === 'confirm' ? confirmNotice : undefined} />}

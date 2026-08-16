@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Boxes,
   Image as ImageIcon,
   LayoutDashboard,
   LogOut,
@@ -36,6 +37,7 @@ const navSections: { label?: string; items: NavItem[] }[] = [
     label: 'Catalog',
     items: [
       { name: 'Products', path: '/admin/products', icon: Package },
+      { name: 'Inventory', path: '/admin/inventory', icon: Boxes },
       { name: 'Categories', path: '/admin/categories', icon: Tags },
     ],
   },

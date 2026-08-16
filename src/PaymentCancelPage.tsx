@@ -1,34 +1,26 @@
 import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, XCircle } from 'lucide-react';
+import { BrandLogo } from './components/BrandLogo';
+import { useSeo } from './utils/seo';
 
 export default function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
   const orderReference = searchParams.get('order') || '';
+  useSeo({ title: 'Payment Not Completed', description: 'Return to checkout or continue shopping after an incomplete MY BABY SHIRE payment.' });
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-boutique-bg font-sans text-boutique-brown">
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-40 bg-pattern bg-[length:400px_400px]"></div>
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-2xl items-center justify-center px-6 py-12">
-        <div className="relative w-full overflow-hidden rounded-[2.2rem] border border-boutique-brown/10 bg-white/85 p-8 text-center shadow-[0_30px_90px_rgba(58,37,26,0.14)] backdrop-blur-sm md:p-10">
-          <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -left-16 -top-12 w-56 opacity-35 mix-blend-multiply" alt="" />
-          <div className="relative z-10 mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-            <XCircle className="h-11 w-11" />
-          </div>
-          <h1 className="relative z-10 font-serif text-4xl text-boutique-brown md:text-5xl">Payment Not Completed</h1>
-          <p className="relative z-10 mx-auto mt-4 max-w-md text-sm leading-relaxed text-boutique-brown-light">
-            Your order was created, but payment was not completed. You can return to checkout and try again.
-          </p>
-          {orderReference && <p className="relative z-10 mt-5 text-xs font-bold uppercase tracking-wider text-boutique-brown-light">Order Reference: {orderReference}</p>}
-          <div className="relative z-10 mt-7 grid gap-3 sm:grid-cols-2">
-            <Link to="/checkout" className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-4 text-sm font-bold text-white hover:bg-boutique-wood">
-              <ShoppingBag className="h-4 w-4" /> Return to Checkout
-            </Link>
-            <Link to="/" className="inline-flex items-center justify-center gap-2 rounded-full border border-boutique-brown/15 bg-white px-5 py-4 text-sm font-bold text-boutique-brown hover:bg-boutique-bg">
-              <ArrowLeft className="h-4 w-4" /> Back to Shop
-            </Link>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fafafa] font-sans text-[#202020]">
+      <header className="border-b border-[#e8e8e8] bg-white"><div className="mx-auto flex min-h-[72px] max-w-[1000px] items-center justify-center px-4"><Link to="/" aria-label="MY BABY SHIRE home"><BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" /></Link></div></header>
+      <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-[680px] items-center px-4 py-10 sm:px-6">
+        <section className="w-full rounded-[12px] border border-[#e3e3e3] bg-white p-6 text-center sm:p-9">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff3d9] text-[#8a641e]"><XCircle className="h-8 w-8" /></div>
+          <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Checkout status</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Payment not completed</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#666]">The checkout did not complete successfully. You can return to checkout or continue browsing.</p>
+          {orderReference && <div className="mx-auto mt-5 max-w-md rounded-[9px] bg-[#fafafa] px-4 py-3 text-xs text-[#666]"><span className="font-semibold text-[#202020]">Order reference:</span> {orderReference}</div>}
+          <div className="mt-7 grid gap-2.5 sm:grid-cols-2"><Link to="/checkout" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]"><ShoppingBag className="h-4 w-4" /> Return to checkout</Link><Link to="/collections/all" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-5 text-sm font-semibold hover:bg-[#f7f7f7]"><ArrowLeft className="h-4 w-4" /> Continue shopping</Link></div>
+        </section>
       </main>
     </div>
   );

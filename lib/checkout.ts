@@ -132,6 +132,73 @@ const normalizePersonalizationData = (value: unknown) => {
   return value as Record<string, unknown>;
 };
 
+const parseFieldOptions = (value?: string | null): string[] => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map((option) => String(option)) : [];
+  } catch {
+    return [];
+  }
+};
+
+const isEmptyPersonalizationValue = (value: unknown) => {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value.trim().length === 0;
+  return false;
+};
+
+const validatePersonalizationForProduct = (
+  product: any,
+  input: Record<string, unknown>,
+): Record<string, unknown> => {
+  const fields = Array.isArray(product.personalization_fields)
+    ? [...product.personalization_fields].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    : [];
+
+  if (product.personalization_required && fields.length === 0) {
+    throw new CheckoutValidationError(
+      `${product.name} requires personalization, but its options are not configured. Please contact us before ordering.`,
+    );
+  }
+
+  const validated: Record<string, unknown> = {};
+
+  for (const field of fields) {
+    const key = String(field.field_key || '').trim();
+    if (!key) continue;
+
+    const rawValue = input[key];
+    const empty = isEmptyPersonalizationValue(rawValue);
+
+    if (field.required && empty) {
+      throw new CheckoutValidationError(`${product.name}: ${field.label} is required.`);
+    }
+
+    if (empty) continue;
+
+    const value = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
+
+    if (typeof value === 'string' && field.max_length && value.length > Number(field.max_length)) {
+      throw new CheckoutValidationError(
+        `${product.name}: ${field.label} must be ${field.max_length} characters or fewer.`,
+      );
+    }
+
+    const options = parseFieldOptions(field.options_json);
+    const constrainedTypes = ['select', 'radio', 'color'];
+    if (options.length > 0 && constrainedTypes.includes(String(field.field_type || '').toLowerCase())) {
+      if (!options.includes(String(value))) {
+        throw new CheckoutValidationError(`${product.name}: choose a valid ${field.label}.`);
+      }
+    }
+
+    validated[key] = value;
+  }
+
+  return validated;
+};
+
 const getPrimaryImage = (product: any) =>
   product.images?.find((image: any) => image.is_primary) || product.images?.[0] || null;
 
@@ -145,7 +212,7 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
   const rawItems = Array.isArray(body?.items) ? body.items : [];
 
   if (!rawItems.length) {
-    throw new CheckoutValidationError('Your gift bag is empty.');
+    throw new CheckoutValidationError('Your cart is empty.');
   }
 
   if (rawItems.length > 30) {
@@ -164,7 +231,7 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
       id: { in: productIds },
       status: 'active',
     },
-    include: { images: true },
+    include: { images: true, personalization_fields: true },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
 
@@ -178,16 +245,17 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
       throw new CheckoutValidationError(`${product.name} has only ${product.stock_quantity} in stock.`);
     }
 
+    const personalizationData = validatePersonalizationForProduct(product, item.personalizationData);
     const primaryImage = getPrimaryImage(product);
 
     return {
       productId: product.id,
       name: product.name,
-      description: product.description || 'Personalized MY BABY SHIRE gift',
+      description: product.description || 'MY BABY SHIRE product',
       imageUrl: primaryImage?.image_url || undefined,
       quantity: item.quantity,
       price: roundMoney(Number(product.price)),
-      personalizationData: item.personalizationData,
+      personalizationData,
     };
   });
 

@@ -68,33 +68,53 @@ export type CartItem = {
 const FALLBACK_PRODUCTS: Product[] = import.meta.env.DEV
   ? [
       {
-        id: 'p1',
-        name: 'Cashmere Dream Blanket',
-        description: 'A delicate cashmere blend blanket crafted for cozy naps and sweet dreams.',
-        price: 85.00,
-        imageUrl: '/product-blanket-cutout-v1.png',
-        bgImage: '/product-card-cloud-blue.png',
-        badge: 'Bestseller',
-        personalizationRequired: true,
-      },
-      {
-        id: 'p2',
-        name: 'Bespoke Heirloom Teddy',
-        description: 'Hand-stitched keepsake bear becomes a lifelong companion.',
-        price: 65.00,
-        imageUrl: '/product-teddy-cutout-v1.png',
-        bgImage: '/product-card-cloud-peach.png',
-        badge: 'Popular',
-        personalizationRequired: true,
-      },
-      {
-        id: 'p3',
-        name: 'Organic Cotton Onesie Set',
-        description: 'Three beautifully soft, breathable onesies in earthy tones.',
-        price: 45.00,
+        id: 'demo-baby-tee',
+        name: 'Premium Cotton Baby Tee',
+        slug: 'premium-cotton-baby-tee',
+        description: 'Soft cotton baby tee used as a local development fallback when the products API is unavailable.',
+        price: 16,
         imageUrl: '/product-onesie-set-cutout-v1.png',
-        bgImage: '/product-card-cloud-mint.png',
+        badge: 'New',
         personalizationRequired: false,
+        status: 'active',
+        sku: 'MBS-DEMO-BABY-TEE',
+        stockQuantity: 20,
+        newArrival: true,
+        categoryName: 'Baby',
+        ageRange: '0-24M',
+        material: 'Cotton',
+      },
+      {
+        id: 'demo-toddler-tee',
+        name: 'Everyday Toddler Tee',
+        slug: 'everyday-toddler-tee',
+        description: 'Simple toddler blank used only for local development fallback data.',
+        price: 18,
+        imageUrl: '/product-onesie-set-cutout-v1.png',
+        personalizationRequired: false,
+        status: 'active',
+        sku: 'MBS-DEMO-TODDLER-TEE',
+        stockQuantity: 20,
+        bestseller: true,
+        categoryName: 'Toddler',
+        ageRange: '2T-5T',
+        material: 'Cotton',
+      },
+      {
+        id: 'demo-adult-crew',
+        name: 'Unisex Fleece Crewneck',
+        slug: 'unisex-fleece-crewneck',
+        description: 'Neutral adult crewneck blank used only when the development products API is unavailable.',
+        price: 28,
+        imageUrl: '/product-onesie-set-cutout-v1.png',
+        personalizationRequired: false,
+        status: 'active',
+        sku: 'MBS-DEMO-CREW',
+        stockQuantity: 20,
+        featured: true,
+        categoryName: 'Adult',
+        ageRange: 'XS-3XL',
+        material: 'Cotton blend fleece',
       },
     ]
   : [];
@@ -104,7 +124,6 @@ type StoreState = {
   productsLoading: boolean;
   loadProducts: () => Promise<void>;
   addProduct: (product: Product) => void;
-
   cartItems: CartItem[];
   isCartOpen: boolean;
   openCart: () => void;
@@ -113,7 +132,6 @@ type StoreState = {
   removeFromCart: (id: string) => void;
   updateCartItemQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
-
   isPersonalizationModalOpen: boolean;
   selectedProduct: Product | null;
   selectedVariant: ProductVariant | null;
@@ -129,14 +147,9 @@ export const useStore = create<StoreState>()(
 
       loadProducts: async () => {
         set({ productsLoading: true });
-
         try {
           const response = await fetch('/api/products');
-
-          if (!response.ok) {
-            throw new Error('Products API failed');
-          }
-
+          if (!response.ok) throw new Error('Products API failed');
           const products = await response.json();
           set({ products: products.length ? products : FALLBACK_PRODUCTS });
         } catch (error) {
@@ -147,70 +160,36 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      addProduct: (product) => {
-        set((state) => ({
-          products: [...state.products, product],
-        }));
-      },
+      addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
 
       cartItems: [],
       isCartOpen: false,
-
       openCart: () => set({ isCartOpen: true }),
-
       closeCart: () => set({ isCartOpen: false }),
 
       addToCart: (item) => {
-        const newItem = {
-          ...item,
-          id: crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11),
-        };
-
-        set((state) => ({
-          cartItems: [...state.cartItems, newItem],
-          isCartOpen: true,
-        }));
+        const newItem = { ...item, id: crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11) };
+        set((state) => ({ cartItems: [...state.cartItems, newItem], isCartOpen: true }));
       },
 
-      removeFromCart: (id) =>
-        set((state) => ({
-          cartItems: state.cartItems.filter((i) => i.id !== id),
-        })),
+      removeFromCart: (id) => set((state) => ({ cartItems: state.cartItems.filter((i) => i.id !== id) })),
 
       updateCartItemQuantity: (id, quantity) =>
         set((state) => ({
           cartItems: state.cartItems.map((item) => {
             if (item.id !== id) return item;
-            const trackedStock = item.variant
-              ? item.variant.stockQuantity
-              : Number(item.product.stockQuantity || 0);
+            const trackedStock = item.variant ? item.variant.stockQuantity : Number(item.product.stockQuantity || 0);
             const maxQuantity = trackedStock > 0 ? Math.min(25, trackedStock) : item.variant ? 1 : 25;
-            return {
-              ...item,
-              quantity: Math.min(maxQuantity, Math.max(1, quantity)),
-            };
+            return { ...item, quantity: Math.min(maxQuantity, Math.max(1, quantity)) };
           }),
         })),
 
       clearCart: () => set({ cartItems: [], isCartOpen: false }),
-
       isPersonalizationModalOpen: false,
       selectedProduct: null,
       selectedVariant: null,
-
-      openPersonalizationModal: (product, variant = null) =>
-        set({
-          isPersonalizationModalOpen: true,
-          selectedProduct: product,
-          selectedVariant: variant,
-        }),
-
-      closePersonalizationModal: () =>
-        set({
-          isPersonalizationModalOpen: false,
-          selectedProduct: null,
-          selectedVariant: null,
-        }),
+      openPersonalizationModal: (product, variant = null) => set({ isPersonalizationModalOpen: true, selectedProduct: product, selectedVariant: variant }),
+      closePersonalizationModal: () => set({ isPersonalizationModalOpen: false, selectedProduct: null, selectedVariant: null }),
     }),
     {
       name: 'mybabyshire-cart-v1',

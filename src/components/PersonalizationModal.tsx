@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, ChevronRight, Check } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useStore, type PersonalizationField } from '../store/useStore';
 
 const DEFAULT_PERSONALIZATION_FIELDS: PersonalizationField[] = [
@@ -17,10 +17,8 @@ export const PersonalizationModal = () => {
 
   useEffect(() => {
     if (!isPersonalizationModalOpen) return;
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
     return () => {
       document.body.style.overflow = previousOverflow;
     };
@@ -57,11 +55,7 @@ export const PersonalizationModal = () => {
       return result;
     }, {});
 
-    addToCart({
-      product: selectedProduct,
-      quantity: 1,
-      personalizationData: completedData,
-    });
+    addToCart({ product: selectedProduct, quantity: 1, personalizationData: completedData });
     handleClose();
   };
 
@@ -89,60 +83,59 @@ export const PersonalizationModal = () => {
 
     if (field.type === 'color') {
       return (
-        <div className="flex flex-col gap-3">
-          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+        <div>
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.12em] text-[#555550]">
             {field.label}{field.required ? ' *' : ''}
           </label>
-          <div className="flex flex-wrap gap-3 px-2">
+          <div className="flex flex-wrap gap-3">
             {options.map((color) => (
               <button
                 type="button"
                 key={color}
                 onClick={() => updateFieldValue(field, color)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${value === color ? 'scale-110 border-[#3a251a]' : 'border-transparent shadow-sm hover:scale-105'}`}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border transition-transform ${value === color ? 'scale-110 border-[#202020] ring-2 ring-white ring-offset-1 ring-offset-[#202020]' : 'border-[#d8d8d2] hover:scale-105'}`}
                 style={{ backgroundColor: color }}
                 aria-label={`${field.label} ${color}`}
               >
-                {value === color && <Check className="h-4 w-4 text-[#3a251a] mix-blend-difference" />}
+                {value === color && <Check className="h-4 w-4 text-[#202020] mix-blend-difference" />}
               </button>
             ))}
           </div>
-          {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
+          {field.helpText && <p className="mt-3 text-xs leading-5 text-[#777770]">{field.helpText}</p>}
+          {isFieldMissing(field) && <p className="mt-2 text-xs font-medium text-[#a25b5b]">Please choose an option.</p>}
         </div>
       );
     }
 
     if (field.type === 'select') {
       const useCompactGrid = options.length >= 5 && options.every((option) => option.length <= 12);
-
       return (
-        <div className="flex flex-col gap-3">
-          <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+        <div>
+          <label className="mb-3 block text-xs font-semibold uppercase tracking-[0.12em] text-[#555550]">
             {field.label}{field.required ? ' *' : ''}
           </label>
-          <div className={useCompactGrid ? 'grid grid-cols-3 gap-2' : 'flex flex-col gap-2'}>
+          <div className={useCompactGrid ? 'grid grid-cols-2 gap-2 sm:grid-cols-3' : 'grid gap-2'}>
             {options.map((option) => (
               <button
                 type="button"
                 key={option}
                 onClick={() => updateFieldValue(field, option)}
-                className={`rounded-2xl border px-5 py-3.5 transition-all ${useCompactGrid ? 'text-center' : 'text-left'} ${value === option ? 'border-[#d4b497] bg-[#f7ede3] text-[#3a251a]' : 'border-[#d4b497]/20 bg-[#fcfaf6] text-[#5a4234] hover:bg-[#f7ede3]/50'}`}
+                className={`min-h-12 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${useCompactGrid ? 'text-center' : 'text-left'} ${value === option ? 'border-[#202020] bg-[#202020] text-white' : 'border-[#deded9] bg-white text-[#3e3e39] hover:border-[#a9a9a2] hover:bg-[#fafaf8]'}`}
               >
-                <span className="font-medium">{option}</span>
+                {option}
               </button>
             ))}
           </div>
-          {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
-          {isFieldMissing(field) && <p className="ml-2 text-xs italic text-[#d4b497]">Please choose an option.</p>}
+          {field.helpText && <p className="mt-3 text-xs leading-5 text-[#777770]">{field.helpText}</p>}
+          {isFieldMissing(field) && <p className="mt-2 text-xs font-medium text-[#a25b5b]">Please choose an option.</p>}
         </div>
       );
     }
 
     const inputType = field.type === 'date' ? 'date' : 'text';
-
     return (
-      <div className="flex flex-col gap-2">
-        <label className="ml-2 text-xs font-bold uppercase tracking-wider text-[#5a4234]">
+      <div>
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#555550]">
           {field.label}{field.required ? ' *' : ''}
         </label>
         <input
@@ -150,171 +143,125 @@ export const PersonalizationModal = () => {
           value={value}
           maxLength={field.maxLength || undefined}
           onChange={(event) => updateFieldValue(field, event.target.value)}
-          className="w-full rounded-2xl border border-[#d4b497]/30 bg-[#fcfaf6] px-5 py-4 text-lg font-medium text-[#3a251a] placeholder:text-[#d4b497] transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#d4b497]/50"
+          className="h-12 w-full rounded-xl border border-[#deded9] bg-white px-4 text-sm text-[#202020] outline-none placeholder:text-[#a2a29b] focus:border-[#202020] focus:ring-1 focus:ring-[#202020]"
           placeholder={field.placeholder || 'Enter custom text'}
         />
-        {field.helpText && <p className="ml-2 text-xs italic text-[#d4b497]">{field.helpText}</p>}
-        {isFieldMissing(field) && <p className="ml-2 mt-1 text-xs italic text-[#d4b497]">This field is required.</p>}
+        {field.helpText && <p className="mt-2 text-xs leading-5 text-[#777770]">{field.helpText}</p>}
+        {isFieldMissing(field) && <p className="mt-2 text-xs font-medium text-[#a25b5b]">This field is required.</p>}
       </div>
     );
   };
 
   const detailsSummary = (
-    <div className="w-full rounded-2xl border border-[#d4b497]/20 bg-white/75 p-4 text-left shadow-sm">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d4b497]">Your details</p>
-      <div className="mt-3 space-y-2.5">
-        {fields.map((field) => {
-          const value = getFieldValue(field);
-          return (
-            <div key={field.fieldKey} className="flex items-start justify-between gap-4 border-b border-[#d4b497]/10 pb-2.5 last:border-0 last:pb-0">
-              <span className="text-[11px] font-bold text-[#5a4234]">{field.label}</span>
-              <span className={`max-w-[58%] break-words text-right text-sm font-medium ${value ? 'text-[#3a251a]' : 'text-[#b69a84]'}`}>{value || 'Not selected yet'}</span>
-            </div>
-          );
-        })}
-      </div>
+    <div className="rounded-xl border border-[#e3e3de] bg-white">
+      {fields.map((field, index) => {
+        const value = getFieldValue(field);
+        return (
+          <div key={field.fieldKey} className={`flex items-start justify-between gap-5 px-4 py-3 ${index < fields.length - 1 ? 'border-b border-[#ecece8]' : ''}`}>
+            <span className="text-xs font-medium text-[#777770]">{field.label}</span>
+            <span className={`max-w-[60%] break-words text-right text-sm font-semibold ${value ? 'text-[#202020]' : 'text-[#9a9a93]'}`}>{value || 'Not selected'}</span>
+          </div>
+        );
+      })}
     </div>
   );
+
+  const stepTitle = step === 1 ? 'Choose the first detail' : step === 2 ? 'Complete your options' : 'Review your details';
+  const stepDescription = step === 1
+    ? 'Select the first required option for this item.'
+    : step === 2
+      ? 'Choose any remaining details before adding the item to your cart.'
+      : 'Confirm the selections below. These details will be saved with your order.';
 
   return (
     <AnimatePresence>
       {isPersonalizationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-3 sm:p-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-            className="absolute inset-0 bg-[#3a251a]/20 backdrop-blur-md"
-          />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          <motion.section
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Personalize ${selectedProduct.name}`}
+            initial={{ opacity: 0, scale: 0.98, y: 14 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.6 }}
-            className="relative flex max-h-[92dvh] min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-[var(--shadow-modal)] md:max-h-[90dvh] md:flex-row"
+            exit={{ opacity: 0, scale: 0.98, y: 14 }}
+            transition={{ duration: 0.2 }}
+            className="relative grid max-h-[92dvh] w-full max-w-4xl overflow-hidden rounded-2xl border border-[#deded9] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.2)] md:grid-cols-[300px_1fr]"
           >
-            <button
-              type="button"
-              onClick={handleClose}
-              className="absolute right-4 top-4 z-20 rounded-full bg-white/90 p-2 text-[#5a4234] shadow-sm backdrop-blur-sm transition-colors hover:bg-[#f7ede3]"
-              aria-label="Close choose details"
-            >
-              <X className="h-5 w-5" />
+            <button type="button" onClick={handleClose} className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#65655f] shadow-sm ring-1 ring-[#e5e5df] hover:bg-[#f5f5f2] hover:text-[#202020]" aria-label="Close personalization">
+              <X className="h-4 w-4" />
             </button>
 
-            <div className="relative hidden w-1/2 flex-shrink-0 flex-col items-center justify-center border-r border-[#d4b497]/20 bg-[#fcfaf6] p-10 md:flex">
-              <img src="/cloud-watercolor-pink.png" className="absolute left-10 top-10 w-24 opacity-60 mix-blend-multiply" alt="" />
-              <img src="/toy-wooden-star-solid.png" className="absolute bottom-16 right-12 w-12 rotate-12 opacity-50 mix-blend-multiply" alt="" />
+            <aside className="hidden border-r border-[#e6e6e1] bg-[#f7f7f5] p-7 md:flex md:flex-col">
+              <div className="flex min-h-64 items-center justify-center rounded-xl bg-white p-5 ring-1 ring-[#e8e8e3]">
+                <img src={selectedProduct.imageUrl} className="max-h-56 w-full object-contain" alt={selectedProduct.name} />
+              </div>
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8a82]">Your item</p>
+                <h2 className="mt-2 text-xl font-semibold leading-snug text-[#202020]">{selectedProduct.name}</h2>
+                <p className="mt-2 text-sm font-semibold text-[#202020]">${selectedProduct.price.toFixed(2)}</p>
+              </div>
+              <div className="mt-6">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8a82]">Selections</p>
+                {detailsSummary}
+              </div>
+            </aside>
 
-              <motion.div
-                key={selectedProduct.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative z-10 flex w-full flex-col items-center"
-              >
-                <img src={selectedProduct.imageUrl} className="h-60 w-60 object-contain drop-shadow-xl" alt={selectedProduct.name} />
-                <div className="mt-6 text-center">
-                  <h2 className="mb-2 font-serif text-2xl text-[#3a251a]">{selectedProduct.name}</h2>
-                  <p className="font-medium text-[#5a4234] opacity-80">${selectedProduct.price.toFixed(2)}</p>
-                </div>
-                <div className="mt-6 w-full max-w-sm">{detailsSummary}</div>
-              </motion.div>
-            </div>
-
-            <div className="flex min-h-0 w-full flex-1 flex-col md:w-1/2">
-              <div className="flex flex-shrink-0 items-center justify-between px-6 pb-5 pt-7 sm:px-8 md:px-10 md:pt-10">
-                <div className="flex gap-2">
-                  {[1, 2, 3].map((itemStep) => (
-                    <div
-                      key={itemStep}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${itemStep === step ? 'w-8 bg-[#d4b497]' : itemStep < step ? 'w-4 bg-[#d4b497]/60' : 'w-4 bg-[#f7ede3]'}`}
-                    />
-                  ))}
-                </div>
-                <div className="mr-10 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#d4b497] sm:mr-8">
-                  <Sparkles className="h-3 w-3" /> Step {step} of 3
+            <div className="flex min-h-0 flex-col">
+              <div className="border-b border-[#ecece8] px-5 pb-5 pt-6 sm:px-7 sm:pt-7 md:px-9">
+                <div className="pr-12">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8a8a82]">Step {step} of 3</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map((itemStep) => (
+                      <div key={itemStep} className={`h-1 rounded-full ${itemStep <= step ? 'bg-[#202020]' : 'bg-[#e9e9e4]'}`} />
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 sm:px-8 md:px-10">
-                <div className="mb-5 flex items-center gap-4 rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-3 md:hidden">
-                  <img src={selectedProduct.imageUrl} className="h-20 w-20 shrink-0 object-contain" alt={selectedProduct.name} />
-                  <div className="min-w-0"><p className="line-clamp-2 font-serif text-lg text-[#3a251a]">{selectedProduct.name}</p><p className="mt-1 text-sm font-bold text-[#5a4234]">${selectedProduct.price.toFixed(2)}</p></div>
+              <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-7 md:px-9 md:py-8">
+                <div className="mb-6 flex items-center gap-4 rounded-xl bg-[#f7f7f5] p-3 md:hidden">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-white p-2 ring-1 ring-[#e5e5df]">
+                    <img src={selectedProduct.imageUrl} className="h-full w-full object-contain" alt={selectedProduct.name} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{selectedProduct.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-[#202020]">${selectedProduct.price.toFixed(2)}</p>
+                  </div>
                 </div>
 
                 <AnimatePresence mode="wait">
-                  {step === 1 && (
-                    <motion.div
-                      key="step1"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="flex flex-col gap-6"
-                    >
-                      <div>
-                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Choose the first detail</h3>
-                        <p className="text-sm text-[#5a4234] opacity-80">Your choices are stored with the order. The product photo stays true to the catalog image.</p>
-                      </div>
-                      {firstField && renderField(firstField)}
-                    </motion.div>
-                  )}
+                  <motion.div key={step} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.15 }}>
+                    <h3 className="text-2xl font-semibold tracking-[-0.025em] text-[#202020]">{stepTitle}</h3>
+                    <p className="mt-2 max-w-lg text-sm leading-6 text-[#6b6b64]">{stepDescription}</p>
 
-                  {step === 2 && (
-                    <motion.div
-                      key="step2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="flex flex-col gap-6"
-                    >
-                      <div>
-                        <h3 className="mb-2 font-serif text-[1.4rem] text-[#3a251a]">Complete the details</h3>
-                        <p className="text-sm text-[#5a4234] opacity-80">Choose the remaining options for this gift.</p>
-                      </div>
-                      <div className="flex flex-col gap-5">
-                        {secondaryFields.length
-                          ? secondaryFields.map((field) => <div key={field.id}>{renderField(field)}</div>)
-                          : <p className="rounded-2xl border border-[#d4b497]/20 bg-[#fcfaf6] p-5 text-sm text-[#5a4234]">No extra details are needed for this gift.</p>}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {step === 3 && (
-                    <motion.div
-                      key="step3"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="flex flex-col gap-6"
-                    >
-                      <div className="flex flex-col items-center justify-center py-4 text-center">
-                        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f7ede3]">
-                          <Sparkles className="h-8 w-8 text-[#d4b497]" />
+                    <div className="mt-7">
+                      {step === 1 && firstField && renderField(firstField)}
+                      {step === 2 && (
+                        <div className="grid gap-6">
+                          {secondaryFields.length
+                            ? secondaryFields.map((field) => <div key={field.id}>{renderField(field)}</div>)
+                            : <p className="rounded-xl bg-[#f7f7f5] p-4 text-sm leading-6 text-[#66665f]">No extra details are needed for this item.</p>}
                         </div>
-                        <h3 className="mb-2 font-serif text-2xl text-[#3a251a]">Review your details</h3>
-                        <p className="max-w-sm text-sm text-[#5a4234] opacity-80">We will prepare the order using the choices below. No generated preview is used.</p>
-                      </div>
-                      {detailsSummary}
-                    </motion.div>
-                  )}
+                      )}
+                      {step === 3 && detailsSummary}
+                    </div>
+                  </motion.div>
                 </AnimatePresence>
               </div>
 
-              <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-[#d4b497]/20 bg-white px-6 py-4 shadow-[0_-8px_24px_rgba(58,37,26,0.06)] sm:px-8 md:px-10 md:py-5">
-                {step > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() => setStep((currentStep) => currentStep - 1)}
-                    className="text-sm font-bold tracking-wide text-[#5a4234] hover:text-[#3a251a]"
-                  >
-                    Back
-                  </button>
-                ) : <div />}
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#ecece8] bg-white px-5 py-4 sm:px-7 md:px-9">
+                <div>
+                  {step > 1 && (
+                    <button type="button" onClick={() => setStep((currentStep) => currentStep - 1)} className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#555550] hover:bg-[#f5f5f2] hover:text-[#202020]">
+                      <ChevronLeft className="h-4 w-4" /> Back
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-3">
-                  {!isStepValid && <span className="hidden max-w-32 text-right text-xs text-[#9b6f55] sm:block">Complete all required choices.</span>}
+                  {!isStepValid && <span className="hidden max-w-36 text-right text-xs leading-4 text-[#8a5d5d] sm:block">Complete the required choice.</span>}
                   <button
                     type="button"
                     onClick={() => {
@@ -323,14 +270,15 @@ export const PersonalizationModal = () => {
                       else setStep((currentStep) => currentStep + 1);
                     }}
                     disabled={!isStepValid}
-                    className="flex items-center gap-2 rounded-full bg-[#3a251a] px-6 py-3.5 font-bold tracking-wide text-white shadow-md transition-colors hover:bg-[#4a3328] disabled:cursor-not-allowed disabled:opacity-50 sm:px-8"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#202020] px-5 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-[#b7b7b1] sm:min-w-36"
                   >
-                    {isLastStep ? 'Add to Gift Bag' : 'Next Step'} <ChevronRight className="h-4 w-4" />
+                    {isLastStep ? 'Add to Cart' : 'Next'}
+                    {!isLastStep && <ChevronRight className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </motion.section>
         </div>
       )}
     </AnimatePresence>

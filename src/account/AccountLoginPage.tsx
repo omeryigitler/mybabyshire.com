@@ -1,27 +1,9 @@
-import React, { FormEvent, useEffect, useId, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles, Star, X } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, X } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
 import { clearMemberSession, getMemberAuthErrorFromUrl, startGoogleMemberLogin } from './memberAuth';
 import { loginAdmin } from '../admin/adminAuth';
-
-const assets = {
-  shop: '/login-assets/boutique-shop.png',
-  teddy: '/login-assets/teddy-bear.png',
-  blocks: '/login-assets/abc-blocks.png',
-  moon: '/login-assets/moon-star.png',
-  train: '/login-assets/toy-train.png',
-  carousel: '/login-assets/carousel.png',
-  balloon: '/login-assets/hot-air-balloon.png',
-  sign: '/login-assets/balloon-sign.png',
-};
-
-const decorativeImageProps = {
-  alt: '',
-  'aria-hidden': true,
-  decoding: 'async' as const,
-  loading: 'lazy' as const,
-};
 
 const AppleIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
@@ -38,109 +20,14 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const cloudTones = {
-  cream: {
-    top: '#fffef9',
-    base: '#fff6e9',
-    bottom: '#ead8bf',
-    stroke: '#ecd6b8',
-    blush: '#f7dcc7',
-    shadow: 'rgba(112,75,42,0.16)',
-  },
-  blue: {
-    top: '#ffffff',
-    base: '#edf8ff',
-    bottom: '#d9ebfb',
-    stroke: '#c4d8ea',
-    blush: '#cfe8fb',
-    shadow: 'rgba(76,102,130,0.15)',
-  },
-  peach: {
-    top: '#ffffff',
-    base: '#fff0e8',
-    bottom: '#f5d7ce',
-    stroke: '#eccdc1',
-    blush: '#ffd6ca',
-    shadow: 'rgba(133,82,61,0.15)',
-  },
-  mint: {
-    top: '#ffffff',
-    base: '#effaf3',
-    bottom: '#dceee3',
-    stroke: '#cbe0d3',
-    blush: '#d4efdE',
-    shadow: 'rgba(75,117,94,0.14)',
-  },
-  lavender: {
-    top: '#ffffff',
-    base: '#f5f0ff',
-    bottom: '#e6dcfb',
-    stroke: '#d7caee',
-    blush: '#eadcff',
-    shadow: 'rgba(100,78,134,0.14)',
-  },
-};
-
-type CloudTone = keyof typeof cloudTones;
-
-const DecorativeCloud = ({ className = '', tone = 'cream' }: { className?: string; tone?: CloudTone }) => {
-  const colors = cloudTones[tone];
-  const cloudId = useId().replace(/:/g, '');
-  const gradientId = `cloud-gradient-${cloudId}`;
-
-  return (
-    <div className={`pointer-events-none absolute ${className}`}>
-      <svg aria-hidden="true" className="h-full w-full overflow-visible" viewBox="0 0 220 124" style={{ filter: `drop-shadow(0 16px 23px ${colors.shadow})` }}>
-        <defs>
-          <linearGradient id={gradientId} x1="110" x2="110" y1="10" y2="111" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor={colors.top} />
-            <stop offset="0.55" stopColor={colors.base} />
-            <stop offset="1" stopColor={colors.bottom} />
-          </linearGradient>
-        </defs>
-        <g fill={`url(#${gradientId})`}>
-          <ellipse cx="111" cy="81" rx="86" ry="32" />
-          <circle cx="43" cy="72" r="28" />
-          <circle cx="75" cy="52" r="36" />
-          <circle cx="116" cy="46" r="42" />
-          <circle cx="158" cy="62" r="34" />
-          <circle cx="181" cy="79" r="24" />
-        </g>
-        <g fill={colors.blush} opacity="0.22">
-          <ellipse cx="102" cy="84" rx="58" ry="18" />
-          <circle cx="151" cy="72" r="23" />
-        </g>
-        <path d="M52 51c16-15 43-16 59 0" fill="none" stroke="#fff" strokeLinecap="round" strokeOpacity="0.68" strokeWidth="7" />
-        <path d="M123 43c13-8 32-5 42 10" fill="none" stroke="#fff" strokeLinecap="round" strokeOpacity="0.5" strokeWidth="6" />
-        <path d="M39 87c26 13 110 16 143 1" fill="none" stroke={colors.bottom} strokeLinecap="round" strokeOpacity="0.32" strokeWidth="6" />
-      </svg>
-    </div>
-  );
-};
-
-const FloatingStar = ({ className = '' }: { className?: string }) => (
-  <Star className={`pointer-events-none absolute fill-[#e8bd68] text-[#d7a753] drop-shadow-[0_5px_8px_rgba(162,111,53,0.22)] ${className}`} />
-);
-
-const AuthButton = ({
-  children,
-  icon,
-  onClick,
-  note,
-}: {
-  children: React.ReactNode;
-  icon: React.ReactNode;
-  onClick: () => void;
-  note?: string;
-}) => (
+const AuthButton = ({ children, icon, onClick }: { children: React.ReactNode; icon: React.ReactNode; onClick: () => void }) => (
   <button
     type="button"
     onClick={onClick}
-    className="group flex min-h-16 w-full items-center justify-center gap-3 rounded-[1.35rem] border border-[#e1d3c4] bg-white/95 px-5 py-4 text-[15px] font-black text-boutique-brown shadow-[0_12px_24px_rgba(58,37,26,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] transition-all hover:-translate-y-0.5 hover:border-boutique-wood hover:bg-[#fffaf3]"
+    className="flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-[#deded9] bg-white px-5 text-sm font-semibold text-[#202020] transition-colors hover:border-[#b9b9b2] hover:bg-[#fafaf8]"
   >
-    <span className="flex h-8 w-8 items-center justify-center text-boutique-brown">{icon}</span>
-    <span className="min-w-0">{children}</span>
-    {note && <span className="ml-auto hidden rounded-full bg-[#fff2df] px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-boutique-brown-light sm:inline-flex">{note}</span>}
+    <span className="flex h-6 w-6 items-center justify-center">{icon}</span>
+    <span>{children}</span>
   </button>
 );
 
@@ -176,216 +63,112 @@ export default function AccountLoginPage() {
   };
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-[#fbf5ec] font-sans text-boutique-brown">
-      <style>
-        {`
-          .member-login-panel {
-            transform: scale(0.94);
-          }
-
-          @media (min-width: 768px) and (max-height: 940px) {
-            .member-login-main {
-              align-items: flex-start;
-            }
-
-            .member-login-panel {
-              transform: scale(0.9);
-            }
-          }
-
-          @media (min-width: 768px) and (max-height: 820px) {
-            .member-login-panel {
-              transform: scale(0.76);
-            }
-          }
-
-          @media (max-width: 767px) and (max-height: 760px) {
-            .member-login-main {
-              align-items: flex-start;
-            }
-
-            .member-login-panel {
-              transform: scale(0.78);
-            }
-          }
-
-          @media (max-width: 767px) and (max-height: 700px) {
-            .member-login-panel {
-              transform: scale(0.7);
-            }
-          }
-        `}
-      </style>
-      <div className="pointer-events-none absolute inset-0 bg-pattern bg-[length:420px_420px] opacity-[0.22]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.96)_0%,rgba(255,250,243,0.68)_38%,rgba(250,238,220,0.25)_72%,rgba(250,238,220,0)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.78)_58%,rgba(255,250,244,0.92)_100%)]" />
-
-      <div className="pointer-events-none absolute left-4 top-8 hidden h-24 w-24 rounded-full bg-[#f2cfb7]/55 blur-2xl lg:block" />
-      <div className="pointer-events-none absolute right-8 top-16 hidden h-28 w-28 rounded-full bg-[#d6e7ea]/50 blur-2xl lg:block" />
-
-      <div className="pointer-events-none absolute inset-0 z-0 hidden lg:block">
-        <img {...decorativeImageProps} src={assets.moon} className="absolute left-[5vw] top-[5vh] w-[clamp(8rem,12vw,15rem)] rotate-[-8deg] drop-shadow-[0_20px_28px_rgba(129,85,44,0.18)]" />
-        <div className="absolute left-[8vw] top-[23vh] h-[clamp(7rem,9vw,10.5rem)] w-[clamp(7rem,11vw,13rem)] rotate-[-5deg] overflow-hidden opacity-95 drop-shadow-[0_22px_34px_rgba(129,85,44,0.14)] xl:left-[10vw]">
-          <img {...decorativeImageProps} src={assets.sign} className="w-full" />
-        </div>
-        <img {...decorativeImageProps} src={assets.shop} className="absolute bottom-[11vh] left-[2vw] w-[clamp(14rem,22vw,26rem)] drop-shadow-[0_26px_44px_rgba(122,83,47,0.17)] xl:left-[4vw]" />
-        <img {...decorativeImageProps} src={assets.teddy} className="absolute bottom-[2.5vh] left-[12vw] w-[clamp(9rem,15vw,19rem)] drop-shadow-[0_24px_36px_rgba(122,83,47,0.18)]" />
-        <img {...decorativeImageProps} src={assets.blocks} className="absolute bottom-[3vh] left-[2vw] w-[clamp(7rem,10vw,12rem)] rotate-[-6deg] drop-shadow-[0_18px_26px_rgba(122,83,47,0.14)]" />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 z-0 hidden lg:block">
-        <img {...decorativeImageProps} src={assets.carousel} className="absolute bottom-[22vh] right-[4vw] w-[clamp(13rem,20vw,25rem)] drop-shadow-[0_26px_44px_rgba(122,83,47,0.17)]" />
-        <img {...decorativeImageProps} src={assets.balloon} className="absolute right-[5vw] top-[6vh] w-[clamp(10rem,14vw,17rem)] rotate-[5deg] drop-shadow-[0_22px_35px_rgba(122,83,47,0.16)]" />
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] hidden h-[25rem] lg:block">
-        <DecorativeCloud tone="peach" className="bottom-[-0.7rem] right-[27vw] h-16 w-40 opacity-86" />
-        <DecorativeCloud tone="blue" className="bottom-[0.7rem] right-[-1.5vw] h-20 w-48 opacity-78" />
-      </div>
-
-      <DecorativeCloud tone="blue" className="left-[24vw] top-[18vh] hidden h-14 w-36 opacity-45 lg:block" />
-      <DecorativeCloud tone="cream" className="right-[19vw] top-[22vh] hidden h-24 w-48 opacity-80 lg:block" />
-      <DecorativeCloud tone="lavender" className="bottom-[-1.7rem] left-[7vw] hidden h-28 w-64 opacity-80 lg:block" />
-      <DecorativeCloud tone="mint" className="bottom-[1rem] right-[-2vw] hidden h-32 w-72 opacity-75 lg:block" />
-      <FloatingStar className="left-[24vw] top-[22vh] hidden h-7 w-7 lg:block" />
-      <FloatingStar className="right-[31vw] top-[17vh] hidden h-5 w-5 lg:block" />
-      <FloatingStar className="right-[23vw] top-[32vh] hidden h-8 w-8 lg:block" />
-      <FloatingStar className="bottom-[9vh] left-[34vw] hidden h-5 w-5 lg:block" />
-
-      <main className="member-login-main relative z-10 flex h-full overflow-hidden items-center justify-center px-4 py-7 sm:px-6 lg:px-8">
-        <section className="member-login-panel relative mt-0 w-full max-w-[22.5rem] origin-top overflow-visible rounded-[2.5rem] border border-[#decfbe] bg-white/86 px-5 py-7 shadow-[0_34px_90px_rgba(58,37,26,0.19),inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-[3px] sm:max-w-[42rem] sm:px-8 md:mt-14 md:px-10 md:py-8 lg:mt-16">
-          <DecorativeCloud tone="blue" className="-left-7 top-[8.6rem] hidden h-14 w-36 opacity-60 md:block" />
-          <DecorativeCloud tone="peach" className="right-10 top-[5.9rem] hidden h-14 w-36 opacity-60 md:block" />
-          <DecorativeCloud tone="lavender" className="-bottom-5 left-11 h-12 w-28 opacity-80" />
-          <div className="pointer-events-none absolute -bottom-24 -right-72 z-[16] hidden w-[clamp(18rem,24vw,25rem)] lg:block">
-            <div className="absolute bottom-4 left-8 h-10 w-[74%] rotate-[-5deg] rounded-full bg-[#b98251]/24 blur-md" />
-            <img {...decorativeImageProps} src={assets.train} className="relative z-10 w-full drop-shadow-[0_30px_40px_rgba(95,61,34,0.28)]" />
-          </div>
-          <div className="pointer-events-none absolute -right-4 top-[-1.9rem] hidden h-32 w-48 md:block">
-            <DecorativeCloud tone="cream" className="right-0 top-0 h-20 w-44 opacity-95" />
-            <span className="absolute right-20 top-[4.6rem] h-12 w-px bg-[#c9a16e]/45" />
-            <span className="absolute right-10 top-[4.2rem] h-16 w-px bg-[#c9a16e]/45" />
-            <FloatingStar className="right-[4.2rem] top-[6.6rem] h-5 w-5" />
-            <FloatingStar className="right-[1.8rem] top-[7.7rem] h-6 w-6" />
-          </div>
-          <FloatingStar className="left-[17%] top-[12.5rem] hidden h-5 w-5 md:block" />
-          <FloatingStar className="right-[16%] top-[11.6rem] hidden h-6 w-6 md:block" />
-          <FloatingStar className="right-[9%] top-[7.5rem] h-4 w-4" />
-
-          <Link to="/" className="relative z-10 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-black text-boutique-brown-light hover:text-boutique-brown">
-            <ArrowLeft className="h-4 w-4" /> Back to shop
+    <div className="min-h-dvh bg-[#f6f6f3] font-sans text-[#202020]">
+      <header className="border-b border-[#e7e7e2] bg-white">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#555550] transition-colors hover:text-[#202020]">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back to shop</span>
           </Link>
+          <Link to="/" aria-label="MY BABY SHIRE home" className="absolute left-1/2 -translate-x-1/2">
+            <BrandLogo variant="nav" className="!h-10 !max-w-[240px] sm:!h-11" />
+          </Link>
+          <div className="w-9 sm:w-[96px]" />
+        </div>
+      </header>
 
-          <div className="relative z-10 mt-1 text-center">
-            <div className="mx-auto mb-3 flex justify-center">
-              <BrandLogo variant="login" />
-            </div>
-
-            <div className="relative mx-auto mb-3 flex h-14 max-w-[13.5rem] items-end justify-center md:h-24 md:max-w-[18rem]">
-              <img {...decorativeImageProps} src={assets.teddy} className="absolute bottom-1 left-11 h-12 w-12 object-contain drop-shadow-[0_12px_18px_rgba(122,83,47,0.15)] md:h-20 md:w-20" />
-              <img {...decorativeImageProps} src={assets.blocks} className="absolute bottom-0 right-10 h-10 w-10 rotate-[5deg] object-contain drop-shadow-[0_12px_18px_rgba(122,83,47,0.14)] md:right-9 md:h-16 md:w-16" />
-              <img {...decorativeImageProps} src={assets.train} className="absolute bottom-0 left-1/2 h-10 w-20 -translate-x-1/2 object-contain opacity-90 drop-shadow-[0_12px_18px_rgba(122,83,47,0.12)] md:h-16 md:w-28" />
-            </div>
-
-            <div className="flex items-center justify-center gap-4">
-              <Sparkles className="hidden h-8 w-8 text-[#d8a855] md:block" />
-              <h1 className="max-w-full whitespace-nowrap font-serif text-[clamp(2rem,9vw,2.32rem)] leading-none text-boutique-brown sm:text-[clamp(2.72rem,10vw,4.75rem)]">Welcome back</h1>
-              <Sparkles className="hidden h-8 w-8 text-[#d8a855] md:block" />
-            </div>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-boutique-brown-light md:text-base">
-              Sign in to view your orders, save delivery details and enjoy a smoother checkout.
-            </p>
+      <main className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-stretch px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[0.9fr_1.1fr] lg:px-8 lg:py-12">
+        <section className="hidden overflow-hidden rounded-l-3xl border border-r-0 border-[#e5dadd] bg-[#f8e9ed] p-10 lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#76545c]">MY BABY SHIRE account</p>
+            <h1 className="mt-5 max-w-sm text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-[#292326]">Everything for your orders, in one place.</h1>
+            <p className="mt-5 max-w-md text-base leading-7 text-[#6b5a5f]">Sign in to review orders, keep delivery details ready and move through checkout faster.</p>
           </div>
 
-          {authError && (
-            <p className="relative z-10 mx-auto mt-5 w-full max-w-[430px] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{authError}</p>
-          )}
-
-          <div className="relative z-10 mx-auto mt-6 grid w-full max-w-[430px] gap-3">
-            <AuthButton icon={<GoogleIcon />} onClick={startGoogleMemberLogin}>
-              Continue with Google
-            </AuthButton>
-            <AuthButton icon={<AppleIcon />} onClick={() => setNotice({ title: 'Apple sign in', message: 'Apple sign in is coming soon. Please use Google sign in while we finish this option.' })}>
-              Continue with Apple
-            </AuthButton>
-            <AuthButton
-              icon={<Mail className="h-5 w-5" />}
-              onClick={() => {
-                setEmailError('');
-                setIsEmailLoginOpen(true);
-              }}
-            >
-              Continue with Email
-            </AuthButton>
+          <div className="space-y-3">
+            {[
+              'View current and past orders',
+              'Keep delivery information ready',
+              'Use secure account access',
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/70 bg-white/55 px-4 py-3 text-sm font-medium text-[#4e3d42]">
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span>{item}</span>
+              </div>
+            ))}
           </div>
+        </section>
 
-          <div className="relative z-10 mx-auto mt-5 w-full max-w-[430px] overflow-hidden rounded-[1.35rem] border border-[#dfcdbb] bg-[#fff7ec]/92 p-4 text-xs leading-relaxed text-boutique-brown-light shadow-[0_12px_24px_rgba(58,37,26,0.08)]">
-            <DecorativeCloud tone="mint" className="-right-4 -bottom-3 h-12 w-28 opacity-60" />
-            <div className="relative z-10 mb-2 flex items-center gap-2 font-black text-boutique-brown">
-              <ShieldCheck className="h-5 w-5" /> Secure sign in
+        <section className="flex items-center rounded-3xl border border-[#e4e4df] bg-white p-5 shadow-[0_18px_55px_rgba(20,20,18,0.07)] sm:p-8 lg:rounded-l-none lg:p-12">
+          <div className="mx-auto w-full max-w-md">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8a8a82]">Account</p>
+            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.035em] text-[#202020] sm:text-5xl">Welcome back</h2>
+            <p className="mt-4 text-sm leading-6 text-[#66665f] sm:text-base">Choose how you would like to continue.</p>
+
+            {authError && (
+              <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{authError}</p>
+            )}
+
+            <div className="mt-8 grid gap-3">
+              <AuthButton icon={<GoogleIcon />} onClick={startGoogleMemberLogin}>Continue with Google</AuthButton>
+              <AuthButton icon={<AppleIcon />} onClick={() => setNotice({ title: 'Apple sign in', message: 'Apple sign in is coming soon. Please use Google sign in while we finish this option.' })}>Continue with Apple</AuthButton>
+              <AuthButton
+                icon={<Mail className="h-5 w-5" />}
+                onClick={() => {
+                  setEmailError('');
+                  setIsEmailLoginOpen(true);
+                }}
+              >
+                Continue with Email
+              </AuthButton>
             </div>
-            <p className="relative z-10 text-sm leading-relaxed">Your account helps us keep your order history and delivery details ready for your next gift.</p>
+
+            <div className="mt-6 flex items-start gap-3 border-t border-[#ecece8] pt-5 text-sm leading-6 text-[#6d6d66]">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#202020]" />
+              <p>Your account keeps order history and delivery details available for your next checkout.</p>
+            </div>
           </div>
         </section>
       </main>
 
       {notice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boutique-brown/35 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[2rem] border border-boutique-brown/10 bg-white p-6 text-center shadow-[0_24px_70px_rgba(58,37,26,0.18)]">
-            <button onClick={() => setNotice(null)} className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-boutique-bg text-boutique-brown-light hover:text-boutique-brown" aria-label="Close">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-5 backdrop-blur-sm">
+          <section role="dialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-[#e4e4df] bg-white p-6 shadow-2xl">
+            <button type="button" onClick={() => setNotice(null)} className="ml-auto flex h-9 w-9 items-center justify-center rounded-full text-[#66665f] hover:bg-[#f4f4f1] hover:text-[#202020]" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
-            <h2 className="mt-2 font-serif text-3xl text-boutique-brown">{notice.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-boutique-brown-light">{notice.message}</p>
-            <button onClick={() => setNotice(null)} className="mt-6 w-full rounded-2xl bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-brown-light">
-              Got it
-            </button>
-          </div>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#202020]">{notice.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-[#66665f]">{notice.message}</p>
+            <button type="button" onClick={() => setNotice(null)} className="mt-6 h-12 w-full rounded-xl bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-black">Got it</button>
+          </section>
         </div>
       )}
 
       {isEmailLoginOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-boutique-brown/35 px-5 backdrop-blur-sm">
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="email-login-title"
-            className="w-full max-w-sm rounded-[2rem] border border-boutique-brown/10 bg-white p-6 shadow-[0_24px_70px_rgba(58,37,26,0.18)]"
-          >
-            <button
-              type="button"
-              onClick={() => setIsEmailLoginOpen(false)}
-              className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-boutique-bg text-boutique-brown-light hover:text-boutique-brown"
-              aria-label="Close email sign in"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-boutique-brown text-white shadow-[0_10px_24px_rgba(58,37,26,0.2)]">
-                <Mail className="h-5 w-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-5 backdrop-blur-sm">
+          <section role="dialog" aria-modal="true" aria-labelledby="email-login-title" className="w-full max-w-md rounded-2xl border border-[#e4e4df] bg-white p-6 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8a8a82]">Email access</p>
+                <h2 id="email-login-title" className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#202020]">Continue with email</h2>
+                <p className="mt-2 text-sm leading-6 text-[#66665f]">Sign in and we will route you to the correct account area.</p>
               </div>
-              <h2 id="email-login-title" className="mt-4 font-serif text-3xl text-boutique-brown">
-                Continue with email
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-boutique-brown-light">
-                Sign in here and we will take you to the correct account area automatically.
-              </p>
+              <button type="button" onClick={() => setIsEmailLoginOpen(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#66665f] hover:bg-[#f4f4f1] hover:text-[#202020]" aria-label="Close email sign in">
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleEmailLogin} className="mt-5 space-y-4">
+            <form onSubmit={handleEmailLogin} className="mt-6 space-y-4">
               <div>
-                <label htmlFor="login-email" className="mb-2 block text-[11px] font-black uppercase tracking-[0.13em] text-boutique-brown/55">
-                  Email
-                </label>
+                <label htmlFor="login-email" className="mb-2 block text-xs font-semibold text-[#4b4b46]">Email</label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/35" />
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8a82]" />
                   <input
                     id="login-email"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className="h-13 w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] pl-11 pr-4 text-sm font-semibold text-boutique-brown outline-none placeholder:text-boutique-brown/30 focus:border-boutique-wood/40 focus:ring-2 focus:ring-boutique-wood/15"
+                    className="h-12 w-full rounded-xl border border-[#dcdcd7] bg-white pl-11 pr-4 text-sm text-[#202020] outline-none placeholder:text-[#a2a29b] focus:border-[#202020] focus:ring-1 focus:ring-[#202020]"
                     autoComplete="username"
                     placeholder="name@example.com"
                     autoFocus
@@ -395,52 +178,35 @@ export default function AccountLoginPage() {
               </div>
 
               <div>
-                <label htmlFor="login-password" className="mb-2 block text-[11px] font-black uppercase tracking-[0.13em] text-boutique-brown/55">
-                  Password
-                </label>
+                <label htmlFor="login-password" className="mb-2 block text-xs font-semibold text-[#4b4b46]">Password</label>
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/35" />
+                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8a82]" />
                   <input
                     id="login-password"
                     type={isPasswordVisible ? 'text' : 'password'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="h-13 w-full rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] pl-11 pr-12 text-sm font-semibold text-boutique-brown outline-none placeholder:text-boutique-brown/30 focus:border-boutique-wood/40 focus:ring-2 focus:ring-boutique-wood/15"
+                    className="h-12 w-full rounded-xl border border-[#dcdcd7] bg-white pl-11 pr-12 text-sm text-[#202020] outline-none placeholder:text-[#a2a29b] focus:border-[#202020] focus:ring-1 focus:ring-[#202020]"
                     autoComplete="current-password"
                     placeholder="Enter your password"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setIsPasswordVisible((visible) => !visible)}
-                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-boutique-brown/45 transition-colors hover:bg-white hover:text-boutique-brown"
-                    aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
-                  >
+                  <button type="button" onClick={() => setIsPasswordVisible((visible) => !visible)} className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#777770] hover:bg-[#f4f4f1] hover:text-[#202020]" aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}>
                     {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              {emailError && (
-                <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                  {emailError}
-                </p>
-              )}
+              {emailError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{emailError}</p>}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex h-13 w-full items-center justify-center rounded-2xl bg-boutique-brown px-4 text-sm font-black text-white shadow-[0_12px_26px_rgba(58,37,26,0.18)] transition-all hover:-translate-y-0.5 hover:bg-boutique-wood disabled:translate-y-0 disabled:cursor-wait disabled:opacity-55"
-              >
+              <button type="submit" disabled={isSubmitting} className="h-12 w-full rounded-xl bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-black disabled:cursor-wait disabled:opacity-50">
                 {isSubmitting ? 'Signing in...' : 'Continue'}
               </button>
             </form>
 
-            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
-              <p className="text-xs font-semibold leading-relaxed text-boutique-brown-light">
-                Approved administrator emails open the Back Office. Customer accounts continue through Google.
-              </p>
+            <div className="mt-5 flex items-start gap-3 rounded-xl bg-[#f6f6f3] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#202020]" />
+              <p className="text-xs leading-5 text-[#66665f]">Approved administrator emails open the Back Office. Customer accounts continue through Google.</p>
             </div>
           </section>
         </div>

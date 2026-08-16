@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { mapProductVariant } from './variants.js';
 
 export const slugify = (value: string) =>
   value
@@ -192,6 +193,11 @@ export const mapProductForStorefront = (product: any) => {
   const primaryImage =
     product.images?.find((image: any) => image.is_primary) ||
     product.images?.[0];
+  const variants = (product.variants || [])
+    .filter((variant: any) => variant.active !== false)
+    .sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
+    .map(mapProductVariant);
+  const variantStock = variants.reduce((sum: number, variant: any) => sum + Number(variant.stockQuantity || 0), 0);
 
   return {
     id: product.id,
@@ -203,7 +209,8 @@ export const mapProductForStorefront = (product: any) => {
     categoryId: product.category_id || null,
     categoryName: product.category?.name || null,
     sku: product.sku || '',
-    stockQuantity: product.stock_quantity || 0,
+    stockQuantity: variants.length ? variantStock : product.stock_quantity || 0,
+    variants,
     imageUrl: primaryImage?.image_url || '',
     bgImage:
       product.card_bg_image ||

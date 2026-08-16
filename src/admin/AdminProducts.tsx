@@ -5,10 +5,8 @@ import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
 import { ProductCreateWizard } from './ProductCreateWizard';
 import { ProductEditWizard } from './ProductEditWizard';
-import { clearProductWizardDraft, readProductWizardDraft, validateProductWizardStep, validateProductWizardThrough } from './productWizardDraft';
-import { saveProductWizardDraft } from './saveProductWizardDraft';
+import { clearProductWizardDraft, readProductWizardDraft } from './productWizardDraft';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
-import { PRODUCT_WIZARD_STEPS } from './ProductWizardHeader';
 
 const StatusBadge = ({ status }: { status?: string }) => {
   const value = status || 'active';
@@ -26,7 +24,6 @@ export const AdminProducts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [confirmAction, setConfirmAction] = useState<null | (() => void)>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,7 +43,6 @@ export const AdminProducts = () => {
       if (!response.ok) throw new Error(data.details || data.error || 'Could not load products.');
       setProducts(data);
     } catch (error) {
-      console.error(error);
       showError('Products could not be loaded', 'The catalog was not changed.', [(error as Error).message]);
     } finally {
       setIsLoading(false);
@@ -61,7 +57,6 @@ export const AdminProducts = () => {
       if (!response.ok) throw new Error(data.details || data.error || 'Could not delete product.');
       setProducts((currentProducts) => currentProducts.filter((item) => item.id !== product.id));
     } catch (error) {
-      console.error(error);
       showError('Product could not be deleted', 'Nothing was removed.', [(error as Error).message]);
     }
   };
@@ -125,81 +120,16 @@ export const AdminProducts = () => {
 
   const closeEdit = () => askConfirmation('Close product editor?', 'Any unsaved changes will be discarded.', () => setEditingProductId(null));
 
-  const currentWizardStep = (root: HTMLDivElement) => {
-    const stepText = Array.from(root.querySelectorAll('p')).map((node) => node.textContent?.trim() || '').find((text) => /^Step \d+ of 8$/.test(text));
-    const match = stepText?.match(/^Step (\d+) of 8$/);
-    return match ? Number(match[1]) : 1;
+  const createSaved = async () => {
+    setIsCreateOpen(false);
+    await loadProducts();
+    setNotice({ kind: 'success', title: 'Product saved', message: 'The product is now stored in the catalog. Add Color × Size inventory from the Inventory page if needed.' });
   };
 
-  const blockWithIssues = (step: number, issues: string[]) => showError(`Complete step ${step} first`, 'Required information is missing.', issues);
-
-  const handleWizardClickCapture = async (event: React.MouseEvent<HTMLDivElement>) => {
-    const button = (event.target as HTMLElement).closest('button');
-    if (!button) return;
-    const label = button.textContent?.replace(/\s+/g, ' ').trim() || '';
-    const root = event.currentTarget;
-    const draft = readProductWizardDraft();
-    const currentStep = currentWizardStep(root);
-
-    if (label === 'Cancel' || label === 'Products') {
-      event.preventDefault();
-      event.stopPropagation();
-      closeCreate();
-      return;
-    }
-
-    if (label.startsWith('Next')) {
-      const issues = validateProductWizardStep(draft, currentStep);
-      if (issues.length) {
-        event.preventDefault();
-        event.stopPropagation();
-        blockWithIssues(currentStep, issues);
-      }
-      return;
-    }
-
-    const targetStep = PRODUCT_WIZARD_STEPS.findIndex((stepLabel, index) => label.replace(/\s+/g, '') === `${index + 1}${stepLabel}`.replace(/\s+/g, '')) + 1;
-    if (targetStep > currentStep) {
-      for (let candidate = 1; candidate < targetStep; candidate += 1) {
-        const issues = validateProductWizardStep(draft, candidate);
-        if (issues.length) {
-          event.preventDefault();
-          event.stopPropagation();
-          blockWithIssues(candidate, issues);
-          return;
-        }
-      }
-    }
-
-    if (!label.includes('Save Product')) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (isSavingProduct) return;
-
-    const issues = validateProductWizardThrough(draft, 7);
-    if (issues.length) {
-      for (let candidate = 1; candidate <= 7; candidate += 1) {
-        const stepIssues = validateProductWizardStep(draft, candidate);
-        if (stepIssues.length) {
-          blockWithIssues(candidate, stepIssues);
-          return;
-        }
-      }
-    }
-
-    setIsSavingProduct(true);
-    try {
-      await saveProductWizardDraft(draft);
-      clearProductWizardDraft();
-      setIsCreateOpen(false);
-      await loadProducts();
-      setNotice({ kind: 'success', title: 'Product saved', message: 'The product is now stored in the catalog.' });
-    } catch (error) {
-      console.error(error);
-      showError('Product could not be saved', 'Nothing was published. Fix the issue and try again.', [(error as Error).message]);
-    } finally {
-      setIsSavingProduct(false);
-    }
+  const editSaved = async () => {
+    setEditingProductId(null);
+    await loadProducts();
+    setNotice({ kind: 'success', title: 'Product updated', message: 'The catalog changes are live for this product.' });
   };
 
   const runConfirmation = () => {
@@ -215,7 +145,7 @@ export const AdminProducts = () => {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Catalog</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em] text-[#202020]">Products</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Manage product information, pricing, stock, visibility and personalization from one catalog.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Manage core product information here. Use Inventory for Color × Size × SKU stock.</p>
         </div>
         <button type="button" onClick={() => setIsCreateOpen(true)} className="commerce-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838]">
           <Plus className="h-4 w-4" /> Add product
@@ -233,13 +163,7 @@ export const AdminProducts = () => {
         <div className="flex flex-col gap-3 border-b border-[#ececec] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#888]" />
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search name, SKU or status"
-              className="commerce-focus h-11 w-full rounded-[9px] border border-[#dedede] bg-white pl-10 pr-4 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]"
-            />
+            <input type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search name, SKU or status" className="commerce-focus h-11 w-full rounded-[9px] border border-[#dedede] bg-white pl-10 pr-4 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]" />
           </div>
           <button type="button" onClick={() => void loadProducts()} disabled={isLoading} className="commerce-focus inline-flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-medium hover:bg-[#f7f7f7] disabled:opacity-50">
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
@@ -248,47 +172,18 @@ export const AdminProducts = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-[#ececec] bg-[#fafafa] text-[10px] font-bold uppercase tracking-[0.12em] text-[#888]">
-                <th className="px-5 py-3.5">Product</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">SKU</th>
-                <th className="px-5 py-3.5">Stock</th>
-                <th className="px-5 py-3.5">Price</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
+            <thead><tr className="border-b border-[#ececec] bg-[#fafafa] text-[10px] font-bold uppercase tracking-[0.12em] text-[#888]"><th className="px-5 py-3.5">Product</th><th className="px-5 py-3.5">Status</th><th className="px-5 py-3.5">SKU</th><th className="px-5 py-3.5">Base stock</th><th className="px-5 py-3.5">Price</th><th className="px-5 py-3.5 text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-[#eeeeee] text-sm">
               {isLoading && <tr><td colSpan={6} className="px-5 py-12 text-center text-[#777]">Loading products...</td></tr>}
               {!isLoading && filteredProducts.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-[#777]">No products found.</td></tr>}
               {!isLoading && filteredProducts.map((product) => (
                 <tr key={product.id} className="transition-colors hover:bg-[#fafafa]">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[9px] border border-[#e5e5e5] bg-[#f7f7f7]">
-                        <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-1.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="max-w-[340px] truncate font-semibold text-[#202020]">{product.name}</p>
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {product.featured && <FeatureBadge>Featured</FeatureBadge>}
-                          {product.newArrival && <FeatureBadge>New</FeatureBadge>}
-                          {product.bestseller && <FeatureBadge>Best seller</FeatureBadge>}
-                          {Boolean(product.personalizationRequired || product.personalizationFields?.length) && <FeatureBadge>Custom</FeatureBadge>}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
+                  <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="h-14 w-14 shrink-0 overflow-hidden rounded-[9px] border border-[#e5e5e5] bg-[#f7f7f7]"><img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-1.5" /></div><div className="min-w-0"><p className="max-w-[340px] truncate font-semibold text-[#202020]">{product.name}</p><div className="mt-1.5 flex flex-wrap gap-1">{product.featured && <FeatureBadge>Featured</FeatureBadge>}{product.newArrival && <FeatureBadge>New</FeatureBadge>}{product.bestseller && <FeatureBadge>Best seller</FeatureBadge>}{Boolean(product.personalizationRequired || product.personalizationFields?.length) && <FeatureBadge>Custom</FeatureBadge>}</div></div></div></td>
                   <td className="px-5 py-4"><StatusBadge status={product.status} /></td>
                   <td className="px-5 py-4 text-[#666]">{product.sku || '—'}</td>
                   <td className="px-5 py-4"><span className={(product.stockQuantity ?? 0) <= 5 ? 'font-semibold text-[#a34d4d]' : 'text-[#555]'}>{product.stockQuantity ?? 0}</span></td>
                   <td className="px-5 py-4 font-semibold text-[#202020]">${product.price.toFixed(2)}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button type="button" onClick={() => setEditingProductId(product.id)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dedede] bg-white hover:border-[#aaa] hover:bg-[#f7f7f7]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></button>
-                      <button type="button" onClick={() => handleDelete(product)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#f0dede] bg-white text-[#a24e4e] hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button>
-                    </div>
-                  </td>
+                  <td className="px-5 py-4"><div className="flex items-center justify-end gap-1.5"><button type="button" onClick={() => setEditingProductId(product.id)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dedede] bg-white hover:border-[#aaa] hover:bg-[#f7f7f7]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(product)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#f0dede] bg-white text-[#a24e4e] hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button></div></td>
                 </tr>
               ))}
             </tbody>
@@ -296,23 +191,9 @@ export const AdminProducts = () => {
         </div>
       </section>
 
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/30 p-3 backdrop-blur-[2px] sm:p-5">
-          <div onClickCapture={handleWizardClickCapture} className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-[1240px] overflow-y-auto rounded-[12px] border border-[#dedede] bg-[#f7f7f7] p-3 shadow-2xl sm:max-h-[calc(100dvh-2.5rem)] sm:p-5">
-            <button type="button" onClick={closeCreate} className="commerce-focus absolute right-4 top-4 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dedede] bg-white hover:bg-[#f5f5f5]" aria-label="Close product editor"><X className="h-4.5 w-4.5" /></button>
-            <ProductCreateWizard />
-          </div>
-        </div>
-      )}
+      {isCreateOpen && <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/30 p-3 backdrop-blur-[2px] sm:p-5"><div className="relative w-full max-w-[1100px] rounded-[12px] border border-[#dedede] bg-[#f7f7f7] p-3 shadow-2xl sm:p-5"><button type="button" onClick={closeCreate} className="commerce-focus absolute right-4 top-4 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dedede] bg-white hover:bg-[#f5f5f5]" aria-label="Close product editor"><X className="h-4.5 w-4.5" /></button><ProductCreateWizard onCancel={closeCreate} onSaved={createSaved} /></div></div>}
 
-      {editingProductId && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/30 p-3 backdrop-blur-[2px] sm:p-5">
-          <div className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-[1240px] overflow-y-auto rounded-[12px] border border-[#dedede] bg-[#f7f7f7] p-3 shadow-2xl sm:max-h-[calc(100dvh-2.5rem)] sm:p-5">
-            <button type="button" onClick={closeEdit} className="commerce-focus absolute right-4 top-4 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dedede] bg-white hover:bg-[#f5f5f5]" aria-label="Close product editor"><X className="h-4.5 w-4.5" /></button>
-            <ProductEditWizard productId={editingProductId} onCancel={closeEdit} onSaved={async () => { setEditingProductId(null); await loadProducts(); }} />
-          </div>
-        </div>
-      )}
+      {editingProductId && <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/30 p-3 backdrop-blur-[2px] sm:p-5"><div className="relative w-full max-w-[1100px] rounded-[12px] border border-[#dedede] bg-[#f7f7f7] p-3 shadow-2xl sm:p-5"><button type="button" onClick={closeEdit} className="commerce-focus absolute right-4 top-4 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dedede] bg-white hover:bg-[#f5f5f5]" aria-label="Close product editor"><X className="h-4.5 w-4.5" /></button><ProductEditWizard productId={editingProductId} onCancel={closeEdit} onSaved={editSaved} /></div></div>}
 
       {notice && <AdminNoticeDialog notice={notice} onClose={() => { setNotice(null); setConfirmAction(null); }} onConfirm={notice.kind === 'confirm' ? runConfirmation : undefined} />}
     </div>
@@ -320,8 +201,5 @@ export const AdminProducts = () => {
 };
 
 const Metric = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="rounded-[11px] border border-[#e3e3e3] bg-white p-4 sm:p-5">
-    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#999]">{label}</p>
-    <div className="mt-2 flex items-center gap-2"><Package className="h-4 w-4 text-[#888]" /><span className="text-xl font-semibold text-[#202020] sm:text-2xl">{value}</span></div>
-  </div>
+  <div className="rounded-[11px] border border-[#e3e3e3] bg-white p-4 sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#999]">{label}</p><div className="mt-2 flex items-center gap-2"><Package className="h-4 w-4 text-[#888]" /><span className="text-xl font-semibold text-[#202020] sm:text-2xl">{value}</span></div></div>
 );

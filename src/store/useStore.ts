@@ -15,6 +15,18 @@ export type PersonalizationField = {
   sortOrder?: number;
 };
 
+export type ProductVariant = {
+  id: string;
+  productId: string;
+  sku: string;
+  color?: string;
+  size?: string;
+  price?: number | null;
+  stockQuantity: number;
+  active: boolean;
+  sortOrder?: number;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -31,6 +43,7 @@ export type Product = {
   categoryId?: string | null;
   categoryName?: string | null;
   stockQuantity?: number;
+  variants?: ProductVariant[];
   featured?: boolean;
   newArrival?: boolean;
   bestseller?: boolean;
@@ -47,6 +60,7 @@ export type Product = {
 export type CartItem = {
   id: string;
   product: Product;
+  variant?: ProductVariant | null;
   quantity: number;
   personalizationData: Record<string, any>;
 };
@@ -102,7 +116,8 @@ type StoreState = {
 
   isPersonalizationModalOpen: boolean;
   selectedProduct: Product | null;
-  openPersonalizationModal: (product: Product) => void;
+  selectedVariant: ProductVariant | null;
+  openPersonalizationModal: (product: Product, variant?: ProductVariant | null) => void;
   closePersonalizationModal: () => void;
 };
 
@@ -164,31 +179,37 @@ export const useStore = create<StoreState>()(
 
       updateCartItemQuantity: (id, quantity) =>
         set((state) => ({
-          cartItems: state.cartItems.map((i) =>
-            i.id === id
-              ? {
-                  ...i,
-                  quantity: Math.max(1, quantity),
-                }
-              : i
-          ),
+          cartItems: state.cartItems.map((item) => {
+            if (item.id !== id) return item;
+            const trackedStock = item.variant
+              ? item.variant.stockQuantity
+              : Number(item.product.stockQuantity || 0);
+            const maxQuantity = trackedStock > 0 ? Math.min(25, trackedStock) : item.variant ? 1 : 25;
+            return {
+              ...item,
+              quantity: Math.min(maxQuantity, Math.max(1, quantity)),
+            };
+          }),
         })),
 
       clearCart: () => set({ cartItems: [], isCartOpen: false }),
 
       isPersonalizationModalOpen: false,
       selectedProduct: null,
+      selectedVariant: null,
 
-      openPersonalizationModal: (product) =>
+      openPersonalizationModal: (product, variant = null) =>
         set({
           isPersonalizationModalOpen: true,
           selectedProduct: product,
+          selectedVariant: variant,
         }),
 
       closePersonalizationModal: () =>
         set({
           isPersonalizationModalOpen: false,
           selectedProduct: null,
+          selectedVariant: null,
         }),
     }),
     {

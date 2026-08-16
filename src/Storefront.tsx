@@ -1,19 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowRight,
-  ChevronDown,
-  Instagram,
-  Menu,
-  PackageCheck,
-  Search,
-  ShieldCheck,
-  ShoppingBag,
-  Sparkles,
-  Truck,
-  UserRound,
-  X,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowRight, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { BrandLogo } from './components/BrandLogo';
 import { CartDrawer } from './components/CartDrawer';
 import { PersonalizationModal } from './components/PersonalizationModal';
@@ -21,156 +8,74 @@ import { ProductCard } from './components/ProductCard';
 import { Product, useStore } from './store/useStore';
 import { useSeo } from './utils/seo';
 
-type FilterMode = 'all' | 'new' | 'best' | 'baby' | 'toddler' | 'adult';
-type SortMode = 'featured' | 'price-asc' | 'price-desc' | 'name';
+const NAV_ITEMS = [
+  ['New', '/collections/new-arrivals'],
+  ['Best Sellers', '/collections/best-sellers'],
+  ['Baby', '/collections/baby'],
+  ['Toddler', '/collections/toddler'],
+  ['Kids', '/collections/kids'],
+  ['Adult', '/collections/adult'],
+  ['Sweatshirts', '/collections/sweatshirts'],
+] as const;
 
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: 'featured', label: 'Featured' },
-  { value: 'price-asc', label: 'Price: Low to High' },
-  { value: 'price-desc', label: 'Price: High to Low' },
-  { value: 'name', label: 'Name: A–Z' },
-];
-
-const MODE_LABELS: Record<FilterMode, string> = {
-  all: 'All Products',
-  new: 'New Arrivals',
-  best: 'Best Sellers',
-  baby: 'Baby',
-  toddler: 'Toddler',
-  adult: 'Adult',
-};
-
-const productText = (product: Product) =>
-  `${product.name} ${product.description || ''} ${product.categoryName || ''} ${product.ageRange || ''}`.toLowerCase();
+const productText = (product: Product) => `${product.name} ${product.description || ''} ${product.categoryName || ''} ${product.ageRange || ''}`.toLowerCase();
 
 export default function Storefront() {
+  const navigate = useNavigate();
   const { openCart, cartItems, products, loadProducts, productsLoading } = useStore();
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<SortMode>('featured');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
-  const sortRef = useRef<HTMLDivElement>(null);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useSeo({
-    description: 'Shop premium baby, toddler and family essentials from MY BABY SHIRE. Clean, easy shopping with secure checkout and fast US shipping.',
+    description: 'Shop blank apparel and custom-ready essentials for baby, toddler, kids and adult sizes from MY BABY SHIRE.',
   });
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  useEffect(() => { void loadProducts(); }, [loadProducts]);
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
-    if (!isSearchOpen) return;
-    window.setTimeout(() => searchRef.current?.focus(), 80);
+    if (isSearchOpen) window.setTimeout(() => searchRef.current?.focus(), 60);
   }, [isSearchOpen]);
 
-  useEffect(() => {
-    if (!isSortOpen) return;
-    const close = (event: PointerEvent) => {
-      if (!sortRef.current?.contains(event.target as Node)) setIsSortOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [isSortOpen]);
-
-  const categories = useMemo(() => {
-    const values = new Set<string>();
-    products.forEach((product) => {
-      if (product.categoryName) values.add(product.categoryName);
-    });
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [products]);
-
   const bestSellers = useMemo(() => {
-    const selected = products.filter((product) => product.bestseller);
-    return (selected.length ? selected : products).slice(0, 8);
+    const flagged = products.filter((product) => product.bestseller);
+    return (flagged.length ? flagged : products).slice(0, 8);
   }, [products]);
 
   const newArrivals = useMemo(() => {
-    const selected = products.filter((product) => product.newArrival);
-    return (selected.length ? selected : [...products].reverse()).slice(0, 8);
+    const flagged = products.filter((product) => product.newArrival);
+    return (flagged.length ? flagged : products).slice(0, 8);
   }, [products]);
-
-  const findByKeyword = (keyword: string) => products.find((product) => productText(product).includes(keyword));
 
   const categoryTiles = useMemo(() => {
-    const smartTiles: { label: string; mode: FilterMode; product?: Product }[] = [
-      { label: 'New Arrivals', mode: 'new', product: products.find((product) => product.newArrival) || products[0] },
-      { label: 'Baby', mode: 'baby', product: products.find((product) => productText(product).includes('baby')) || products[1] || products[0] },
-      { label: 'Toddler', mode: 'toddler', product: products.find((product) => productText(product).includes('toddler')) || products[2] || products[0] },
-      { label: 'Best Sellers', mode: 'best', product: products.find((product) => product.bestseller) || products[3] || products[0] },
-      { label: 'Adult', mode: 'adult', product: products.find((product) => productText(product).includes('adult')) || products[4] || products[0] },
-    ];
-    return smartTiles.filter((tile) => tile.product);
+    const match = (pattern: RegExp, fallbackIndex: number) => products.find((product) => pattern.test(productText(product))) || products[fallbackIndex] || products[0];
+    return [
+      { label: 'New Arrivals', href: '/collections/new-arrivals', product: products.find((product) => product.newArrival) || products[0], tint: '#f8e9ed' },
+      { label: 'Baby', href: '/collections/baby', product: match(/baby|newborn|infant|bodysuit|onesie|romper/, 1), tint: '#e8f1f5' },
+      { label: 'Toddler', href: '/collections/toddler', product: match(/toddler|2t|3t|4t|5t/, 2), tint: '#f4eee4' },
+      { label: 'Kids', href: '/collections/kids', product: match(/kid|kids|child|children|youth/, 3), tint: '#eef1e8' },
+      { label: 'Adult', href: '/collections/adult', product: match(/adult|women|men|unisex/, 4), tint: '#efedf4' },
+      { label: 'Sweatshirts', href: '/collections/sweatshirts', product: match(/sweatshirt|crewneck|hoodie|fleece/, 5), tint: '#f1eeee' },
+    ].filter((tile) => tile.product);
   }, [products]);
 
-  const filteredProducts = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    let result = products.filter((product) => {
-      const text = productText(product);
-      const matchesSearch = !query || text.includes(query);
-      const matchesCategory = activeCategory === 'all' || product.categoryName === activeCategory;
-      const matchesMode =
-        filterMode === 'all' ||
-        (filterMode === 'new' && Boolean(product.newArrival)) ||
-        (filterMode === 'best' && Boolean(product.bestseller)) ||
-        (filterMode === 'baby' && /(baby|newborn|infant|bodysuit|onesie|romper)/.test(text)) ||
-        (filterMode === 'toddler' && /(toddler|2t|3t|4t|5t)/.test(text)) ||
-        (filterMode === 'adult' && /(adult|women|men|unisex adult)/.test(text));
-      return matchesSearch && matchesCategory && matchesMode;
-    });
+  const heroProducts = (bestSellers.length ? bestSellers : newArrivals).slice(0, 2);
 
-    result = [...result];
-    if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price);
-    if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'featured') result.sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
-    return result;
-  }, [products, searchTerm, activeCategory, filterMode, sortBy]);
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const shopMode = (mode: FilterMode) => {
-    setFilterMode(mode);
-    setActiveCategory('all');
-    setSearchTerm('');
-    setIsMobileMenuOpen(false);
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
     setIsSearchOpen(false);
-    window.setTimeout(() => scrollTo('shop-all'), 20);
+    navigate(query ? `/collections/all?search=${encodeURIComponent(query)}` : '/collections/all');
   };
-
-  const chooseCategory = (category: string) => {
-    setFilterMode('all');
-    setActiveCategory(category);
-    setSearchTerm('');
-    window.setTimeout(() => scrollTo('shop-all'), 20);
-  };
-
-  const clearFilters = () => {
-    setFilterMode('all');
-    setActiveCategory('all');
-    setSearchTerm('');
-    setSortBy('featured');
-  };
-
-  const heroProducts = bestSellers.slice(0, 2);
-  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === sortBy)?.label || 'Featured';
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#202020]">
@@ -178,285 +83,117 @@ export default function Storefront() {
       <PersonalizationModal />
 
       <div className="bg-[#f8e9ed] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#4e3d42] sm:text-xs">
-        Free shipping on orders over $150
+        Blank apparel & custom-ready essentials
       </div>
 
       <header className="sticky top-0 z-40 border-b border-[#e9e9e9] bg-white/95 backdrop-blur-lg">
         <div className="mx-auto grid min-h-[70px] max-w-[1560px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-6 lg:min-h-[78px] lg:px-8">
           <nav className="hidden items-center gap-5 text-[13px] font-semibold xl:flex">
-            <button type="button" onClick={() => shopMode('new')} className="commerce-focus hover:text-[#8a5966]">New</button>
-            <button type="button" onClick={() => shopMode('best')} className="commerce-focus hover:text-[#8a5966]">Best Sellers</button>
-            <button type="button" onClick={() => shopMode('baby')} className="commerce-focus hover:text-[#8a5966]">Baby</button>
-            <button type="button" onClick={() => shopMode('toddler')} className="commerce-focus hover:text-[#8a5966]">Toddler</button>
-            <button type="button" onClick={() => shopMode('adult')} className="commerce-focus hover:text-[#8a5966]">Adult</button>
-            <button type="button" onClick={() => scrollTo('wholesale')} className="commerce-focus hover:text-[#8a5966]">Wholesale</button>
+            {NAV_ITEMS.map(([label, href]) => <Link key={href} to={href} className="commerce-focus hover:text-[#8a5966]">{label}</Link>)}
           </nav>
 
-          <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5] xl:hidden" aria-label="Open menu">
-            <Menu className="h-5 w-5" />
-          </button>
+          <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5] xl:hidden" aria-label="Open menu"><Menu className="h-5 w-5" /></button>
 
-          <Link to="/" className="group/logo justify-self-center" aria-label="MY BABY SHIRE home">
-            <BrandLogo variant="nav" className="!h-[39px] sm:!h-[45px] md:!h-[48px] !drop-shadow-none" />
-          </Link>
+          <Link to="/" className="justify-self-center" aria-label="MY BABY SHIRE home"><BrandLogo variant="nav" className="!h-[39px] sm:!h-[45px] md:!h-[48px] !drop-shadow-none" /></Link>
 
           <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-            <button type="button" onClick={() => setIsSearchOpen((open) => !open)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Search"><Search className="h-5 w-5" /></button>
+            <button type="button" onClick={() => setIsSearchOpen(true)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Search"><Search className="h-5 w-5" /></button>
             <Link to="/account" className="commerce-focus hidden h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5] sm:inline-flex" aria-label="Account"><UserRound className="h-5 w-5" /></Link>
-            <button type="button" onClick={openCart} className="commerce-focus relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Cart">
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#202020] px-1 text-[9px] font-bold text-white">{cartCount}</span>}
-            </button>
+            <button type="button" onClick={openCart} className="commerce-focus relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Cart"><ShoppingBag className="h-5 w-5" />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#202020] px-1 text-[9px] font-bold text-white">{cartCount}</span>}</button>
           </div>
         </div>
-
-        {isSearchOpen && (
-          <div className="absolute inset-x-0 top-full border-b border-[#e9e9e9] bg-white shadow-lg">
-            <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
-              <Search className="h-4.5 w-4.5 shrink-0 text-[#777]" />
-              <input
-                ref={searchRef}
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    setFilterMode('all');
-                    setActiveCategory('all');
-                    setIsSearchOpen(false);
-                    window.setTimeout(() => scrollTo('shop-all'), 20);
-                  }
-                }}
-                placeholder="Search products..."
-                className="commerce-focus min-w-0 flex-1 border-0 bg-transparent py-2 text-sm outline-none placeholder:text-[#aaa]"
-              />
-              <button type="button" onClick={() => setIsSearchOpen(false)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close search"><X className="h-4.5 w-4.5" /></button>
-            </div>
-          </div>
-        )}
       </header>
 
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/25" role="dialog" aria-modal="true">
+          <button type="button" className="absolute inset-0" onClick={() => setIsSearchOpen(false)} aria-label="Close search" />
+          <div className="relative z-10 border-b border-[#e8e8e8] bg-white shadow-xl">
+            <form onSubmit={submitSearch} className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-5 sm:px-6">
+              <Search className="h-5 w-5 shrink-0 text-[#777]" />
+              <input ref={searchRef} value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search products..." className="commerce-focus min-w-0 flex-1 border-0 bg-transparent py-2 text-base outline-none placeholder:text-[#aaa]" />
+              <button type="submit" className="commerce-focus rounded-[9px] bg-[#202020] px-4 py-2.5 text-sm font-semibold text-white">Search</button>
+              <button type="button" onClick={() => setIsSearchOpen(false)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close"><X className="h-5 w-5" /></button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] xl:hidden">
+        <div className="fixed inset-0 z-[70] xl:hidden">
           <button type="button" className="absolute inset-0 bg-black/25" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu" />
           <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,390px)] flex-col bg-white shadow-2xl">
-            <div className="flex min-h-20 items-center justify-between border-b border-[#ededed] px-5">
-              <BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" />
-              <button type="button" onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close menu"><X className="h-5 w-5" /></button>
-            </div>
+            <div className="flex min-h-20 items-center justify-between border-b border-[#ededed] px-5"><BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" /><button type="button" onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close menu"><X className="h-5 w-5" /></button></div>
             <nav className="flex flex-1 flex-col overflow-y-auto px-5 py-5">
-              {([
-                ['New Arrivals', 'new'],
-                ['Best Sellers', 'best'],
-                ['Baby', 'baby'],
-                ['Toddler', 'toddler'],
-                ['Adult', 'adult'],
-                ['All Products', 'all'],
-              ] as [string, FilterMode][]).map(([label, mode]) => (
-                <button key={mode} type="button" onClick={() => shopMode(mode)} className="commerce-focus flex items-center justify-between border-b border-[#eeeeee] py-4 text-left text-base font-semibold">
-                  {label}<ArrowRight className="h-4 w-4 text-[#888]" />
-                </button>
-              ))}
-              <button type="button" onClick={() => { setIsMobileMenuOpen(false); window.setTimeout(() => scrollTo('wholesale'), 20); }} className="commerce-focus flex items-center justify-between border-b border-[#eeeeee] py-4 text-left text-base font-semibold">Wholesale<ArrowRight className="h-4 w-4 text-[#888]" /></button>
+              {NAV_ITEMS.map(([label, href]) => <Link key={href} to={href} onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus flex items-center justify-between border-b border-[#eeeeee] py-4 text-base font-semibold">{label}<ArrowRight className="h-4 w-4 text-[#888]" /></Link>)}
+              <Link to="/collections/all" onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus flex items-center justify-between border-b border-[#eeeeee] py-4 text-base font-semibold">All Products<ArrowRight className="h-4 w-4 text-[#888]" /></Link>
             </nav>
-            <div className="border-t border-[#ededed] p-5">
-              <Link to="/account" onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus flex items-center gap-3 text-sm font-semibold"><UserRound className="h-4.5 w-4.5" /> My account</Link>
-              <Link to="/track-order" onClick={() => setIsMobileMenuOpen(false)} className="commerce-focus mt-4 flex items-center gap-3 text-sm font-semibold"><PackageCheck className="h-4.5 w-4.5" /> Track order</Link>
-            </div>
+            <div className="grid gap-2 border-t border-[#ededed] p-5"><Link to="/account" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-semibold">My account</Link><Link to="/track-order" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-semibold">Track order</Link></div>
           </aside>
         </div>
       )}
 
       <main>
-        <section className="mx-auto max-w-[1560px] px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-6 lg:px-8 lg:pb-16">
-          <div className="grid min-h-[520px] overflow-hidden rounded-[14px] bg-[#f4ecee] lg:grid-cols-[.92fr_1.08fr] lg:min-h-[620px]">
-            <div className="flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 xl:px-20">
-              <span className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a5966]">Premium everyday essentials</span>
-              <h1 className="max-w-[650px] text-[40px] font-semibold leading-[1.02] tracking-[-0.035em] text-[#202020] sm:text-5xl lg:text-[58px] xl:text-[66px]">Simple pieces.<br />Made to be yours.</h1>
-              <p className="mt-5 max-w-lg text-sm leading-6 text-[#666] sm:text-base sm:leading-7">Shop soft baby, toddler and family essentials with an easier, faster shopping experience and the personalization options you already know.</p>
-              <div className="mt-7 grid gap-2.5 sm:flex sm:flex-wrap">
-                <button type="button" onClick={() => shopMode('new')} className="commerce-focus inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#393939]">Shop new arrivals <ArrowRight className="h-4 w-4" /></button>
-                <button type="button" onClick={() => shopMode('best')} className="commerce-focus inline-flex min-h-[48px] items-center justify-center rounded-[9px] border border-[#202020] bg-transparent px-6 text-sm font-semibold transition-colors hover:bg-white/55">Shop best sellers</button>
-              </div>
+        <section className="overflow-hidden border-b border-[#ededed] bg-[#f6f3f1]">
+          <div className="mx-auto grid min-h-[64vh] max-w-[1560px] items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-14">
+            <div className="max-w-xl py-4 lg:py-10">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8a5966]">MY BABY SHIRE</p>
+              <h1 className="mt-3 text-[clamp(2.8rem,7vw,6.3rem)] font-semibold leading-[0.95] tracking-[-0.055em]">Premium blanks, made simple.</h1>
+              <p className="mt-5 max-w-lg text-sm leading-6 text-[#666] sm:text-base">A cleaner way to shop baby, toddler, kids and adult essentials—with Color × Size options and customization only where a product actually needs it.</p>
+              <div className="mt-7 flex flex-wrap gap-2.5"><Link to="/collections/new-arrivals" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]">Shop new <ArrowRight className="h-4 w-4" /></Link><Link to="/collections/all" className="commerce-focus inline-flex min-h-12 items-center justify-center rounded-[9px] border border-[#d5d5d5] bg-white px-5 text-sm font-semibold hover:border-[#aaa]">Shop all</Link></div>
             </div>
 
-            <div className="relative min-h-[330px] overflow-hidden bg-[linear-gradient(145deg,#f7f0e5_0%,#e7f0f5_48%,#f7e5ea_100%)] lg:min-h-full">
-              <div className="absolute -right-16 -top-20 h-72 w-72 rounded-full bg-white/45 blur-2xl" />
-              <div className="absolute -bottom-24 left-4 h-72 w-72 rounded-full bg-white/50 blur-2xl" />
-              {heroProducts[0] && <img src={heroProducts[0].imageUrl} alt={heroProducts[0].name} className="absolute bottom-[-3%] left-[2%] z-10 h-[76%] w-[54%] object-contain drop-shadow-[0_28px_34px_rgba(0,0,0,0.12)] sm:left-[7%] sm:h-[82%]" />}
-              {heroProducts[1] && <img src={heroProducts[1].imageUrl} alt={heroProducts[1].name} className="absolute right-[-2%] top-[5%] z-20 h-[68%] w-[52%] rotate-[4deg] object-contain drop-shadow-[0_28px_34px_rgba(0,0,0,0.12)] sm:right-[2%] sm:h-[72%]" />}
-              {!heroProducts.length && <div className="absolute inset-0 flex items-center justify-center text-sm text-[#777]">Products are loading...</div>}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:pl-4">
+              {heroProducts.length > 0 ? heroProducts.map((product, index) => <Link key={product.id} to={`/products/${product.slug || product.id}`} className={`commerce-focus group relative overflow-hidden rounded-[14px] border border-white/80 bg-white shadow-sm ${index === 1 ? 'mt-10 sm:mt-16' : ''}`}><div className="aspect-[4/5] bg-[linear-gradient(150deg,#fff_0%,#f4f4f4_100%)] p-4 sm:p-6"><img src={product.imageUrl} alt={product.name} loading="eager" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.025]" /></div><div className="border-t border-[#eeeeee] bg-white p-3 sm:p-4"><p className="line-clamp-1 text-xs font-semibold sm:text-sm">{product.name}</p><p className="mt-1 text-xs text-[#777]">${product.price.toFixed(2)}</p></div></Link>) : <><div className="aspect-[4/5] rounded-[14px] bg-white/70" /><div className="mt-10 aspect-[4/5] rounded-[14px] bg-white/70 sm:mt-16" /></>}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8a5966]">Find it faster</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">Shop by category</h2></div>
-            <button type="button" onClick={() => shopMode('all')} className="commerce-focus hidden items-center gap-2 text-sm font-semibold hover:text-[#8a5966] sm:inline-flex">View all <ArrowRight className="h-4 w-4" /></button>
-          </div>
+        <section className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+          <div className="mb-6 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Browse</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Shop by category</h2></div><Link to="/collections/all" className="hidden text-sm font-semibold text-[#666] hover:text-[#202020] sm:inline">View all</Link></div>
+          {productsLoading ? <div className="py-10 text-center text-sm text-[#777]">Loading catalog...</div> : <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible md:grid-cols-6">{categoryTiles.map((tile) => <Link key={tile.href} to={tile.href} className="commerce-focus group min-w-[42%] snap-start sm:min-w-0"><div className="aspect-square overflow-hidden rounded-full border border-[#e8e8e8] p-3 sm:p-4" style={{ backgroundColor: tile.tint }}><img src={tile.product!.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" /></div><p className="mt-3 text-center text-xs font-semibold sm:text-sm">{tile.label}</p></Link>)}</div>}
+        </section>
 
-          <div className="hide-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-5">
-            {categoryTiles.map((tile) => (
-              <button key={tile.label} type="button" onClick={() => shopMode(tile.mode)} className="commerce-focus group min-w-[42vw] snap-start text-left sm:min-w-0">
-                <div className="aspect-square overflow-hidden rounded-[11px] border border-[#e7e7e7] bg-[#f7f7f7]">
-                  <img src={tile.product!.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-5 transition-transform duration-300 group-hover:scale-[1.035]" />
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-2"><span className="text-sm font-semibold">{tile.label}</span><ArrowRight className="h-4 w-4 text-[#888] transition-transform group-hover:translate-x-0.5" /></div>
-              </button>
-            ))}
+        <section className="border-y border-[#ededed] bg-[#fafafa]">
+          <div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+            <div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Popular now</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Best sellers</h2></div><Link to="/collections/best-sellers" className="text-sm font-semibold text-[#666] hover:text-[#202020]">View all</Link></div>
+            {productsLoading ? <div className="py-16 text-center text-sm text-[#777]">Loading products...</div> : bestSellers.length > 0 ? <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-6">{bestSellers.slice(0, 8).map((product) => <ProductCard key={product.id} product={product} />)}</div> : <EmptyProducts />}
           </div>
         </section>
 
-        <ProductRail title="Best Sellers" eyebrow="Customer favorites" products={bestSellers} onViewAll={() => shopMode('best')} />
+        <section className="mx-auto grid max-w-[1560px] gap-3 px-4 py-10 sm:grid-cols-3 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+          <Value title="Simple catalog" text="Browse by age group, style and product collection without decorative clutter." />
+          <Value title="Color & size inventory" text="Variant-level SKU and stock support keeps product options clear as the catalog grows." />
+          <Value title="Customization when needed" text="Standard blanks stay simple; products can request customer details only when required." />
+        </section>
 
-        <section className="border-y border-[#eeeeee] bg-[#fafafa]">
-          <div className="mx-auto grid max-w-[1560px] grid-cols-2 gap-px bg-[#e9e9e9] sm:grid-cols-4">
-            {[
-              { icon: Sparkles, title: 'Premium Quality', text: 'Soft, dependable everyday pieces.' },
-              { icon: Truck, title: 'Fast Shipping', text: 'Clear US shipping at checkout.' },
-              { icon: ShieldCheck, title: 'Secure Checkout', text: 'Stripe and PayPal supported.' },
-              { icon: PackageCheck, title: 'Easy Ordering', text: 'Simple cart and order tracking.' },
-            ].map((item) => (
-              <div key={item.title} className="bg-[#fafafa] p-5 sm:p-7 lg:p-8">
-                <item.icon className="h-5 w-5" />
-                <h3 className="mt-4 text-sm font-semibold sm:text-base">{item.title}</h3>
-                <p className="mt-1.5 text-xs leading-5 text-[#777] sm:text-sm">{item.text}</p>
-              </div>
-            ))}
+        <section className="border-y border-[#ededed] bg-white">
+          <div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+            <div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Just added</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">New arrivals</h2></div><Link to="/collections/new-arrivals" className="text-sm font-semibold text-[#666] hover:text-[#202020]">View all</Link></div>
+            {productsLoading ? <div className="py-16 text-center text-sm text-[#777]">Loading products...</div> : newArrivals.length > 0 ? <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-6">{newArrivals.slice(0, 8).map((product) => <ProductCard key={product.id} product={product} />)}</div> : <EmptyProducts />}
           </div>
         </section>
 
-        <ProductRail title="New Arrivals" eyebrow="Just added" products={newArrivals} onViewAll={() => shopMode('new')} />
-
-        <section id="wholesale" className="scroll-mt-28 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-          <div className="mx-auto grid max-w-[1560px] overflow-hidden rounded-[14px] bg-[#e8f1f6] lg:grid-cols-2">
-            <div className="relative min-h-[330px] overflow-hidden bg-[linear-gradient(140deg,#f3ebe3_0%,#e7f0f5_100%)] lg:min-h-[520px]">
-              {(findByKeyword('baby') || products[0]) && <img src={(findByKeyword('baby') || products[0]).imageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain p-8 sm:p-12" />}
-            </div>
-            <div className="flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 xl:px-16">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#536d7a]">For creators & small businesses</p>
-              <h2 className="mt-3 max-w-md text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Simple products, easier bulk shopping.</h2>
-              <p className="mt-4 max-w-lg text-sm leading-6 text-[#5d6970] sm:text-base sm:leading-7">Browse the existing catalog in a cleaner format. Wholesale availability can be handled without changing your current checkout and order system.</p>
-              <button type="button" onClick={() => shopMode('all')} className="commerce-focus mt-7 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white hover:bg-[#383838] sm:w-fit">Shop all products <ArrowRight className="h-4 w-4" /></button>
-            </div>
-          </div>
-        </section>
-
-        <section id="shop-all" className="scroll-mt-28 border-t border-[#eeeeee] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-          <div className="mx-auto max-w-[1560px]">
-            <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8a5966]">Catalog</p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">{activeCategory !== 'all' ? activeCategory : MODE_LABELS[filterMode]}</h2>
-                <p className="mt-2 text-sm text-[#777]">{filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}</p>
-              </div>
-
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                <div className="relative sm:w-64">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#888]" />
-                  <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search catalog" className="commerce-focus h-11 w-full rounded-[9px] border border-[#dedede] bg-white pl-10 pr-10 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]" />
-                  {searchTerm && <button type="button" onClick={() => setSearchTerm('')} className="commerce-focus absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
-                </div>
-
-                <div ref={sortRef} className="relative sm:w-52">
-                  <button type="button" onClick={() => setIsSortOpen((open) => !open)} className="commerce-focus flex h-11 w-full items-center justify-between rounded-[9px] border border-[#dedede] bg-white px-3.5 text-sm font-medium hover:border-[#bdbdbd]" aria-haspopup="listbox" aria-expanded={isSortOpen}>
-                    {selectedSortLabel}<ChevronDown className={`h-4 w-4 transition-transform ${isSortOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isSortOpen && (
-                    <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-full overflow-hidden rounded-[9px] border border-[#dedede] bg-white p-1.5 shadow-xl" role="listbox">
-                      {SORT_OPTIONS.map((option) => (
-                        <button key={option.value} type="button" onClick={() => { setSortBy(option.value); setIsSortOpen(false); }} className={`commerce-focus block w-full rounded-[7px] px-3 py-2.5 text-left text-sm ${sortBy === option.value ? 'bg-[#f4f4f4] font-semibold' : 'hover:bg-[#f7f7f7]'}`} role="option" aria-selected={sortBy === option.value}>{option.label}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {categories.length > 0 && (
-              <div className="hide-scrollbar mb-7 flex gap-2 overflow-x-auto pb-1">
-                <button type="button" onClick={() => chooseCategory('all')} className={`commerce-focus whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold ${activeCategory === 'all' ? 'border-[#202020] bg-[#202020] text-white' : 'border-[#dedede] bg-white hover:border-[#aaa]'}`}>All</button>
-                {categories.map((category) => (
-                  <button key={category} type="button" onClick={() => chooseCategory(category)} className={`commerce-focus whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold ${activeCategory === category ? 'border-[#202020] bg-[#202020] text-white' : 'border-[#dedede] bg-white hover:border-[#aaa]'}`}>{category}</button>
-                ))}
-              </div>
-            )}
-
-            {productsLoading && <div className="py-20 text-center text-sm text-[#777]">Loading products...</div>}
-
-            {!productsLoading && filteredProducts.length > 0 && (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-6 xl:gap-y-12">
-                {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-              </div>
-            )}
-
-            {!productsLoading && filteredProducts.length === 0 && (
-              <div className="rounded-[12px] border border-dashed border-[#d7d7d7] bg-[#fafafa] px-6 py-16 text-center">
-                <p className="text-lg font-semibold">No matching products</p>
-                <p className="mt-2 text-sm text-[#777]">Try clearing the current filters or search.</p>
-                <button type="button" onClick={clearFilters} className="commerce-focus mt-5 rounded-[9px] bg-[#202020] px-5 py-3 text-sm font-semibold text-white">Clear filters</button>
-              </div>
-            )}
+        <section id="wholesale" className="bg-[#e9eef0]">
+          <div className="mx-auto grid max-w-[1560px] gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-20">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#66757c]">Wholesale & bulk</p><h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-[-0.035em] sm:text-5xl">A clean catalog foundation for larger orders.</h2><p className="mt-4 max-w-xl text-sm leading-6 text-[#5f6a6e] sm:text-base">Bulk and wholesale rules can be added without complicating the everyday storefront. Contact the store before placing a large or special-order request.</p></div>
+            <div className="flex lg:justify-end"><a href="mailto:hello@mybabyshire.com?subject=Wholesale%20Inquiry" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]">Wholesale inquiry <ArrowRight className="h-4 w-4" /></a></div>
           </div>
         </section>
       </main>
 
       <footer className="border-t border-[#e8e8e8] bg-[#fafafa]">
-        <div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-          <div className="grid gap-9 lg:grid-cols-[1.3fr_.7fr_.7fr_.7fr] lg:gap-12">
-            <div>
-              <BrandLogo variant="footer" className="!w-[190px] !drop-shadow-none" />
-              <p className="mt-4 max-w-sm text-sm leading-6 text-[#707070]">A simpler way to shop MY BABY SHIRE essentials, personalization-ready products and customer favorites.</p>
-              <div className="mt-5 flex gap-2"><span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#dedede] bg-white"><Instagram className="h-4 w-4" /></span></div>
-            </div>
-
-            <FooterGroup title="Shop" links={[['New Arrivals', () => shopMode('new')], ['Best Sellers', () => shopMode('best')], ['Baby', () => shopMode('baby')], ['All Products', () => shopMode('all')]]} />
-            <FooterLinks title="Help" links={[['Track Order', '/track-order'], ['My Account', '/account'], ['Shipping', '/policies/shipping'], ['Returns', '/policies/returns']]} />
-            <FooterLinks title="Company" links={[['Privacy', '/policies/privacy'], ['Terms', '/policies/terms']]} />
-          </div>
-
-          <div className="mt-10 flex flex-col gap-3 border-t border-[#e5e5e5] pt-5 text-xs text-[#888] sm:flex-row sm:items-center sm:justify-between">
-            <span>© {new Date().getFullYear()} MY BABY SHIRE</span>
-            <span>Secure checkout with Stripe & PayPal</span>
-          </div>
+        <div className="mx-auto grid max-w-[1560px] gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8 lg:py-12">
+          <div><BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" /><p className="mt-4 max-w-xs text-sm leading-6 text-[#777]">Blank apparel and custom-ready essentials in a simpler shopping experience.</p></div>
+          <FooterGroup title="Shop" links={[['All Products','/collections/all'],['New Arrivals','/collections/new-arrivals'],['Best Sellers','/collections/best-sellers'],['Baby','/collections/baby'],['Adult','/collections/adult']]} />
+          <FooterGroup title="Customer" links={[['My Account','/account'],['Track Order','/track-order'],['Returns','/policies/returns'],['Shipping','/policies/shipping']]} />
+          <FooterGroup title="Information" links={[['Privacy','/policies/privacy'],['Terms','/policies/terms']]} />
         </div>
+        <div className="border-t border-[#e8e8e8]"><div className="mx-auto flex max-w-[1560px] flex-col gap-2 px-4 py-5 text-xs text-[#888] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"><span>© {new Date().getFullYear()} MY BABY SHIRE</span><span>Built for a fast, mobile-first catalog.</span></div></div>
       </footer>
     </div>
   );
 }
 
-function ProductRail({ title, eyebrow, products, onViewAll }: { title: string; eyebrow: string; products: Product[]; onViewAll: () => void }) {
-  return (
-    <section className="mx-auto max-w-[1560px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <div className="mb-7 flex items-end justify-between gap-4">
-        <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8a5966]">{eyebrow}</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">{title}</h2></div>
-        <button type="button" onClick={onViewAll} className="commerce-focus inline-flex items-center gap-2 text-sm font-semibold hover:text-[#8a5966]">View all <ArrowRight className="h-4 w-4" /></button>
-      </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-4 lg:gap-6">
-        {products.slice(0, 4).map((product) => <ProductCard key={product.id} product={product} />)}
-      </div>
-    </section>
-  );
-}
-
-function FooterGroup({ title, links }: { title: string; links: [string, () => void][] }) {
-  return (
-    <div>
-      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-[#555]">{title}</h3>
-      <div className="mt-4 flex flex-col gap-3">
-        {links.map(([label, action]) => <button key={label} type="button" onClick={action} className="commerce-focus w-fit text-left text-sm text-[#707070] hover:text-[#202020]">{label}</button>)}
-      </div>
-    </div>
-  );
-}
-
-function FooterLinks({ title, links }: { title: string; links: [string, string][] }) {
-  return (
-    <div>
-      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-[#555]">{title}</h3>
-      <div className="mt-4 flex flex-col gap-3">
-        {links.map(([label, href]) => <Link key={label} to={href} className="commerce-focus w-fit text-sm text-[#707070] hover:text-[#202020]">{label}</Link>)}
-      </div>
-    </div>
-  );
-}
+const Value = ({ title, text }: { title: string; text: string }) => <div className="rounded-[12px] border border-[#e5e5e5] bg-white p-5 sm:p-6"><h3 className="text-sm font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-[#777]">{text}</p></div>;
+const EmptyProducts = () => <div className="rounded-[12px] border border-dashed border-[#d7d7d7] bg-[#fafafa] px-6 py-14 text-center text-sm text-[#777]">Products will appear here after they are added and tagged in Admin.</div>;
+const FooterGroup = ({ title, links }: { title: string; links: [string, string][] }) => <div><h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[#999]">{title}</h3><div className="mt-4 grid gap-2.5">{links.map(([label, href]) => <Link key={href} to={href} className="text-sm text-[#666] hover:text-[#202020]">{label}</Link>)}</div></div>;

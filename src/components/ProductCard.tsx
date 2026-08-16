@@ -1,8 +1,7 @@
 import React from 'react';
+import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useStore, Product } from '../store/useStore';
-import { CardDesignFrame } from './CardDesignFrame';
-import { StarRating } from './StarRating';
+import { Product, useStore } from '../store/useStore';
 
 interface ProductCardProps {
   product: Product;
@@ -11,101 +10,83 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
-  const hasDetails = Boolean(product.personalizationRequired || product.personalizationFields?.length);
-  const actionLabel = hasDetails ? 'Choose Details' : 'View Details';
-  const backgroundImage = product.bgImage || '/product-card-cloud-blue.png';
+  const hasPersonalization = Boolean(product.personalizationRequired || product.personalizationFields?.length);
   const detailPath = `/products/${product.slug || product.id}`;
+  const hasComparePrice = Boolean(product.salePrice && product.salePrice > product.price);
 
-  const handleAction = (event: React.MouseEvent) => {
-    if (preview) return;
-
-    if (hasDetails) {
-      event.preventDefault();
-      openPersonalizationModal(product);
-    }
+  const handleCustomize = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!preview) openPersonalizationModal(product);
   };
 
-  const articleLayout = preview
-    ? 'min-h-[206px] grid-cols-[48%_52%] px-4 py-4'
-    : 'min-h-[208px] grid-cols-[49%_51%] px-2 py-3 sm:min-h-[228px] sm:grid-cols-[48%_52%] sm:px-4 sm:py-4 md:min-h-[292px] md:grid-cols-[47%_53%] md:px-6 md:py-7';
+  return (
+    <article className={`group flex h-full min-w-0 flex-col ${preview ? 'max-w-sm' : ''}`}>
+      <Link
+        to={preview ? '#' : detailPath}
+        onClick={preview ? (event) => event.preventDefault() : undefined}
+        className="commerce-focus relative block aspect-[4/5] overflow-hidden rounded-[10px] border border-[#e8e8e8] bg-[#f7f7f7]"
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(145deg,#ffffff_0%,#f7f7f7_72%,#f5e9ec_100%)]" />
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          loading={preview ? 'eager' : 'lazy'}
+          decoding="async"
+          className="relative z-10 h-full w-full object-contain p-5 transition-transform duration-300 ease-out group-hover:scale-[1.025] sm:p-7"
+        />
 
-  const imageShellLayout = preview
-    ? 'h-[148px] max-w-[160px]'
-    : 'h-[150px] max-w-[164px] sm:h-[170px] sm:max-w-[186px] md:h-[224px] md:max-w-[240px]';
-
-  const imageLayout = preview
-    ? 'h-[140px] max-w-[152px]'
-    : 'h-[144px] max-w-[156px] sm:h-[164px] sm:max-w-[178px] md:h-[212px] md:max-w-[228px]';
-
-  const contentLayout = preview
-    ? 'h-[158px] max-w-[190px] px-0.5'
-    : 'h-[160px] max-w-[194px] translate-x-1.5 translate-y-1 px-0.5 sm:h-[178px] sm:max-w-[224px] sm:translate-x-2 sm:translate-y-1.5 sm:px-1 md:h-[212px] md:max-w-[258px] md:translate-x-3 md:translate-y-3 md:px-1';
-
-  const titleLayout = preview
-    ? 'text-[0.9rem]'
-    : 'text-[0.9rem] sm:text-[0.96rem] md:text-[1.02rem] xl:text-[1.08rem]';
-
-  const descriptionLayout = preview
-    ? 'text-[9px]'
-    : 'text-[9px] sm:text-[10px] md:text-[11px] xl:text-[11.5px]';
-
-  const cardContent = (
-    <article
-      className={`relative isolate z-10 mx-auto grid w-full max-w-[540px] items-center justify-items-stretch gap-0 text-left transition-transform ${articleLayout} ${
-        preview ? '' : 'group hover:-translate-y-1'
-      }`}
-    >
-      <CardDesignFrame
-        value={backgroundImage}
-        preserveAspectRatio="xMidYMid meet"
-        className="absolute inset-x-0 top-[2px] -z-10 h-[calc(100%-4px)] w-full opacity-95 drop-shadow-[var(--shadow-cloud-float)]"
-        legacyClassName="absolute inset-x-0 top-[2px] -z-10 h-[calc(100%-4px)] w-full object-contain opacity-95 drop-shadow-[var(--shadow-cloud-float)]"
-      />
-
-      <div className={`relative z-10 flex w-full items-center justify-center self-center ${imageShellLayout}`}>
-        <div className="absolute inset-1.5 rounded-[44%_56%_47%_53%/38%_40%_60%_62%] border border-white/55 bg-white/35 shadow-[inset_0_0_30px_rgba(255,255,255,0.55)]" />
-        <div className={`relative z-10 w-full drop-shadow-lg transition-transform duration-500 ease-out ${imageLayout} ${preview ? '' : 'group-hover:scale-[1.04]'}`}>
-          <img
-            src={product.imageUrl}
-            className={`h-full w-full object-contain ${preview ? 'scale-[1.07]' : 'scale-[1.10] md:scale-[1.09]'}`}
-            alt={product.name}
-          />
-        </div>
-        {product.badge && (
-          <div className="absolute -bottom-1 right-0 rounded-full border border-[#d4b497]/30 bg-[#fdfaf6] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#3a251a] shadow-sm md:-bottom-2 md:px-3 md:text-[10px]">
-            {product.badge}
-          </div>
+        {(product.badge || product.newArrival || product.bestseller) && (
+          <span className="absolute left-3 top-3 z-20 rounded-md bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#202020] shadow-sm ring-1 ring-black/5">
+            {product.bestseller ? 'Best seller' : product.newArrival ? 'New' : product.badge}
+          </span>
         )}
-      </div>
 
-      <div className={`relative z-10 flex w-full flex-col justify-start self-center ${contentLayout}`}>
-        <h3 className={`mb-1 min-h-[2.2em] overflow-hidden font-serif font-medium leading-[1.08] text-[#3a251a] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:mb-1.5 ${titleLayout}`}>
-          {product.name}
-        </h3>
-        <p className={`mb-1.5 min-h-[2.7em] overflow-hidden font-medium leading-[1.38] text-[#5a4234] opacity-90 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:mb-2.5 md:min-h-[4.05em] md:[-webkit-line-clamp:3] ${descriptionLayout}`}>
-          {product.description}
-        </p>
-        {(product.ratingCount ?? 0) > 0 && (
-          <div className="mb-1 flex items-center justify-start gap-1.5 md:mb-1.5">
-            <StarRating value={product.ratingAverage ?? 0} size={13} />
-            <span className="text-[9px] font-medium text-[#5a4234] opacity-80 md:text-[10px]">({product.ratingCount})</span>
-          </div>
+        {hasPersonalization && (
+          <span className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-md bg-[#f8e9ed]/95 px-2.5 py-1.5 text-[10px] font-semibold text-[#5a3540] backdrop-blur-sm">
+            <Sparkles className="h-3 w-3" /> Customizable
+          </span>
         )}
-        <p className="mb-1.5 font-sans text-[15px] font-bold text-[#3a251a] md:mb-2.5 md:text-[17px]">${product.price.toFixed(2)}</p>
-        <button
-          type="button"
-          onClick={handleAction}
-          disabled={preview}
-          className={`group/btn relative mt-auto flex aspect-[866/288] w-[120px] items-center justify-center self-start overflow-visible transition-transform sm:w-[132px] md:w-[142px] xl:w-[148px] ${preview ? 'cursor-default' : 'cursor-pointer hover:-translate-y-0.5'}`}
+      </Link>
+
+      <div className="flex flex-1 flex-col pt-3 sm:pt-4">
+        {product.categoryName && (
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a8a]">{product.categoryName}</p>
+        )}
+        <Link
+          to={preview ? '#' : detailPath}
+          onClick={preview ? (event) => event.preventDefault() : undefined}
+          className="commerce-focus line-clamp-2 text-[13px] font-semibold leading-snug text-[#202020] transition-colors hover:text-[#895b67] sm:text-[15px]"
         >
-          <img src="/btn-paw-blank-taupe.png" className="absolute inset-0 h-full w-full object-contain drop-shadow-sm transition-all group-active/btn:drop-shadow-none" alt="" />
-          <span className="relative z-10 flex items-center gap-1.5 text-[9.5px] font-bold text-[#4a3328] sm:text-[10.5px] md:text-[11px] xl:text-xs">{actionLabel}</span>
-        </button>
+          {product.name}
+        </Link>
+
+        <div className="mt-2 flex items-center gap-2 text-sm sm:text-[15px]">
+          <span className="font-semibold text-[#202020]">${product.price.toFixed(2)}</span>
+          {hasComparePrice && <span className="text-[#9a9a9a] line-through">${product.salePrice!.toFixed(2)}</span>}
+        </div>
+
+        <div className="mt-auto pt-3 sm:pt-4">
+          {hasPersonalization ? (
+            <button
+              type="button"
+              onClick={handleCustomize}
+              disabled={preview}
+              className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#202020] bg-[#202020] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#3a3a3a] disabled:cursor-default disabled:opacity-70 sm:text-sm"
+            >
+              Customize <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <Link
+              to={preview ? '#' : detailPath}
+              onClick={preview ? (event) => event.preventDefault() : undefined}
+              className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#dcdcdc] bg-white px-3 py-2.5 text-xs font-semibold text-[#202020] transition-colors hover:border-[#202020] sm:text-sm"
+            >
+              View product <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   );
-
-  if (preview) return cardContent;
-
-  return <Link to={detailPath} className="block w-full">{cardContent}</Link>;
 };

@@ -1,79 +1,111 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { CardDesignFrame } from './CardDesignFrame';
 
 export const CartDrawer = () => {
   const { cartItems, isCartOpen, closeCart, removeFromCart, updateCartItemQuantity } = useStore();
-
-  const total = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const total = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   return (
     <AnimatePresence>
       {isCartOpen && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeCart} className="fixed inset-0 bg-[#3a251a]/20 backdrop-blur-sm z-50" />
-          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 right-0 w-full max-w-md bg-[#fcfaf6] shadow-2xl z-50 flex flex-col border-l border-[#d4b497]/30">
-            <div className="flex items-center justify-between p-6 border-b border-[#d4b497]/20">
-              <h2 className="font-serif text-2xl text-[#3a251a] flex items-center gap-2"><ShoppingBag className="w-5 h-5" /> Your Gift Bag</h2>
-              <button onClick={closeCart} className="p-2 -mr-2 text-[#5a4234] hover:bg-[#f7ede3] rounded-full transition-colors"><X className="w-5 h-5" /></button>
+          <motion.button
+            type="button"
+            aria-label="Close cart"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeCart}
+            className="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px]"
+          />
+
+          <motion.aside
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-[#e7e7e7] bg-white shadow-2xl"
+            aria-label="Shopping cart"
+          >
+            <div className="flex min-h-20 items-center justify-between border-b border-[#e9e9e9] px-5 sm:px-6">
+              <div className="flex items-center gap-2.5">
+                <ShoppingBag className="h-5 w-5" />
+                <h2 className="text-lg font-semibold text-[#202020]">Your cart</h2>
+                <span className="rounded-full bg-[#f2f2f2] px-2 py-0.5 text-xs font-semibold text-[#666]">{cartItems.length}</span>
+              </div>
+              <button type="button" onClick={closeCart} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close cart">
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
               {cartItems.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-70">
-                  <img src="/toy-wooden-train.png" alt="" className="w-24 mb-4 mix-blend-multiply opacity-50 grayscale" />
-                  <p className="font-serif text-lg text-[#3a251a]">Your gift bag is empty</p>
-                  <p className="text-[#5a4234] text-sm mt-2">Discover personalized magic for the little ones.</p>
-                  <button onClick={closeCart} className="mt-6 px-6 py-2.5 bg-[#f7ede3] text-[#3a251a] rounded-full text-sm font-semibold hover:bg-[#d4b497]/30 transition-colors">Continue Shopping</button>
+                <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f6f6f6]">
+                    <ShoppingBag className="h-7 w-7 text-[#777]" />
+                  </div>
+                  <p className="text-lg font-semibold text-[#202020]">Your cart is empty</p>
+                  <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-[#777]">Browse the collection and add your favorites when you are ready.</p>
+                  <button type="button" onClick={closeCart} className="commerce-focus mt-6 rounded-[9px] bg-[#202020] px-5 py-3 text-sm font-semibold text-white hover:bg-[#383838]">Continue shopping</button>
                 </div>
               ) : (
-                cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 bg-white rounded-2xl shadow-[var(--shadow-soft-subtle)] border border-[#d4b497]/10 relative group">
-                    <button onClick={() => removeFromCart(item.id)} className="absolute top-2 right-2 p-1.5 text-[#5a4234]/50 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"><X className="w-4 h-4" /></button>
-                    <div className="w-24 h-24 bg-[#fcfaf6] rounded-xl flex items-center justify-center p-2 relative overflow-hidden flex-shrink-0">
-                      {item.product.bgImage && <CardDesignFrame value={item.product.bgImage} className="absolute inset-0 h-full w-full opacity-75" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-75" />}
-                      <img src={item.product.imageUrl} className="w-full h-full object-contain relative z-10" alt={item.product.name} />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-serif font-medium text-[#3a251a] leading-tight pr-6">{item.product.name}</h3>
-                        <p className="text-[#5a4234] text-sm mt-1 font-medium">${item.product.price.toFixed(2)}</p>
+                <div className="divide-y divide-[#eeeeee]">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="grid grid-cols-[88px_1fr] gap-4 py-5 first:pt-0">
+                      <div className="aspect-square overflow-hidden rounded-[9px] border border-[#e8e8e8] bg-[#f7f7f7]">
+                        <img src={item.product.imageUrl} alt={item.product.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2.5" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{item.product.name}</h3>
+                            <p className="mt-1 text-sm font-medium text-[#555]">${item.product.price.toFixed(2)}</p>
+                          </div>
+                          <button type="button" onClick={() => removeFromCart(item.id)} className="commerce-focus -mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#777] hover:bg-[#f5f5f5] hover:text-[#202020]" aria-label={`Remove ${item.product.name}`}>
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+
                         {Object.keys(item.personalizationData).length > 0 && (
-                          <div className="mt-2 text-[11px] bg-[#fcfaf6] p-2 rounded-lg border border-[#d4b497]/20 text-[#5a4234]">
-                            {Object.entries(item.personalizationData).map(([key, value]) => <div key={key} className="flex items-start gap-1"><span className="opacity-70 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span><span className="font-semibold">{value as string}</span></div>)}
+                          <div className="mt-3 space-y-1 rounded-[8px] bg-[#faf6f7] p-2.5 text-[11px] leading-relaxed text-[#666]">
+                            {Object.entries(item.personalizationData).map(([key, value]) => (
+                              <div key={key} className="flex gap-1">
+                                <span className="capitalize text-[#888]">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                                <span className="font-semibold text-[#444]">{String(value)}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-3 bg-[#f7ede3] rounded-full px-2 py-1">
-                          <button onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)} className="p-1 hover:bg-white rounded-full transition-colors text-[#5a4234]"><Minus className="w-3 h-3" /></button>
-                          <span className="text-[#3a251a] text-xs font-semibold w-3 text-center">{item.quantity}</span>
-                          <button onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)} className="p-1 hover:bg-white rounded-full transition-colors text-[#5a4234]"><Plus className="w-3 h-3" /></button>
+
+                        <div className="mt-4 inline-flex items-center rounded-[8px] border border-[#dedede] bg-white">
+                          <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-l-[8px] hover:bg-[#f5f5f5]" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
+                          <span className="min-w-8 text-center text-xs font-semibold">{item.quantity}</span>
+                          <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-r-[8px] hover:bg-[#f5f5f5]" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
 
             {cartItems.length > 0 && (
-              <div className="p-6 bg-white border-t border-[#d4b497]/20">
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex justify-between text-[#5a4234] text-sm"><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
-                  <div className="border-t border-[#d4b497]/20 pt-3 flex justify-between text-[#3a251a] font-serif font-medium text-lg"><span>Total</span><span>${total.toFixed(2)}</span></div>
+              <div className="border-t border-[#e9e9e9] bg-white px-5 py-5 sm:px-6">
+                <div className="mb-4 flex items-center justify-between text-base font-semibold text-[#202020]">
+                  <span>Subtotal</span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
-                <Link to="/checkout" onClick={closeCart} className="w-full relative flex items-center justify-center cursor-pointer h-14 hover:-translate-y-0.5 transition-transform group rounded-full overflow-hidden">
-                  <div className="absolute inset-0 bg-[#3a251a] group-hover:bg-[#4a3328] transition-colors"></div>
-                  <span className="relative z-10 font-bold text-white tracking-wide">Checkout Securely</span>
+                <p className="mb-4 text-xs leading-relaxed text-[#777]">Shipping and taxes are calculated at checkout.</p>
+                <Link to="/checkout" onClick={closeCart} className="commerce-focus flex w-full items-center justify-center rounded-[9px] bg-[#202020] px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">
+                  Checkout
                 </Link>
-                <div className="mt-4 flex items-center justify-center gap-2 text-[#5a4234] text-xs opacity-80"><img src="/toy-wooden-star-solid.png" className="w-4 h-4 mix-blend-multiply" alt=""/> Gift-ready packaging included</div>
               </div>
             )}
-          </motion.div>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>

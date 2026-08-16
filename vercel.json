@@ -39,6 +39,7 @@
     { "source": "/android-chrome-192x192.png", "destination": "/brand/mybabyshire-favicon.png" },
     { "source": "/android-chrome-512x512.png", "destination": "/brand/mybabyshire-favicon.png" },
     { "source": "/maskable-icon.svg", "destination": "/brand/mybabyshire-favicon.png" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/admin/upload-image", "destination": "/api/product-image-upload" },
     { "source": "/api/admin/remove-bg-upload", "destination": "/api/removed-upload-route" },
     { "source": "/api/admin-google-start", "destination": "/api/admin/login?authMode=admin-google" },

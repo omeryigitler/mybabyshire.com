@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
+import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -8,12 +9,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    await ensureProductVariantsTable();
     const products = await prisma.products.findMany({
       where: { status: 'active' },
       include: {
         images: true,
         category: true,
         personalization_fields: true,
+        variants: { where: { active: true }, orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }] },
       },
       orderBy: { created_at: 'asc' },
     });

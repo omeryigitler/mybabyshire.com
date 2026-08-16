@@ -6,7 +6,8 @@ import { useStore } from '../store/useStore';
 
 export const CartDrawer = () => {
   const { cartItems, isCartOpen, closeCart, removeFromCart, updateCartItemQuantity } = useStore();
-  const total = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const unitPrice = (item: (typeof cartItems)[number]) => item.variant?.price ?? item.product.price;
+  const total = cartItems.reduce((sum, item) => sum + unitPrice(item) * item.quantity, 0);
 
   return (
     <AnimatePresence>
@@ -53,42 +54,51 @@ export const CartDrawer = () => {
                 </div>
               ) : (
                 <div className="divide-y divide-[#eeeeee]">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="grid grid-cols-[88px_1fr] gap-4 py-5 first:pt-0">
-                      <div className="aspect-square overflow-hidden rounded-[9px] border border-[#e8e8e8] bg-[#f7f7f7]">
-                        <img src={item.product.imageUrl} alt={item.product.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2.5" />
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{item.product.name}</h3>
-                            <p className="mt-1 text-sm font-medium text-[#555]">${item.product.price.toFixed(2)}</p>
-                          </div>
-                          <button type="button" onClick={() => removeFromCart(item.id)} className="commerce-focus -mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#777] hover:bg-[#f5f5f5] hover:text-[#202020]" aria-label={`Remove ${item.product.name}`}>
-                            <X className="h-4 w-4" />
-                          </button>
+                  {cartItems.map((item) => {
+                    const variantLabel = item.variant ? [item.variant.color, item.variant.size].filter(Boolean).join(' / ') : '';
+                    const maxQuantity = item.variant
+                      ? Math.min(25, Math.max(0, item.variant.stockQuantity))
+                      : item.product.stockQuantity && item.product.stockQuantity > 0
+                        ? Math.min(25, item.product.stockQuantity)
+                        : 25;
+                    return (
+                      <div key={item.id} className="grid grid-cols-[88px_1fr] gap-4 py-5 first:pt-0">
+                        <div className="aspect-square overflow-hidden rounded-[9px] border border-[#e8e8e8] bg-[#f7f7f7]">
+                          <img src={item.product.imageUrl} alt={item.product.name} loading="lazy" decoding="async" className="h-full w-full object-contain p-2.5" />
                         </div>
 
-                        {Object.keys(item.personalizationData).length > 0 && (
-                          <div className="mt-3 space-y-1 rounded-[8px] bg-[#faf6f7] p-2.5 text-[11px] leading-relaxed text-[#666]">
-                            {Object.entries(item.personalizationData).map(([key, value]) => (
-                              <div key={key} className="flex gap-1">
-                                <span className="capitalize text-[#888]">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                                <span className="font-semibold text-[#444]">{String(value)}</span>
-                              </div>
-                            ))}
+                        <div className="min-w-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{item.product.name}</h3>
+                              {variantLabel && <p className="mt-1 text-xs font-medium text-[#777]">{variantLabel} · {item.variant?.sku}</p>}
+                              <p className="mt-1 text-sm font-medium text-[#555]">${unitPrice(item).toFixed(2)}</p>
+                            </div>
+                            <button type="button" onClick={() => removeFromCart(item.id)} className="commerce-focus -mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#777] hover:bg-[#f5f5f5] hover:text-[#202020]" aria-label={`Remove ${item.product.name}`}>
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
-                        )}
 
-                        <div className="mt-4 inline-flex items-center rounded-[8px] border border-[#dedede] bg-white">
-                          <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-l-[8px] hover:bg-[#f5f5f5]" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
-                          <span className="min-w-8 text-center text-xs font-semibold">{item.quantity}</span>
-                          <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-r-[8px] hover:bg-[#f5f5f5]" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
+                          {Object.keys(item.personalizationData).length > 0 && (
+                            <div className="mt-3 space-y-1 rounded-[8px] bg-[#faf6f7] p-2.5 text-[11px] leading-relaxed text-[#666]">
+                              {Object.entries(item.personalizationData).map(([key, value]) => (
+                                <div key={key} className="flex gap-1">
+                                  <span className="capitalize text-[#888]">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                                  <span className="font-semibold text-[#444]">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="mt-4 inline-flex items-center rounded-[8px] border border-[#dedede] bg-white">
+                            <button type="button" onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-l-[8px] hover:bg-[#f5f5f5]" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
+                            <span className="min-w-8 text-center text-xs font-semibold">{item.quantity}</span>
+                            <button type="button" disabled={maxQuantity <= item.quantity} onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-r-[8px] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-35" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

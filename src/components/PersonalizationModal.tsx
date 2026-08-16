@@ -17,10 +17,15 @@ export const PersonalizationModal = () => {
 
   useEffect(() => {
     if (!isPersonalizationModalOpen) return;
-    const previousOverflow = document.body.style.overflow;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
     };
   }, [isPersonalizationModalOpen]);
 
@@ -31,7 +36,7 @@ export const PersonalizationModal = () => {
   }, [isPersonalizationModalOpen, selectedProduct?.id, selectedVariant?.id]);
 
   useEffect(() => {
-    contentRef.current?.scrollTo({ top: 0 });
+    contentRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [step, selectedProduct?.id]);
 
   const getFieldsForProduct = () => (
@@ -95,7 +100,7 @@ export const PersonalizationModal = () => {
                 type="button"
                 key={color}
                 onClick={() => updateFieldValue(field, color)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full border transition-transform ${value === color ? 'scale-110 border-[#202020] ring-2 ring-white ring-offset-1 ring-offset-[#202020]' : 'border-[#d8d8d2] hover:scale-105'}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border transition-transform ${value === color ? 'scale-110 border-[#202020] ring-2 ring-white ring-offset-1 ring-offset-[#202020]' : 'border-[#d8d8d2] hover:scale-105'}`}
                 style={{ backgroundColor: color }}
                 aria-label={`${field.label} ${color}`}
               >
@@ -145,7 +150,7 @@ export const PersonalizationModal = () => {
           value={value}
           maxLength={field.maxLength || undefined}
           onChange={(event) => updateFieldValue(field, event.target.value)}
-          className="h-12 w-full rounded-xl border border-[#deded9] bg-white px-4 text-sm text-[#202020] outline-none placeholder:text-[#a2a29b] focus:border-[#202020] focus:ring-1 focus:ring-[#202020]"
+          className="h-12 w-full rounded-xl border border-[#deded9] bg-white px-4 text-base text-[#202020] outline-none placeholder:text-[#a2a29b] focus:border-[#202020] focus:ring-1 focus:ring-[#202020] sm:text-sm"
           placeholder={field.placeholder || 'Enter custom text'}
         />
         {field.helpText && <p className="mt-2 text-xs leading-5 text-[#777770]">{field.helpText}</p>}
@@ -184,25 +189,36 @@ export const PersonalizationModal = () => {
   return (
     <AnimatePresence>
       {isPersonalizationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-[100] flex items-stretch justify-center sm:items-center sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            className="absolute inset-0 bg-black/40 sm:backdrop-blur-sm"
+          />
 
           <motion.section
             role="dialog"
             aria-modal="true"
             aria-label={`Personalize ${selectedProduct.name}`}
-            initial={{ opacity: 0, scale: 0.98, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 14 }}
-            transition={{ duration: 0.2 }}
-            className="relative grid max-h-[92dvh] w-full max-w-4xl overflow-hidden rounded-2xl border border-[#deded9] bg-white shadow-[0_30px_90px_rgba(0,0,0,0.2)] md:grid-cols-[300px_1fr]"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.18 }}
+            className="relative z-10 flex h-[100dvh] min-h-0 w-full max-w-4xl flex-col overflow-hidden bg-white shadow-[0_30px_90px_rgba(0,0,0,0.2)] sm:h-[min(92dvh,820px)] sm:max-h-[92dvh] sm:rounded-2xl sm:border sm:border-[#deded9] md:grid md:grid-cols-[300px_minmax(0,1fr)]"
           >
-            <button type="button" onClick={handleClose} className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#65655f] shadow-sm ring-1 ring-[#e5e5df] hover:bg-[#f5f5f2] hover:text-[#202020]" aria-label="Close personalization">
-              <X className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={handleClose}
+              className="absolute right-3 top-3 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#65655f] shadow-sm ring-1 ring-[#e5e5df] hover:bg-[#f5f5f2] hover:text-[#202020] sm:right-4 sm:top-4"
+              aria-label="Close personalization"
+            >
+              <X className="h-5 w-5" />
             </button>
 
-            <aside className="hidden border-r border-[#e6e6e1] bg-[#f7f7f5] p-7 md:flex md:flex-col">
-              <div className="flex min-h-64 items-center justify-center rounded-xl bg-white p-5 ring-1 ring-[#e8e8e3]">
+            <aside className="hidden min-h-0 overflow-y-auto border-r border-[#e6e6e1] bg-[#f7f7f5] p-7 md:flex md:flex-col">
+              <div className="flex min-h-64 shrink-0 items-center justify-center rounded-xl bg-white p-5 ring-1 ring-[#e8e8e3]">
                 <img src={selectedProduct.imageUrl} className="max-h-56 w-full object-contain" alt={selectedProduct.name} />
               </div>
               <div className="mt-5">
@@ -211,14 +227,14 @@ export const PersonalizationModal = () => {
                 {variantLabel && <p className="mt-1 text-xs font-medium text-[#777770]">{variantLabel}</p>}
                 <p className="mt-2 text-sm font-semibold text-[#202020]">${unitPrice.toFixed(2)}</p>
               </div>
-              <div className="mt-6">
+              <div className="mt-6 pb-2">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8a82]">Selections</p>
                 {detailsSummary}
               </div>
             </aside>
 
-            <div className="flex min-h-0 flex-col">
-              <div className="border-b border-[#ecece8] px-5 pb-5 pt-6 sm:px-7 sm:pt-7 md:px-9">
+            <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="shrink-0 border-b border-[#ecece8] px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-7 md:px-9">
                 <div className="pr-12">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8a8a82]">Step {step} of 3</p>
                   <div className="mt-3 grid grid-cols-3 gap-2">
@@ -229,12 +245,16 @@ export const PersonalizationModal = () => {
                 </div>
               </div>
 
-              <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-7 md:px-9 md:py-8">
-                <div className="mb-6 flex items-center gap-4 rounded-xl bg-[#f7f7f5] p-3 md:hidden">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-white p-2 ring-1 ring-[#e5e5df]">
+              <div
+                ref={contentRef}
+                className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-5 sm:px-7 sm:py-6 md:px-9 md:py-8"
+                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+              >
+                <div className="mb-5 flex items-center gap-3 rounded-xl bg-[#f7f7f5] p-3 md:hidden">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white p-2 ring-1 ring-[#e5e5df] sm:h-20 sm:w-20">
                     <img src={selectedProduct.imageUrl} className="h-full w-full object-contain" alt={selectedProduct.name} />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 pr-10">
                     <p className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{selectedProduct.name}</p>
                     {variantLabel && <p className="mt-1 text-xs text-[#777770]">{variantLabel}</p>}
                     <p className="mt-1 text-sm font-semibold text-[#202020]">${unitPrice.toFixed(2)}</p>
@@ -242,7 +262,14 @@ export const PersonalizationModal = () => {
                 </div>
 
                 <AnimatePresence mode="wait">
-                  <motion.div key={step} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.15 }}>
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="pb-4"
+                  >
                     <h3 className="text-2xl font-semibold tracking-[-0.025em] text-[#202020]">{stepTitle}</h3>
                     <p className="mt-2 max-w-lg text-sm leading-6 text-[#6b6b64]">{stepDescription}</p>
 
@@ -261,16 +288,20 @@ export const PersonalizationModal = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#ecece8] bg-white px-5 py-4 sm:px-7 md:px-9">
-                <div>
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[#ecece8] bg-white px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-7 sm:py-4 md:px-9">
+                <div className="min-w-0">
                   {step > 1 && (
-                    <button type="button" onClick={() => setStep((currentStep) => currentStep - 1)} className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#555550] hover:bg-[#f5f5f2] hover:text-[#202020]">
+                    <button
+                      type="button"
+                      onClick={() => setStep((currentStep) => currentStep - 1)}
+                      className="inline-flex h-11 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-[#555550] hover:bg-[#f5f5f2] hover:text-[#202020] sm:gap-2 sm:px-3"
+                    >
                       <ChevronLeft className="h-4 w-4" /> Back
                     </button>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   {!isStepValid && <span className="hidden max-w-36 text-right text-xs leading-4 text-[#8a5d5d] sm:block">Complete the required choice.</span>}
                   <button
                     type="button"
@@ -280,7 +311,7 @@ export const PersonalizationModal = () => {
                       else setStep((currentStep) => currentStep + 1);
                     }}
                     disabled={!isStepValid}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#202020] px-5 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-[#b7b7b1] sm:min-w-36"
+                    className="inline-flex h-11 min-w-24 items-center justify-center gap-2 rounded-xl bg-[#202020] px-4 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-[#b7b7b1] sm:min-w-36 sm:px-5"
                   >
                     {isLastStep ? 'Add to Cart' : 'Next'}
                     {!isLastStep && <ChevronRight className="h-4 w-4" />}

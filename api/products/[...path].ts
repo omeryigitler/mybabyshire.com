@@ -3,6 +3,7 @@ import express from 'express';
 import apiRoutes from '../../server/api.js';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
+import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 const legacyApp = express();
 legacyApp.use(express.json({ limit: '25mb' }));
@@ -40,12 +41,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const slug = parts[0];
 
     try {
+      await ensureProductVariantsTable();
       const product = await prisma.products.findFirst({
         where: { slug, status: 'active' },
         include: {
           images: true,
           category: true,
           personalization_fields: true,
+          variants: { where: { active: true }, orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }] },
         },
       });
 

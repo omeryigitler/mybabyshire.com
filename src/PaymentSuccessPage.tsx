@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Copy, MailCheck, PackageCheck, ShoppingBag, Sparkles, Truck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Copy, Loader2, MailCheck, PackageCheck, ShoppingBag, Sparkles, Truck } from 'lucide-react';
 import { useStore } from './store/useStore';
 import { consumePendingPurchase, trackPurchase } from './utils/analytics';
 
@@ -14,17 +14,54 @@ const StepCard = ({ icon: Icon, title, text }: { icon: React.ComponentType<{ cla
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session_id') || '';
   const orderReference = searchParams.get('order') || '';
   const { clearCart } = useStore();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Verifying your payment with Stripe...');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    clearCart();
-    const purchase = consumePendingPurchase(orderReference || undefined);
-    if (purchase) {
-      trackPurchase({ orderNumber: purchase.orderNumber, value: purchase.value });
-    }
-  }, [clearCart, orderReference]);
+    let cancelled = false;
+
+    const verifyPayment = async () => {
+      if (!sessionId || !orderReference) {
+        setStatus('error');
+        setMessage('Missing payment verification information. Please return to your order or contact support.');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/stripe/verify-session?session_id=${encodeURIComponent(sessionId)}&order=${encodeURIComponent(orderReference)}`);
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : null;
+
+        if (!response.ok || !data?.confirmed) {
+          throw new Error(data?.error || 'Stripe has not confirmed this payment yet.');
+        }
+
+        if (cancelled) return;
+
+        clearCart();
+        const purchase = consumePendingPurchase(orderReference);
+        if (purchase) {
+          trackPurchase({ orderNumber: purchase.orderNumber, value: purchase.value });
+        }
+
+        setStatus('success');
+        setMessage('Your payment was confirmed securely. We received your MY BABY SHIRE order and will start preparing it soon.');
+      } catch (error) {
+        if (cancelled) return;
+        setStatus('error');
+        setMessage((error as Error).message || 'Payment could not be verified.');
+      }
+    };
+
+    verifyPayment();
+    return () => {
+      cancelled = true;
+    };
+  }, [clearCart, orderReference, sessionId]);
 
   const copyOrderReference = async () => {
     if (!orderReference) return;
@@ -32,6 +69,12 @@ export default function PaymentSuccessPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
+
+  const statusIcon = status === 'loading'
+    ? <Loader2 className="h-10 w-10 animate-spin" />
+    : status === 'success'
+      ? <CheckCircle2 className="h-11 w-11" />
+      : <AlertTriangle className="h-10 w-10" />;
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-boutique-bg font-sans text-boutique-brown">
@@ -42,10 +85,16 @@ export default function PaymentSuccessPage() {
           <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -left-16 -top-12 w-56 opacity-40 mix-blend-multiply" alt="" />
           <img src="/cloud-watercolor-pink.png" className="pointer-events-none absolute -right-16 bottom-16 w-52 opacity-35 mix-blend-multiply" alt="" />
           <img src="/toy-wooden-star-solid.png" className="pointer-events-none absolute right-10 top-12 w-10 rotate-12 opacity-45 mix-blend-multiply" alt="" />
-          <div className="relative z-10 mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-700 shadow-[0_12px_30px_rgba(22,101,52,0.16)]"><CheckCircle2 className="h-11 w-11" /></div>
-          <div className="relative z-10 mb-4 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown-light"><Sparkles className="h-3.5 w-3.5" /> Payment confirmed</div>
-          <h1 className="relative z-10 font-serif text-4xl text-boutique-brown md:text-6xl">Thank You!</h1>
-          <p className="relative z-10 mx-auto mt-4 max-w-lg text-sm leading-relaxed text-boutique-brown-light">Your payment was completed successfully. We received your MY BABY SHIRE gift order and will start preparing it soon.</p>
+
+          <div className={`relative z-10 mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full shadow-[0_12px_30px_rgba(58,37,26,0.12)] ${status === 'error' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+            {statusIcon}
+          </div>
+
+          <div className="relative z-10 mb-4 inline-flex items-center gap-2 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-boutique-brown-light"><Sparkles className="h-3.5 w-3.5" /> Stripe checkout</div>
+          <h1 className="relative z-10 font-serif text-4xl text-boutique-brown md:text-6xl">
+            {status === 'loading' ? 'Verifying Payment' : status === 'success' ? 'Thank You!' : 'Payment Check Needed'}
+          </h1>
+          <p className="relative z-10 mx-auto mt-4 max-w-lg text-sm leading-relaxed text-boutique-brown-light">{message}</p>
 
           {orderReference && (
             <div className="relative z-10 mt-7 rounded-[1.6rem] border border-boutique-brown/10 bg-white p-4 shadow-sm">
@@ -57,11 +106,13 @@ export default function PaymentSuccessPage() {
             </div>
           )}
 
-          <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-3">
-            <StepCard icon={MailCheck} title="Confirmation" text="Email confirmation will send after Resend domain verification is completed." />
-            <StepCard icon={PackageCheck} title="Preparing" text="Your gift order will stay in processing while it is prepared." />
-            <StepCard icon={Truck} title="Tracking" text="Tracking details will appear after the order ships." />
-          </div>
+          {status === 'success' && (
+            <div className="relative z-10 mt-6 grid gap-3 md:grid-cols-3">
+              <StepCard icon={MailCheck} title="Confirmation" text="Your order confirmation is handled after payment processing completes." />
+              <StepCard icon={PackageCheck} title="Preparing" text="Your order will stay in processing while it is prepared." />
+              <StepCard icon={Truck} title="Tracking" text="Tracking details will appear after the order ships." />
+            </div>
+          )}
 
           <div className="relative z-10 mt-7 grid gap-3 sm:grid-cols-2">
             <Link to="/track-order" className="inline-flex items-center justify-center gap-2 rounded-full bg-boutique-brown px-5 py-4 text-sm font-bold text-white hover:bg-boutique-wood"><ShoppingBag className="h-4 w-4" /> Track Order</Link>

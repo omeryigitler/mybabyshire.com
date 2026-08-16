@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ArrowRight, CheckCircle2, Clock3, DollarSign, Package, Plus, RefreshCcw, ShoppingCart, Sparkles, Wand2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Boxes, Package, Plus, RefreshCcw, ShoppingCart } from 'lucide-react';
 import { Product } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
-import { CardDesignFrame } from '../components/CardDesignFrame';
-import { Badge, Button, EmptyState, PageHeader, Panel, StatCard, Table, TD, TH } from './ui';
 
 type DashboardOrder = {
   id: string;
@@ -12,190 +10,97 @@ type DashboardOrder = {
   customerName: string;
   customerEmail: string;
   totalAmount: number;
+  currency?: string;
   paymentStatus: string;
-  paymentProvider?: string;
   orderStatus: string;
+  shipmentStatus?: string | null;
   createdAt: string;
 };
 
-const paymentTone = (status: string) => (status === 'paid' ? 'green' : status === 'refunded' ? 'gray' : 'amber');
+type Variant = { id: string; productId: string; productName?: string; sku: string; color: string; size: string; stockQuantity: number; active: boolean };
+const money = (value: number, currency = 'USD') => `${currency} ${Number(value || 0).toFixed(2)}`;
+const titleCase = (value?: string | null) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [variants, setVariants] = useState<Variant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const loadDashboard = async () => {
     setIsLoading(true);
+    setError('');
     try {
       const token = getAdminToken();
-      const [productsResponse, ordersResponse] = await Promise.all([
+      const [productsResponse, ordersResponse, variantsResponse] = await Promise.all([
         fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/admin/orders', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/variants', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-
-      const productsData = await productsResponse.json();
-      const ordersData = await ordersResponse.json();
-
+      const [productsData, ordersData, variantsData] = await Promise.all([productsResponse.json(), ordersResponse.json(), variantsResponse.json()]);
       if (!productsResponse.ok) throw new Error(productsData.details || productsData.error || 'Could not load products.');
       if (!ordersResponse.ok) throw new Error(ordersData.details || ordersData.error || 'Could not load orders.');
-
-      setProducts(productsData);
-      setOrders(ordersData);
-    } catch (error) {
-      console.error(error);
-      alert((error as Error).message);
+      if (!variantsResponse.ok) throw new Error(variantsData.details || variantsData.error || 'Could not load inventory.');
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setVariants(Array.isArray(variantsData) ? variantsData : []);
+    } catch (loadError) {
+      setError((loadError as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => { void loadDashboard(); }, []);
 
-  const stats = useMemo(() => {
-    const totalProducts = products.length;
-    const activeProducts = products.filter((product) => product.status !== 'draft').length;
-    const draftProducts = products.filter((product) => product.status === 'draft').length;
-    const personalizedProducts = products.filter((product: any) => product.personalizationEnabled || product.personalizationFields?.length > 0 || product.personalizationRequired).length;
-    const totalOrders = orders.length;
-    const pendingPayments = orders.filter((order) => order.paymentStatus === 'pending').length;
-    const paidOrders = orders.filter((order) => order.paymentStatus === 'paid').length;
-    const paidValue = orders.filter((order) => order.paymentStatus === 'paid').reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
-    const avgOrder = paidOrders > 0 ? paidValue / paidOrders : 0;
-    return { totalProducts, activeProducts, draftProducts, personalizedProducts, totalOrders, pendingPayments, paidOrders, paidValue, avgOrder };
-  }, [products, orders]);
+  const stats = useMemo(() => ({
+    activeProducts: products.filter((product) => (product.status || 'active') !== 'draft').length,
+    orders: orders.length,
+    activeVariants: variants.filter((variant) => variant.active).length,
+    lowStock: variants.filter((variant) => variant.active && variant.stockQuantity <= 5).length,
+  }), [products, orders, variants]);
 
-  const recentProducts = products.slice(0, 4);
-  const recentOrders = orders.slice(0, 6);
-
-  const money = (value: number) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
+  const lowStockVariants = variants.filter((variant) => variant.active && variant.stockQuantity <= 5).sort((a, b) => a.stockQuantity - b.stockQuantity).slice(0, 8);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Back office overview"
-        icon={Sparkles}
-        title="Dashboard"
-        description="A quick view of MY BABY SHIRE revenue, orders, products, and next actions."
-        actions={
-          <>
-            <Button variant="secondary" icon={RefreshCcw} onClick={loadDashboard} disabled={isLoading}>Refresh</Button>
-            <Link to="/admin/products?create=1"><Button variant="primary" icon={Plus}>Add Product</Button></Link>
-          </>
-        }
-      />
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="Paid Revenue" value={isLoading ? '—' : money(stats.paidValue)} icon={DollarSign} tone="green" hint="Confirmed payments" />
-        <StatCard label="Orders" value={isLoading ? '—' : stats.totalOrders} icon={ShoppingCart} tone="cream" hint={`${stats.paidOrders} paid`} />
-        <StatCard label="Pending Payment" value={isLoading ? '—' : stats.pendingPayments} icon={Clock3} tone="amber" hint="Needs follow-up" />
-        <StatCard label="Avg Order Value" value={isLoading ? '—' : money(stats.avgOrder)} icon={CheckCircle2} tone="blue" hint="Per paid order" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Commerce admin</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em]">Dashboard</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Catalog, order and inventory overview. Payment and shipping provider configuration stays separate until real credentials and rules are supplied.</p></div>
+        <div className="flex gap-2"><button type="button" onClick={() => void loadDashboard()} disabled={isLoading} className="commerce-focus inline-flex min-h-11 items-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7] disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh</button><Link to="/admin/products?create=1" className="commerce-focus inline-flex min-h-11 items-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838]"><Plus className="h-4 w-4" /> Add product</Link></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="Products" value={isLoading ? '—' : stats.totalProducts} icon={Package} tone="cream" hint="Catalog items" />
-        <StatCard label="Active" value={isLoading ? '—' : stats.activeProducts} icon={CheckCircle2} tone="green" hint="Visible in storefront" />
-        <StatCard label="Drafts" value={isLoading ? '—' : stats.draftProducts} icon={AlertCircle} tone="amber" hint="Not visible yet" />
-        <StatCard label="Personalized" value={isLoading ? '—' : stats.personalizedProducts} icon={Wand2} tone="blue" hint="Custom gifts" />
+      {error && <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Metric label="Orders" value={isLoading ? '—' : stats.orders} icon={ShoppingCart} />
+        <Metric label="Active products" value={isLoading ? '—' : stats.activeProducts} icon={Package} />
+        <Metric label="Active variants" value={isLoading ? '—' : stats.activeVariants} icon={Boxes} />
+        <Metric label="Low stock" value={isLoading ? '—' : stats.lowStock} icon={AlertTriangle} warning={stats.lowStock > 0} />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.4fr_0.6fr]">
-        <Panel
-          title="Recent Orders"
-          description="Latest payment and fulfillment activity."
-          bodyClassName=""
-          actions={<Link to="/admin/orders"><Button variant="secondary" icon={ArrowRight}>View all</Button></Link>}
-        >
-          {isLoading ? (
-            <div className="p-6 text-sm text-boutique-brown-light">Loading orders...</div>
-          ) : recentOrders.length === 0 ? (
-            <EmptyState icon={ShoppingCart} title="No orders yet" description="Orders will appear here as customers check out." />
-          ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <TH>Order</TH>
-                  <TH>Customer</TH>
-                  <TH>Payment</TH>
-                  <TH className="text-right">Total</TH>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="transition-colors hover:bg-[#fffaf3]/60">
-                    <TD>
-                      <Link to="/admin/orders" className="font-bold text-boutique-brown hover:text-boutique-wood">{order.orderNumber}</Link>
-                      <div className="mt-0.5 text-[11px] text-boutique-brown-light">{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                    </TD>
-                    <TD>
-                      <div className="max-w-[200px] truncate font-medium">{order.customerName}</div>
-                      <div className="max-w-[200px] truncate text-[11px] text-boutique-brown-light">{order.customerEmail}</div>
-                    </TD>
-                    <TD>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Badge tone={paymentTone(order.paymentStatus)}>{order.paymentStatus}</Badge>
-                        {order.paymentProvider && <Badge tone="neutral">{order.paymentProvider}</Badge>}
-                      </div>
-                    </TD>
-                    <TD className="text-right font-bold">{money(Number(order.totalAmount || 0))}</TD>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </Panel>
+      <div className="grid gap-5 xl:grid-cols-[1.3fr_.7fr]">
+        <section className="overflow-hidden rounded-[12px] border border-[#e3e3e3] bg-white">
+          <div className="flex items-center justify-between gap-4 border-b border-[#ececec] p-5"><div><h2 className="font-semibold">Recent orders</h2><p className="mt-1 text-xs text-[#888]">Latest order activity.</p></div><Link to="/admin/orders" className="commerce-focus inline-flex items-center gap-1.5 text-xs font-semibold text-[#666] hover:text-[#202020]">View all <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[620px] border-collapse text-left"><thead><tr className="border-b border-[#ececec] bg-[#fafafa] text-[10px] font-bold uppercase tracking-[0.12em] text-[#888]"><th className="px-5 py-3">Order</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Status</th><th className="px-5 py-3 text-right">Total</th></tr></thead><tbody className="divide-y divide-[#eeeeee] text-sm">{isLoading && <tr><td colSpan={4} className="px-5 py-10 text-center text-[#777]">Loading orders...</td></tr>}{!isLoading && recentOrders.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-[#777]">No orders yet.</td></tr>}{!isLoading && recentOrders.map((order) => <tr key={order.id} className="hover:bg-[#fafafa]"><td className="px-5 py-4"><p className="font-semibold">{order.orderNumber}</p><p className="mt-1 text-xs text-[#888]">{new Date(order.createdAt).toLocaleDateString()}</p></td><td className="px-5 py-4"><p className="font-medium">{order.customerName}</p><p className="mt-1 max-w-[220px] truncate text-xs text-[#888]">{order.customerEmail}</p></td><td className="px-5 py-4"><span className="rounded-full bg-[#f1f1f1] px-2.5 py-1 text-[10px] font-semibold text-[#666]">{titleCase(order.orderStatus)}</span></td><td className="px-5 py-4 text-right font-semibold">{money(order.totalAmount, order.currency || 'USD')}</td></tr>)}</tbody></table></div>
+        </section>
 
-        <div className="flex flex-col gap-5">
-          <div className="relative overflow-hidden rounded-2xl border border-boutique-brown/10 bg-boutique-brown p-5 text-white shadow-[0_14px_40px_rgba(58,37,26,0.16)]">
-            <img src="/cloud-watercolor-blue-light.png" className="pointer-events-none absolute -right-10 -top-10 w-40 opacity-20 mix-blend-screen" alt="" />
-            <div className="relative z-10 mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5" /><h2 className="text-[15px] font-bold tracking-tight">Quick Actions</h2></div>
-            <div className="relative z-10 space-y-2">
-              <Link to="/admin/products?create=1" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Add a new product <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/admin/orders" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Review orders <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/admin/reviews" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Moderate reviews <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/admin/coupons" className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/15">Manage coupons <ArrowRight className="h-4 w-4" /></Link>
-            </div>
-          </div>
-
-          <Panel title="Catalog health" className="flex flex-1 flex-col" bodyClassName="flex flex-1 flex-col justify-center p-5">
-            <div className="space-y-2.5 text-sm">
-              <div className="flex items-center justify-between"><span className="text-boutique-brown-light">Active products</span><span className="font-bold text-boutique-brown">{isLoading ? '—' : stats.activeProducts}</span></div>
-              <div className="flex items-center justify-between"><span className="text-boutique-brown-light">Drafts</span><span className="font-bold text-boutique-brown">{isLoading ? '—' : stats.draftProducts}</span></div>
-              <div className="flex items-center justify-between"><span className="text-boutique-brown-light">Personalized</span><span className="font-bold text-boutique-brown">{isLoading ? '—' : stats.personalizedProducts}</span></div>
-            </div>
-          </Panel>
-        </div>
+        <section className="rounded-[12px] border border-[#e3e3e3] bg-white p-5">
+          <div className="flex items-center justify-between gap-4"><div><h2 className="font-semibold">Low stock</h2><p className="mt-1 text-xs text-[#888]">Active variants with 5 or fewer units.</p></div><Link to="/admin/inventory" className="commerce-focus text-xs font-semibold text-[#666] hover:text-[#202020]">Inventory</Link></div>
+          <div className="mt-4 divide-y divide-[#eeeeee]">{isLoading && <p className="py-6 text-center text-sm text-[#777]">Loading inventory...</p>}{!isLoading && lowStockVariants.length === 0 && <p className="py-6 text-center text-sm text-[#777]">No low-stock variants.</p>}{!isLoading && lowStockVariants.map((variant) => <div key={variant.id} className="flex items-start justify-between gap-4 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{variant.productName || 'Product'}</p><p className="mt-1 truncate text-xs text-[#888]">{variant.color} · {variant.size} · {variant.sku}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${variant.stockQuantity === 0 ? 'bg-red-50 text-red-700' : 'bg-[#fff3d9] text-[#8a641e]'}`}>{variant.stockQuantity}</span></div>)}</div>
+        </section>
       </div>
 
-      <Panel
-        title="Recent Products"
-        description="Latest catalog items."
-        actions={<Link to="/admin/products"><Button variant="secondary" icon={ArrowRight}>View all</Button></Link>}
-      >
-        {isLoading ? (
-          <div className="text-sm text-boutique-brown-light">Loading products...</div>
-        ) : recentProducts.length === 0 ? (
-          <EmptyState icon={Package} title="No products yet" description="Add your first product to start building the storefront." />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {recentProducts.map((product) => (
-              <Link key={product.id} to={`/admin/products/${product.id}/edit`} className="group rounded-xl border border-boutique-brown/10 bg-[#fffaf3] p-3 transition-transform hover:-translate-y-0.5 hover:shadow-md">
-                <div className="relative h-32 overflow-hidden rounded-lg bg-white">
-                  {product.bgImage && <CardDesignFrame value={product.bgImage} className="absolute inset-0 h-full w-full opacity-40" legacyClassName="absolute inset-0 h-full w-full object-cover opacity-40" />}
-                  {product.imageUrl ? <img src={product.imageUrl} className="relative z-10 h-full w-full object-contain p-3" alt="" /> : <div className="flex h-full w-full items-center justify-center text-boutique-brown/30"><Package className="h-8 w-8" /></div>}
-                </div>
-                <div className="mt-3">
-                  <h3 className="truncate font-bold text-boutique-brown">{product.name}</h3>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="font-bold text-boutique-brown">${product.price.toFixed(2)}</span>
-                    <Badge tone={product.status === 'draft' ? 'gray' : 'green'}>{product.status || 'active'}</Badge>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </Panel>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickLink to="/admin/products" label="Products" text="Edit catalog information" />
+        <QuickLink to="/admin/inventory" label="Inventory" text="Manage Color × Size stock" />
+        <QuickLink to="/admin/orders" label="Orders" text="Review order activity" />
+        <QuickLink to="/admin/reviews" label="Reviews" text="Moderate customer reviews" />
+      </section>
     </div>
   );
 };
+
+const Metric = ({ label, value, icon: Icon, warning = false }: { label: string; value: React.ReactNode; icon: React.ComponentType<{ className?: string }>; warning?: boolean }) => <div className="rounded-[11px] border border-[#e3e3e3] bg-white p-4 sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#999]">{label}</p><div className="mt-2 flex items-center gap-2"><Icon className={`h-4 w-4 ${warning ? 'text-[#a25c42]' : 'text-[#888]'}`} /><span className={`text-xl font-semibold sm:text-2xl ${warning ? 'text-[#a25c42]' : ''}`}>{value}</span></div></div>;
+const QuickLink = ({ to, label, text }: { to: string; label: string; text: string }) => <Link to={to} className="commerce-focus group rounded-[11px] border border-[#e3e3e3] bg-white p-4 hover:border-[#bdbdbd]"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold">{label}</p><p className="mt-1 text-xs text-[#888]">{text}</p></div><ArrowRight className="h-4 w-4 text-[#999] transition-transform group-hover:translate-x-0.5" /></div></Link>;

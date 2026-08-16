@@ -177,12 +177,6 @@ svg {
   outline-offset: 3px;
 }
 
-/*
- * Mobile browsers continuously resize the visual viewport while their URL bar
- * collapses/expands. A translucent sticky element with backdrop-filter gets
- * re-composited on those frames and can visibly shake. Keep mobile commerce
- * headers on a single opaque GPU layer and reserve stable touch/icon boxes.
- */
 header a[aria-label="MY BABY SHIRE home"] {
   display: flex;
   align-items: center;
@@ -192,47 +186,121 @@ header a[aria-label="MY BABY SHIRE home"] {
 
 header button svg,
 header a svg {
+  display: block;
   flex: none;
-  shape-rendering: geometricPrecision;
 }
 
+/*
+ * Mobile commerce header stability.
+ *
+ * Do not promote this toolbar to a transformed/composited sticky layer. Mobile
+ * Safari/Chrome resize the visual viewport while their browser chrome collapses;
+ * sticky + backdrop-filter + translateZ/will-change can shimmer even when the
+ * layout itself has not moved. The commerce toolbar is instead a plain fixed,
+ * opaque 64px layer with integer geometry and a matching 64px flow offset.
+ */
 @media (max-width: 767px) {
-  header.sticky {
-    background-color: #ffffff !important;
+  /* The pink announcement immediately preceding the commerce header is desktop/tablet only. */
+  #root > div > div:has(+ header.sticky:has(a[aria-label="MY BABY SHIRE home"])) {
+    display: none !important;
+  }
+
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 40;
+    width: 100%;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #e9e9e9;
+    background: #ffffff !important;
+    box-shadow: none !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    will-change: transform;
-    contain: paint;
+    -webkit-transform: none !important;
+    transform: none !important;
+    -webkit-backface-visibility: visible !important;
+    backface-visibility: visible !important;
+    will-change: auto !important;
+    contain: none !important;
   }
 
-  header.sticky button[aria-label],
-  header.fixed button[aria-label],
-  header.sticky a[aria-label]:not([aria-label="MY BABY SHIRE home"]) {
-    min-width: 44px;
-    min-height: 44px;
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) > div {
+    width: 100%;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
 
-  /* PDP centers its logo with absolute + translate utilities. On touch screens,
-     remove that sub-pixel transform so the wordmark cannot shimmer while scrolling. */
-  header.sticky .group\/logo {
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: max-content;
-    height: 100%;
-    margin: auto;
+  /* Reserve exactly the same space removed from normal flow by position: fixed. */
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) ~ main {
+    margin-top: 64px !important;
+  }
+
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) button[aria-label],
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) a[aria-label]:not([aria-label="MY BABY SHIRE home"]) {
+    box-sizing: border-box;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 !important;
+    line-height: 0;
+    transform: none !important;
+    transition-property: color, background-color, border-color !important;
+  }
+
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) button[aria-label] svg,
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) a[aria-label]:not([aria-label="MY BABY SHIRE home"]) svg {
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) a[aria-label="MY BABY SHIRE home"] {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto !important;
+    height: 44px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     transform: none !important;
     -webkit-transform: none !important;
+    line-height: 0;
   }
 
-  header img[alt="MY BABY SHIRE"] {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) img[alt="MY BABY SHIRE"] {
+    display: block;
+    width: auto !important;
+    height: 36px !important;
+    max-width: 46vw !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    object-fit: contain;
+    filter: none !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    -webkit-backface-visibility: visible !important;
+    backface-visibility: visible !important;
+  }
+
+  /* PDP used absolute + translate centering; keep it in normal flex flow on mobile. */
+  header.sticky:has(a[aria-label="MY BABY SHIRE home"]) .group\/logo {
+    position: static !important;
+    width: auto !important;
+    height: 44px !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    -webkit-transform: none !important;
   }
 }
 

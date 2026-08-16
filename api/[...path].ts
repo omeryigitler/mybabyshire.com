@@ -273,6 +273,7 @@ app.post('/api/paypal-capture-order', capturePayPalOrderHandler);
 app.post('/api/newsletter', newsletterPostHandler);
 app.get('/api/newsletter', newsletterGetHandler);
 app.get('/api/sitemap', sitemapHandler);
+app.get('/sitemap.xml', sitemapHandler);
 
 app.use('/api', apiRoutes);
 

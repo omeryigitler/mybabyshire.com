@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 import { calculateTax, type TaxBreakdown } from '../src/utils/tax.js';
 import { resolveCoupon } from './coupons.js';
+import { ensureProductVariantsTable, variantDisplayName } from './variants.js';
 import {
   SHIPPING_METHODS,
   resolveShippingMethod as resolveShippingMethodById,
@@ -12,6 +13,13 @@ export type CheckoutProvider = 'stripe' | 'paypal';
 export { SHIPPING_METHODS };
 export type { ShippingMethod };
 
+type VerifiedVariant = {
+  id: string;
+  sku: string;
+  color: string | null;
+  size: string | null;
+};
+
 export type VerifiedCheckoutItem = {
   productId: string;
   name: string;
@@ -19,6 +27,7 @@ export type VerifiedCheckoutItem = {
   imageUrl?: string;
   quantity: number;
   price: number;
+  variant: VerifiedVariant | null;
   personalizationData: Record<string, unknown>;
 };
 
@@ -207,6 +216,16 @@ const resolveShippingMethod = (body: any) => {
   return resolveShippingMethodById(requestedId);
 };
 
+const parseOrderItemSnapshot = (value?: string | null): Record<string, any> => {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
 export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout> => {
   const customer = sanitizeCustomer(body?.customer || {});
   const rawItems = Array.isArray(body?.items) ? body.items : [];
@@ -221,9 +240,12 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
 
   const requestedItems = rawItems.map((item: any) => ({
     productId: sanitizeText(item?.productId, 'Product', 80),
+    variantId: String(item?.variantId || '').trim().slice(0, 80) || null,
     quantity: normalizeQuantity(item?.quantity),
     personalizationData: normalizePersonalizationData(item?.personalizationData),
   }));
+
+  await ensureProductVariantsTable();
 
   const productIds: string[] = Array.from(new Set(requestedItems.map((item) => item.productId)));
   const products = await prisma.products.findMany({
@@ -231,7 +253,11 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
       id: { in: productIds },
       status: 'active',
     },
-    include: { images: true, personalization_fields: true },
+    include: {
+      images: true,
+      personalization_fields: true,
+      variants: { where: { active: true } },
+    },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
 
@@ -241,7 +267,41 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
       throw new CheckoutValidationError('One or more products are unavailable. Please refresh your cart.');
     }
 
-    if (Number(product.stock_quantity) > 0 && item.quantity > Number(product.stock_quantity)) {
+    const activeVariants = Array.isArray(product.variants) ? product.variants : [];
+    let verifiedVariant: VerifiedVariant | null = null;
+    let itemPrice = roundMoney(Number(product.price));
+    let itemName = product.name;
+
+    if (activeVariants.length > 0) {
+      if (!item.variantId) {
+        throw new CheckoutValidationError(`${product.name}: choose a color and size before checkout.`);
+      }
+
+      const variant = activeVariants.find((candidate) => candidate.id === item.variantId);
+      if (!variant) {
+        throw new CheckoutValidationError(`${product.name}: the selected variant is no longer available. Please choose again.`);
+      }
+
+      if (Number(variant.stock_quantity) < item.quantity) {
+        const label = variantDisplayName(variant);
+        throw new CheckoutValidationError(
+          Number(variant.stock_quantity) > 0
+            ? `${product.name} (${label}) has only ${variant.stock_quantity} in stock.`
+            : `${product.name} (${label}) is sold out.`,
+        );
+      }
+
+      verifiedVariant = {
+        id: variant.id,
+        sku: variant.sku,
+        color: variant.color,
+        size: variant.size,
+      };
+      itemPrice = roundMoney(variant.price === null || variant.price === undefined ? Number(product.price) : Number(variant.price));
+      itemName = `${product.name} — ${variantDisplayName(variant)}`;
+    } else if (item.variantId) {
+      throw new CheckoutValidationError(`${product.name}: the selected variant is no longer available. Please refresh your cart.`);
+    } else if (Number(product.stock_quantity) > 0 && item.quantity > Number(product.stock_quantity)) {
       throw new CheckoutValidationError(`${product.name} has only ${product.stock_quantity} in stock.`);
     }
 
@@ -250,11 +310,12 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
 
     return {
       productId: product.id,
-      name: product.name,
+      name: itemName,
       description: product.description || 'MY BABY SHIRE product',
       imageUrl: primaryImage?.image_url || undefined,
       quantity: item.quantity,
-      price: roundMoney(Number(product.price)),
+      price: itemPrice,
+      variant: verifiedVariant,
       personalizationData,
     };
   });
@@ -331,7 +392,10 @@ export const createPendingOrderFromCheckout = async (checkout: VerifiedCheckout,
           product_name_snapshot: item.name,
           quantity: item.quantity,
           price_snapshot: item.price,
-          personalization_data_json: JSON.stringify(item.personalizationData || {}),
+          personalization_data_json: JSON.stringify({
+            ...item.personalizationData,
+            ...(item.variant ? { __variant: item.variant } : {}),
+          }),
         })),
       },
     },
@@ -339,16 +403,38 @@ export const createPendingOrderFromCheckout = async (checkout: VerifiedCheckout,
   });
 };
 
-// Decrement stock for a paid order. Only products that actively track stock
-// (stock_quantity > 0) are reduced; a stock_quantity of 0 means "untracked /
-// unlimited" and is left alone. The `gte` guard keeps stock from going negative
-// and makes this safe to call exactly once per order (after payment succeeds).
+// Decrement the exact inventory source captured with each paid order item.
+// Variant products always track stock at the Color×Size SKU level. Legacy
+// products retain the existing convention where product stock 0 is untracked.
 export const decrementInventoryForOrder = async (
-  items: Array<{ product_id: string; quantity: number | null }>,
+  items: Array<{ product_id: string; quantity: number | null; personalization_data_json?: string | null }>,
 ) => {
+  await ensureProductVariantsTable();
+
   for (const item of items) {
     const quantity = Number(item.quantity) || 0;
     if (quantity <= 0) continue;
+
+    const snapshot = parseOrderItemSnapshot(item.personalization_data_json);
+    const variantId = String(snapshot?.__variant?.id || '').trim();
+
+    if (variantId) {
+      const result = await prisma.product_variants.updateMany({
+        where: {
+          id: variantId,
+          product_id: item.product_id,
+          active: true,
+          stock_quantity: { gte: quantity },
+        },
+        data: { stock_quantity: { decrement: quantity } },
+      });
+
+      if (result.count !== 1) {
+        throw new Error(`Variant inventory could not be decremented for ${variantId}.`);
+      }
+      continue;
+    }
+
     await prisma.products.updateMany({
       where: { id: item.product_id, stock_quantity: { gte: quantity } },
       data: { stock_quantity: { decrement: quantity } },

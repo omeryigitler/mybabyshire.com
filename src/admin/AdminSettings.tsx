@@ -1,25 +1,14 @@
 import React, { useState } from 'react';
-import { CheckCircle2, CreditCard, Globe, Mail, Palette, Send, ShieldCheck, Sparkles, Truck, WalletCards } from 'lucide-react';
-import { PageHeader } from './ui';
+import { CheckCircle2, CreditCard, Globe, Mail, Send, ShieldCheck, Truck, XCircle } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
 
-const SettingCard = ({ icon: Icon, title, status, children }: { icon: React.ComponentType<{ className?: string }>; title: string; status: string; children: React.ReactNode }) => (
-  <div className="rounded-[1.7rem] border border-boutique-brown/10 bg-white/82 p-5 shadow-[0_16px_40px_rgba(58,37,26,0.07)] backdrop-blur-sm">
+const SettingCard = ({ icon: Icon, title, status, pending = false, children }: { icon: React.ComponentType<{ className?: string }>; title: string; status: string; pending?: boolean; children: React.ReactNode }) => (
+  <section className="rounded-[12px] border border-[#e3e3e3] bg-white p-5">
     <div className="flex items-start gap-4">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm"><Icon className="h-5 w-5" /></div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3"><h2 className="font-bold text-boutique-brown">{title}</h2><span className="rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-boutique-brown-light">{status}</span></div>
-        <div className="mt-3 text-sm leading-relaxed text-boutique-brown-light">{children}</div>
-      </div>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px] bg-[#f3f3f3] text-[#555]"><Icon className="h-5 w-5" /></div>
+      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold">{title}</h2><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] ${pending ? 'bg-[#fff3d9] text-[#8a641e]' : 'bg-[#eaf5ee] text-[#316942]'}`}>{status}</span></div><div className="mt-3 text-sm leading-6 text-[#666]">{children}</div></div>
     </div>
-  </div>
-);
-
-const ChecklistItem = ({ done, title, note }: { done?: boolean; title: string; note: string }) => (
-  <div className="flex gap-3 rounded-2xl border border-boutique-brown/10 bg-white p-4 shadow-sm">
-    <div className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${done ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}><CheckCircle2 className="h-4 w-4" /></div>
-    <div><p className="text-sm font-bold text-boutique-brown">{title}</p><p className="mt-1 text-xs leading-relaxed text-boutique-brown-light">{note}</p></div>
-  </div>
+  </section>
 );
 
 export const AdminSettings = () => {
@@ -30,15 +19,10 @@ export const AdminSettings = () => {
   const sendTestEmail = async () => {
     setIsSendingEmail(true);
     setEmailStatus('');
-
     try {
-      const token = getAdminToken();
       const response = await fetch('/api/admin/test-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAdminToken()}` },
         body: JSON.stringify({ to: testEmail.trim() || undefined }),
       });
       const data = await response.json();
@@ -52,56 +36,36 @@ export const AdminSettings = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Store setup"
-        icon={Sparkles}
-        title="Settings"
-        description="A practical checklist for payments, storefront, shipping, email, admin access and launch readiness."
-      />
+    <div className="space-y-6">
+      <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Configuration</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em]">Settings</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Operational status only. This page does not claim payment or shipping readiness until real provider information is supplied and tested.</p></div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <SettingCard icon={CreditCard} title="Payments" status="Active">Stripe and PayPal checkout are connected. Stripe card checkout is primary and PayPal is secondary.</SettingCard>
-        <SettingCard icon={WalletCards} title="Wallet readiness" status="Review">Apple Pay, Google Pay and Link are shown on the checkout page. Real wallet availability should be tested inside Stripe Hosted Checkout.</SettingCard>
-        <SettingCard icon={Palette} title="Stripe Hosted Checkout branding" status="Later">Saved for later: dashboard branding, logo, colors, policy links, currency behavior and custom domain after the final domain decision.</SettingCard>
-        <SettingCard icon={Globe} title="Storefront" status="Live">Public storefront, product pages, checkout, success, cancel and order tracking pages are available on the production domain.</SettingCard>
-        <SettingCard icon={Truck} title="Shipping" status="Ready for tests">Flat shipping, admin shipment updates, public tracking lookup, carrier links and shipment timeline are connected. Later: add live carrier rates.</SettingCard>
-        <SettingCard icon={Mail} title="Email notifications" status="Ready for test">
-          <p>The domain DNS records and RESEND_API_KEY are in place. Send a test message before relying on customer notifications.</p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
-            <input
-              value={testEmail}
-              onChange={(event) => setTestEmail(event.target.value)}
-              type="email"
-              placeholder="Optional recipient email"
-              className="rounded-2xl border border-boutique-brown/10 bg-[#fffaf3] px-4 py-3 text-sm text-boutique-brown outline-none placeholder:text-boutique-brown/35 focus:ring-2 focus:ring-boutique-wood/25"
-            />
-            <button
-              type="button"
-              onClick={sendTestEmail}
-              disabled={isSendingEmail}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-boutique-brown px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-boutique-wood disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" /> {isSendingEmail ? 'Sending...' : 'Send test'}
-            </button>
-          </div>
-          {emailStatus && <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-xs font-bold text-boutique-brown-light shadow-sm">{emailStatus}</p>}
+        <SettingCard icon={CreditCard} title="Payments" status="Needs real configuration" pending><p>The checkout code supports payment-provider flows, but production credentials, provider settings and live transaction testing must be confirmed before treating payments as ready.</p></SettingCard>
+        <SettingCard icon={Truck} title="Shipping" status="Needs real configuration" pending><p>Order and tracking screens are built. Real carrier choice, shipping methods, rates, delivery rules and production tracking behavior still need your actual shipping information.</p></SettingCard>
+        <SettingCard icon={Globe} title="Storefront" status="Active"><p>The storefront, product pages, collections, customer account, order tracking and policy routes are available on the production application.</p></SettingCard>
+        <SettingCard icon={ShieldCheck} title="Admin & customer access" status="Active"><p>Admin authentication and customer account access are separated. Admin routes remain protected and customer account data uses the customer session flow.</p></SettingCard>
+        <SettingCard icon={Mail} title="Email test" status="Available">
+          <p>Use this to verify the currently configured transactional email connection. A successful test confirms sending at that moment; it does not replace production monitoring.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]"><input value={testEmail} onChange={(event) => setTestEmail(event.target.value)} type="email" placeholder="Optional recipient email" className="commerce-focus h-11 rounded-[9px] border border-[#dedede] bg-white px-3.5 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]" /><button type="button" onClick={() => void sendTestEmail()} disabled={isSendingEmail} className="commerce-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50"><Send className="h-4 w-4" /> {isSendingEmail ? 'Sending…' : 'Send test'}</button></div>
+          {emailStatus && <p className="mt-3 rounded-[9px] bg-[#fafafa] px-3.5 py-3 text-xs font-medium text-[#666]">{emailStatus}</p>}
         </SettingCard>
-        <SettingCard icon={ShieldCheck} title="Admin access" status="Email + Google">Email/password and Google admin sign-in are wired. Apple is visible as coming soon until an Apple Developer account is ready.</SettingCard>
-        <SettingCard icon={Sparkles} title="Brand system" status="In progress">Back office has MY BABY SHIRE colors, clouds, toy visuals and soft card layouts. Remaining flows can be refined as the shop grows.</SettingCard>
+        <SettingCard icon={CheckCircle2} title="Catalog & inventory" status="Active"><p>Products, categories and Color × Size × SKU inventory management are connected. Variant price and stock are verified server-side during checkout.</p></SettingCard>
       </div>
 
-      <div className="rounded-[2rem] border border-boutique-brown/10 bg-white/82 p-6 shadow-[0_20px_55px_rgba(58,37,26,0.08)] backdrop-blur-sm">
-        <div className="mb-5 flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown shadow-sm"><WalletCards className="h-5 w-5" /></div><div><h2 className="font-serif text-3xl text-boutique-brown">Payment launch checklist</h2><p className="mt-1 text-sm text-boutique-brown-light">Use this before moving from test flow to real customer payments.</p></div></div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <ChecklistItem done title="Stripe card checkout" note="Checkout sessions are created from the site checkout flow." />
-          <ChecklistItem done title="PayPal checkout" note="The sandbox payment flow is connected and tested." />
-          <ChecklistItem title="Apple Pay / Google Pay / Link" note="Test real wallet visibility in Stripe Checkout using supported devices and browsers." />
-          <ChecklistItem title="Stripe page branding" note="Later: add logo, brand colors, policy URLs and review currency selector behavior." />
-          <ChecklistItem done title="Final domain" note="mybabyshire.com is connected and redirects to the canonical www domain." />
-          <ChecklistItem done title="Email sending" note="Resend DNS records and API key are ready for a live test email." />
+      <section className="rounded-[12px] border border-[#e3e3e3] bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-semibold">Launch status</h2>
+        <p className="mt-1 text-sm text-[#777]">Items that depend on real business/provider information remain intentionally open.</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <StatusItem done title="Storefront & collections" note="Responsive catalog and collection routes are implemented." />
+          <StatusItem done title="Products & variant inventory" note="Color, size, SKU and stock management are implemented." />
+          <StatusItem done title="Customer account & tracking UI" note="Customer-facing account and order lookup are implemented." />
+          <StatusItem done title="Admin commerce workflows" note="Products, inventory, orders, customers, reviews and discounts are available." />
+          <StatusItem title="Live payment configuration" note="Waiting for actual production payment information and live-provider testing." />
+          <StatusItem title="Live shipping configuration" note="Waiting for actual carriers, rates, rules and tracking configuration." />
         </div>
-      </div>
+      </section>
     </div>
   );
 };
+
+const StatusItem = ({ done = false, title, note }: { done?: boolean; title: string; note: string }) => <div className="flex gap-3 rounded-[10px] border border-[#e5e5e5] p-4"><div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done ? 'bg-[#eaf5ee] text-[#316942]' : 'bg-[#fff3d9] text-[#8a641e]'}`}>{done ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}</div><div><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-[#777]">{note}</p></div></div>;

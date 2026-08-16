@@ -34,7 +34,7 @@ export const createEmptyProductWizardDraft = (): ProductWizardDraft => ({
   ageRange: '', material: '', preparationTime: '', careInstructions: '', categoryId: '',
   status: 'active', promotionBadge: 'none', cloudShape: DEFAULT_CARD_DESIGN.cloud,
   panelShape: DEFAULT_CARD_DESIGN.panel, cardColor: DEFAULT_CARD_DESIGN.color,
-  createCloudVariants: false, personalizationRequired: true,
+  createCloudVariants: false, personalizationRequired: false,
   personalizationFields: DEFAULT_PRODUCT_FIELDS.map((field) => ({ ...field, options: field.options ? [...field.options] : undefined })),
 });
 
@@ -68,18 +68,18 @@ export const validateProductWizardStep = (draft: ProductWizardDraft, step: numbe
     }
   }
   if (step === 4) {
-    if (!draft.ageRange.trim()) issues.push('Age range is required.');
+    if (!draft.ageRange.trim()) issues.push('Size / age range is required.');
     if (!draft.material.trim()) issues.push('Material is required.');
     if (!draft.preparationTime.trim()) issues.push('Preparation time is required.');
-    if (!draft.careInstructions.trim()) issues.push('Care / safety instructions are required.');
+    if (!draft.careInstructions.trim()) issues.push('Care instructions are required.');
   }
   if (step === 5) {
     if (!draft.categoryId) issues.push('Choose a product category.');
     if (!draft.status) issues.push('Choose Active or Draft status.');
   }
-  if (step === 6 && (!draft.cloudShape || !draft.panelShape || !draft.cardColor)) issues.push('Choose a complete card style.');
+  if (step === 6 && (!draft.cloudShape || !draft.panelShape || !draft.cardColor)) issues.push('Storefront display defaults are incomplete.');
   if (step === 7 && draft.personalizationRequired) {
-    if (!draft.personalizationFields.length) issues.push('Add at least one customer information field or turn off made-for-you fields.');
+    if (!draft.personalizationFields.length) issues.push('Add at least one customization field or turn off customization.');
     const keys = new Set<string>();
     draft.personalizationFields.forEach((field, index) => {
       const number = index + 1;

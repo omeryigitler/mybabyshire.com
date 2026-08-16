@@ -90,6 +90,7 @@ model products {
   updated_at               DateTime @updatedAt
 
   images                 product_images[]
+  variants               product_variants[]
   category               categories?              @relation(fields: [category_id], references: [id])
   personalization_fields personalization_fields[]
   cart_items             cart_items[]
@@ -137,6 +138,24 @@ model product_images {
   sort_order Int      @default(0)
   is_primary Boolean  @default(false)
   product    products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+}
+
+model product_variants {
+  id             String   @id @default(uuid())
+  product_id     String
+  sku            String   @unique
+  color          String?
+  size           String?
+  price          Decimal?
+  stock_quantity Int      @default(0)
+  active         Boolean  @default(true)
+  sort_order     Int      @default(0)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  product products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id, active])
 }
 
 model categories {

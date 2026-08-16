@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Product, useStore } from '../store/useStore';
@@ -8,11 +8,52 @@ interface ProductCardProps {
   preview?: boolean;
 }
 
+const COLOR_SWATCHES: Record<string, string> = {
+  black: '#202020',
+  white: '#ffffff',
+  ivory: '#f4f0e6',
+  cream: '#eee6d7',
+  natural: '#e7dcc7',
+  beige: '#d8c8ae',
+  tan: '#c3a984',
+  brown: '#765744',
+  gray: '#9b9b9b',
+  grey: '#9b9b9b',
+  charcoal: '#55585b',
+  red: '#b94a4a',
+  pink: '#e6b8c3',
+  blush: '#e9c8ce',
+  rose: '#c98793',
+  orange: '#d98b52',
+  yellow: '#e2c85d',
+  green: '#789174',
+  olive: '#7c815a',
+  sage: '#9dac93',
+  mint: '#b8d8c4',
+  blue: '#7798b6',
+  navy: '#394b64',
+  lavender: '#b7a8cc',
+  purple: '#806b98',
+};
+
+const swatchColor = (name: string) => {
+  const normalized = name.trim().toLowerCase();
+  const exact = COLOR_SWATCHES[normalized];
+  if (exact) return exact;
+  const partial = Object.entries(COLOR_SWATCHES).find(([key]) => normalized.includes(key));
+  return partial?.[1] || '#d9d9d9';
+};
+
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
   const hasPersonalization = Boolean(product.personalizationRequired || product.personalizationFields?.length);
   const detailPath = `/products/${product.slug || product.id}`;
   const hasComparePrice = Boolean(product.salePrice && product.salePrice > product.price);
+  const activeVariants = (product.variants || []).filter((variant) => variant.active !== false);
+  const colorOptions = useMemo(() => Array.from(new Set(activeVariants.map((variant) => variant.color || '').filter(Boolean))), [activeVariants]);
+  const variantPrices = activeVariants.map((variant) => variant.price ?? product.price);
+  const lowestPrice = variantPrices.length ? Math.min(...variantPrices) : product.price;
+  const hasVariantPriceRange = variantPrices.length > 1 && new Set(variantPrices.map((price) => Number(price).toFixed(2))).size > 1;
 
   const handleCustomize = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -33,8 +74,18 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
           alt={product.name}
           loading={preview ? 'eager' : 'lazy'}
           decoding="async"
-          className="relative z-10 h-full w-full object-contain p-5 transition-transform duration-300 ease-out group-hover:scale-[1.025] sm:p-7"
+          className={`absolute inset-0 z-10 h-full w-full object-contain p-5 transition-all duration-300 ease-out sm:p-7 ${product.hoverImageUrl ? 'group-hover:opacity-0' : 'group-hover:scale-[1.025]'}`}
         />
+        {product.hoverImageUrl && (
+          <img
+            src={product.hoverImageUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            aria-hidden="true"
+            className="absolute inset-0 z-10 h-full w-full object-contain p-5 opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.025] group-hover:opacity-100 sm:p-7"
+          />
+        )}
 
         {(product.badge || product.newArrival || product.bestseller) && (
           <span className="absolute left-3 top-3 z-20 rounded-md bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#202020] shadow-sm ring-1 ring-black/5">
@@ -50,9 +101,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
       </Link>
 
       <div className="flex flex-1 flex-col pt-3 sm:pt-4">
-        {product.categoryName && (
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a8a]">{product.categoryName}</p>
-        )}
+        {product.categoryName && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a8a]">{product.categoryName}</p>}
         <Link
           to={preview ? '#' : detailPath}
           onClick={preview ? (event) => event.preventDefault() : undefined}
@@ -61,9 +110,18 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
           {product.name}
         </Link>
 
+        {colorOptions.length > 0 && (
+          <div className="mt-2 flex min-h-5 items-center gap-1.5" aria-label={`${colorOptions.length} color options`}>
+            {colorOptions.slice(0, 6).map((color) => (
+              <span key={color} title={color} className="h-4.5 w-4.5 rounded-full border border-black/15 ring-1 ring-white" style={{ backgroundColor: swatchColor(color) }} />
+            ))}
+            {colorOptions.length > 6 && <span className="ml-0.5 text-[10px] font-medium text-[#777]">+{colorOptions.length - 6}</span>}
+          </div>
+        )}
+
         <div className="mt-2 flex items-center gap-2 text-sm sm:text-[15px]">
-          <span className="font-semibold text-[#202020]">${product.price.toFixed(2)}</span>
-          {hasComparePrice && <span className="text-[#9a9a9a] line-through">${product.salePrice!.toFixed(2)}</span>}
+          <span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}${lowestPrice.toFixed(2)}</span>
+          {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">${product.salePrice!.toFixed(2)}</span>}
         </div>
 
         <div className="mt-auto pt-3 sm:pt-4">

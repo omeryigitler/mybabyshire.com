@@ -1,12 +1,7 @@
 import { useEffect } from 'react';
 
-// -------------------------------------------------------------------------
-// Lightweight SEO helper (no extra dependency). Sets the document title and
-// the meta/Open Graph/Twitter tags imperatively, plus optional JSON-LD.
-// -------------------------------------------------------------------------
-
 const SITE_NAME = 'MY BABY SHIRE';
-const DEFAULT_DESCRIPTION = 'Personalized baby gifts made with love. Custom blankets, keepsakes, and nursery essentials, shipped across the US.';
+const DEFAULT_DESCRIPTION = 'Shop blank apparel and ready-to-customize essentials for baby, toddler and adult sizes from MY BABY SHIRE.';
 const DEFAULT_IMAGE = 'https://www.mybabyshire.com/brand/mybabyshire-header-horizontal-logo_2x-removebg-preview.png';
 
 type SeoOptions = {
@@ -30,7 +25,7 @@ const upsertMeta = (selector: string, attr: 'name' | 'property', key: string, co
 const JSON_LD_ID = 'seo-jsonld';
 
 export function useSeo({ title, description, image, type = 'website', jsonLd }: SeoOptions) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Personalized Baby Gifts`;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Blank Apparel & Custom-Ready Essentials`;
   const desc = description || DEFAULT_DESCRIPTION;
   const img = image || DEFAULT_IMAGE;
 

@@ -1,24 +1,23 @@
-import React, { useState } from 'react';
-import { Upload, Wand2 } from 'lucide-react';
+import React from 'react';
+import { Image as ImageIcon, Images } from 'lucide-react';
 import { ImageUploader } from './ImageUploader';
-import { WizardCleanUploader } from './WizardCleanUploader';
 import type { ProductWizardImage } from './productWizardDraft';
 
-export const WizardMediaStep = ({ images, onImagesChange }: { images: ProductWizardImage[]; onImagesChange: (images: ProductWizardImage[]) => void }) => {
-  const [clean, setClean] = useState(false);
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button type="button" onClick={() => setClean(false)} className={`rounded-[1.3rem] border p-4 text-left ${!clean ? 'border-boutique-brown bg-[#fff4df]' : 'border-boutique-brown/10 bg-white'}`}><Upload className="mb-2 h-5 w-5 text-boutique-brown" /><span className="block text-sm font-bold text-boutique-brown">Original</span><span className="mt-1 block text-xs text-boutique-brown-light">Keep the uploaded photo as-is.</span></button>
-        <button type="button" onClick={() => setClean(true)} className={`rounded-[1.3rem] border p-4 text-left ${clean ? 'border-boutique-brown bg-[#fff4df]' : 'border-boutique-brown/10 bg-white'}`}><Wand2 className="mb-2 h-5 w-5 text-boutique-brown" /><span className="block text-sm font-bold text-boutique-brown">Clean Background</span><span className="mt-1 block text-xs text-boutique-brown-light">Remove the background before the image is stored.</span></button>
+export const WizardMediaStep = ({ images, onImagesChange }: { images: ProductWizardImage[]; onImagesChange: (images: ProductWizardImage[]) => void }) => (
+  <div className="space-y-5">
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="rounded-[10px] border border-[#e5e5e5] bg-[#fafafa] p-4">
+        <div className="flex items-center gap-2"><ImageIcon className="h-4 w-4 text-[#666]" /><p className="text-sm font-semibold">Primary image</p></div>
+        <p className="mt-2 text-xs leading-5 text-[#777]">The first image is used across collection cards, search results and the main product view.</p>
       </div>
-
-      {clean ? <WizardCleanUploader onUploaded={(image) => onImagesChange([image])} /> : <ImageUploader images={images} onImagesChange={onImagesChange} maxImages={1} />}
-
-      {clean && images[0] && <div className="mx-auto max-w-sm rounded-[1.3rem] border border-boutique-brown/10 bg-white p-3"><img src={images[0].url} alt="Cleaned product" className="aspect-square w-full object-contain" /><button type="button" onClick={() => onImagesChange([])} className="mt-3 w-full rounded-full border border-boutique-brown/10 px-4 py-2 text-xs font-bold text-boutique-brown">Replace image</button></div>}
-
-      <p className="rounded-2xl bg-[#fffaf3] px-4 py-3 text-xs leading-relaxed text-boutique-brown-light">The product photo stays exactly as uploaded or cleaned. Customer names and other made-for-you answers are collected separately and are not drawn onto the photo.</p>
+      <div className="rounded-[10px] border border-[#e5e5e5] bg-[#fafafa] p-4">
+        <div className="flex items-center gap-2"><Images className="h-4 w-4 text-[#666]" /><p className="text-sm font-semibold">Hover image</p></div>
+        <p className="mt-2 text-xs leading-5 text-[#777]">An optional second image appears when a customer hovers a product card on pointer-based devices.</p>
+      </div>
     </div>
-  );
-};
+
+    <ImageUploader images={images} onImagesChange={(nextImages) => onImagesChange(nextImages.slice(0, 2))} maxImages={2} />
+
+    <p className="text-xs leading-5 text-[#777]">Use clean product photography with consistent framing. On touch devices the primary image remains the default card image.</p>
+  </div>
+);

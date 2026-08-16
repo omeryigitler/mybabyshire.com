@@ -1,132 +1,101 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store/useStore';
+import React, { useEffect, useState } from 'react';
+import { ChevronDown, Save, X } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
-import { ProductWizardPage } from './ProductWizardPage';
 import { WizardBasicsStep } from './WizardBasicsStep';
 import { WizardMediaStep } from './WizardMediaStep';
 import { WizardPricingStep } from './WizardPricingStep';
 import { WizardDetailsStep } from './WizardDetailsStep';
 import { WizardOrganizationStep } from './WizardOrganizationStep';
-import { WizardCardStyleStep } from './WizardCardStyleStep';
 import { WizardPersonalizationStep } from './WizardPersonalizationStep';
-import { WizardReviewStep } from './WizardReviewStep';
 import { useProductWizardState } from './useProductWizardState';
 import { saveProductWizardDraft } from './saveProductWizardDraft';
-import { validateProductWizardStep, validateProductWizardThrough } from './productWizardDraft';
+import { validateProductWizardStep } from './productWizardDraft';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
 
 type Category = { id: string; name: string };
 
-export const ProductCreateWizard = () => {
-  const [step, setStep] = useState(1);
+const validationSteps = [1, 2, 3, 4, 5, 7];
+
+const Section = ({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) => (
+  <section className="rounded-[12px] border border-[#e2e2e2] bg-white p-4 sm:p-6">
+    <div className="mb-5 border-b border-[#eeeeee] pb-4">
+      <h2 className="text-lg font-semibold tracking-[-0.015em] text-[#202020]">{title}</h2>
+      {description && <p className="mt-1 text-sm leading-6 text-[#777]">{description}</p>}
+    </div>
+    {children}
+  </section>
+);
+
+export const ProductCreateWizard = ({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => void | Promise<void> }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
-  const [pendingConfirm, setPendingConfirm] = useState<null | (() => void)>(null);
-  const [navigateAfterNotice, setNavigateAfterNotice] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { draft, update, clear } = useProductWizardState();
-  const { addProduct } = useStore();
-  const navigate = useNavigate();
-
-  const showIssues = (targetStep: number, issues: string[]) => {
-    setStep(targetStep);
-    setNotice({ kind: 'error', title: `Complete step ${targetStep} first`, message: 'Every required field must be complete before you can move forward.', issues });
-  };
 
   useEffect(() => {
-    if (step !== 5 || categories.length) return;
+    let cancelled = false;
     (async () => {
       try {
         const response = await fetch('/api/admin/categories', { headers: { Authorization: `Bearer ${getAdminToken()}` } });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Categories could not be loaded.');
-        setCategories(Array.isArray(data) ? data : []);
+        if (!cancelled) setCategories(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error(error);
-        setNotice({ kind: 'error', title: 'Categories could not be loaded', message: 'Nothing was changed. Try again before continuing.', issues: [(error as Error).message] });
+        if (!cancelled) setNotice({ kind: 'error', title: 'Categories could not be loaded', message: 'Reload the editor and try again.', issues: [(error as Error).message] });
       }
     })();
-  }, [step, categories.length]);
-
-  const categoryName = useMemo(() => categories.find((category) => category.id === draft.categoryId)?.name || 'No category', [categories, draft.categoryId]);
-
-  const next = () => {
-    const issues = validateProductWizardStep(draft, step);
-    if (issues.length) return showIssues(step, issues);
-    setStep((current) => Math.min(8, current + 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const changeStep = (targetStep: number) => {
-    if (targetStep <= step) return setStep(targetStep);
-    for (let candidate = 1; candidate < targetStep; candidate += 1) {
-      const issues = validateProductWizardStep(draft, candidate);
-      if (issues.length) return showIssues(candidate, issues);
-    }
-    setStep(targetStep);
-  };
-
-  const discard = () => { clear(); navigate('/admin/products'); };
-
-  const cancel = () => {
-    const hasProgress = Boolean(draft.name.trim() || draft.description.trim() || draft.images.length || draft.price || draft.ageRange.trim() || draft.material.trim() || draft.preparationTime.trim() || draft.careInstructions.trim() || draft.categoryId);
-    if (!hasProgress) return discard();
-    setPendingConfirm(() => discard);
-    setNotice({ kind: 'confirm', title: 'Discard this product draft?', message: 'All information entered in the product editor will be cleared.' });
-  };
+    return () => { cancelled = true; };
+  }, []);
 
   const save = async () => {
-    const allIssues = validateProductWizardThrough(draft, 7);
-    if (allIssues.length) {
-      for (let candidate = 1; candidate <= 7; candidate += 1) {
-        const issues = validateProductWizardStep(draft, candidate);
-        if (issues.length) return showIssues(candidate, issues);
-      }
+    const issues = validationSteps.flatMap((step) => validateProductWizardStep(draft, step));
+    if (issues.length) {
+      setNotice({ kind: 'error', title: 'Product is not ready to save', message: 'Complete the required product information first.', issues });
       return;
     }
 
     setSaving(true);
     try {
-      const products = await saveProductWizardDraft(draft);
-      products.forEach(addProduct);
+      await saveProductWizardDraft(draft);
       clear();
-      setNavigateAfterNotice(true);
-      setNotice({ kind: 'success', title: 'Product saved', message: 'The product is now stored in the catalog.' });
+      await onSaved();
     } catch (error) {
-      console.error(error);
-      setNotice({ kind: 'error', title: 'Product could not be saved', message: 'Nothing was published. Fix the issue and try again.', issues: [(error as Error).message] });
+      setNotice({ kind: 'error', title: 'Product could not be saved', message: 'Nothing was published.', issues: [(error as Error).message] });
     } finally {
       setSaving(false);
     }
   };
 
-  const closeNotice = () => {
-    setNotice(null);
-    setPendingConfirm(null);
-    if (navigateAfterNotice) { setNavigateAfterNotice(false); navigate('/admin/products'); }
-  };
+  return (
+    <div className="space-y-4 pb-24">
+      <div className="sticky top-0 z-30 flex flex-col gap-4 rounded-[12px] border border-[#e2e2e2] bg-white/95 p-4 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Catalog</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-[-0.025em] text-[#202020]">Add product</h1>
+          <p className="mt-1 text-sm text-[#777]">Create the product here. Manage Color × Size inventory from Inventory after saving.</p>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={onCancel} className="commerce-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7]"><X className="h-4 w-4" /> Cancel</button>
+          <button type="button" onClick={() => void save()} disabled={saving} className="commerce-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save product'}</button>
+        </div>
+      </div>
 
-  const confirmNotice = () => {
-    const action = pendingConfirm;
-    setNotice(null);
-    setPendingConfirm(null);
-    action?.();
-  };
+      <Section title="Product information" description="Customer-facing title and description."><WizardBasicsStep draft={draft} update={update} /></Section>
+      <Section title="Media" description="Use a clean primary product image. Additional variant imagery can be managed as the catalog grows."><WizardMediaStep images={draft.images} onImagesChange={(images) => update({ images })} /></Section>
+      <Section title="Pricing & base stock" description="Base price and SKU. For products with Color × Size variants, manage exact stock in Inventory."><WizardPricingStep draft={draft} update={update} /></Section>
+      <Section title="Product details" description="Material, sizing guidance, care and preparation details."><WizardDetailsStep draft={draft} update={update} /></Section>
+      <Section title="Organization & visibility" description="Choose category, storefront status and merchandising badge."><WizardOrganizationStep draft={draft} categories={categories} update={update} /></Section>
 
-  const content = step === 1 ? <WizardBasicsStep draft={draft} update={update} />
-    : step === 2 ? <WizardMediaStep images={draft.images} onImagesChange={(images) => update({ images })} />
-    : step === 3 ? <WizardPricingStep draft={draft} update={update} />
-    : step === 4 ? <WizardDetailsStep draft={draft} update={update} />
-    : step === 5 ? <WizardOrganizationStep draft={draft} categories={categories} update={update} />
-    : step === 6 ? <WizardCardStyleStep draft={draft} update={update} />
-    : step === 7 ? <WizardPersonalizationStep draft={draft} update={update} />
-    : <WizardReviewStep draft={draft} categoryName={categoryName} />;
+      <section className="overflow-hidden rounded-[12px] border border-[#e2e2e2] bg-white">
+        <button type="button" onClick={() => setAdvancedOpen((open) => !open)} className="commerce-focus flex w-full items-center justify-between gap-4 p-4 text-left sm:p-6" aria-expanded={advancedOpen}>
+          <div><h2 className="text-lg font-semibold tracking-[-0.015em] text-[#202020]">Advanced customization</h2><p className="mt-1 text-sm leading-6 text-[#777]">Optional customer-input fields for products that require names, dates or other custom information.</p></div>
+          <ChevronDown className={`h-5 w-5 shrink-0 text-[#777] transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {advancedOpen && <div className="border-t border-[#eeeeee] p-4 sm:p-6"><WizardPersonalizationStep draft={draft} update={update} /></div>}
+      </section>
 
-  return <>
-    <ProductWizardPage step={step} onCancel={cancel} onBack={() => setStep((current) => Math.max(1, current - 1))} onNext={next} onStepChange={changeStep} finalAction={<button type="button" onClick={save} disabled={saving} className="commerce-focus min-h-10 rounded-[8px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50">{saving ? 'Saving...' : 'Save Product'}</button>}>
-      {content}
-    </ProductWizardPage>
-    {notice && <AdminNoticeDialog notice={notice} onClose={closeNotice} onConfirm={notice.kind === 'confirm' ? confirmNotice : undefined} />}
-  </>;
+      {notice && <AdminNoticeDialog notice={notice} onClose={() => setNotice(null)} />}
+    </div>
+  );
 };

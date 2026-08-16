@@ -10,6 +10,21 @@ legacyApp.use(express.json({ limit: '25mb' }));
 legacyApp.use('/api', apiRoutes);
 
 const pathParts = (req: VercelRequest) => {
+  try {
+    const pathname = new URL(req.url || '/', 'https://mybabyshire.local').pathname;
+    const marker = '/api/products/';
+    const markerIndex = pathname.indexOf(marker);
+    if (markerIndex >= 0) {
+      return pathname
+        .slice(markerIndex + marker.length)
+        .split('/')
+        .map((part) => decodeURIComponent(part))
+        .filter(Boolean);
+    }
+  } catch {
+    // Fall through to the query representation used by local adapters.
+  }
+
   const value = req.query.path;
   if (Array.isArray(value)) return value.map(String).filter(Boolean);
   if (typeof value === 'string') return value.split('/').filter(Boolean);

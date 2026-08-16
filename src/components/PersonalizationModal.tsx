@@ -10,7 +10,7 @@ const DEFAULT_PERSONALIZATION_FIELDS: PersonalizationField[] = [
 ];
 
 export const PersonalizationModal = () => {
-  const { isPersonalizationModalOpen, selectedProduct, closePersonalizationModal, addToCart } = useStore();
+  const { isPersonalizationModalOpen, selectedProduct, selectedVariant, closePersonalizationModal, addToCart } = useStore();
   const [step, setStep] = useState(1);
   const [personalizationData, setPersonalizationData] = useState<Record<string, string>>({});
   const contentRef = useRef<HTMLDivElement>(null);
@@ -28,7 +28,7 @@ export const PersonalizationModal = () => {
     if (!isPersonalizationModalOpen) return;
     setStep(1);
     setPersonalizationData({});
-  }, [isPersonalizationModalOpen, selectedProduct?.id]);
+  }, [isPersonalizationModalOpen, selectedProduct?.id, selectedVariant?.id]);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0 });
@@ -55,7 +55,7 @@ export const PersonalizationModal = () => {
       return result;
     }, {});
 
-    addToCart({ product: selectedProduct, quantity: 1, personalizationData: completedData });
+    addToCart({ product: selectedProduct, variant: selectedVariant, quantity: 1, personalizationData: completedData });
     handleClose();
   };
 
@@ -64,6 +64,8 @@ export const PersonalizationModal = () => {
   const fields = getFieldsForProduct();
   const firstField = fields[0];
   const secondaryFields = fields.slice(1);
+  const unitPrice = selectedVariant?.price ?? selectedProduct.price;
+  const variantLabel = selectedVariant ? [selectedVariant.color, selectedVariant.size].filter(Boolean).join(' / ') : '';
   const getFieldValue = (field: PersonalizationField) => String(personalizationData[field.fieldKey] ?? field.defaultValue ?? '');
   const isLastStep = step === 3;
   const isFieldMissing = (field: PersonalizationField) => field.required && !getFieldValue(field).trim();
@@ -154,6 +156,12 @@ export const PersonalizationModal = () => {
 
   const detailsSummary = (
     <div className="rounded-xl border border-[#e3e3de] bg-white">
+      {variantLabel && (
+        <div className="flex items-start justify-between gap-5 border-b border-[#ecece8] px-4 py-3">
+          <span className="text-xs font-medium text-[#777770]">Variant</span>
+          <span className="max-w-[60%] text-right text-sm font-semibold text-[#202020]">{variantLabel}</span>
+        </div>
+      )}
       {fields.map((field, index) => {
         const value = getFieldValue(field);
         return (
@@ -200,7 +208,8 @@ export const PersonalizationModal = () => {
               <div className="mt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8a82]">Your item</p>
                 <h2 className="mt-2 text-xl font-semibold leading-snug text-[#202020]">{selectedProduct.name}</h2>
-                <p className="mt-2 text-sm font-semibold text-[#202020]">${selectedProduct.price.toFixed(2)}</p>
+                {variantLabel && <p className="mt-1 text-xs font-medium text-[#777770]">{variantLabel}</p>}
+                <p className="mt-2 text-sm font-semibold text-[#202020]">${unitPrice.toFixed(2)}</p>
               </div>
               <div className="mt-6">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8a82]">Selections</p>
@@ -227,7 +236,8 @@ export const PersonalizationModal = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="line-clamp-2 text-sm font-semibold leading-snug text-[#202020]">{selectedProduct.name}</p>
-                    <p className="mt-1 text-sm font-semibold text-[#202020]">${selectedProduct.price.toFixed(2)}</p>
+                    {variantLabel && <p className="mt-1 text-xs text-[#777770]">{variantLabel}</p>}
+                    <p className="mt-1 text-sm font-semibold text-[#202020]">${unitPrice.toFixed(2)}</p>
                   </div>
                 </div>
 

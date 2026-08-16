@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     const images = await prisma.product_images.findMany({
       where: { product_id: productId },
-      orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
+      orderBy: { sort_order: 'asc' },
     });
     return res.status(200).json(images.map((image) => ({
       id: image.id,
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const saved = await prisma.product_images.findMany({
       where: { product_id: productId },
-      orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
+      orderBy: { sort_order: 'asc' },
     });
 
     return res.status(200).json(saved.map((image) => ({

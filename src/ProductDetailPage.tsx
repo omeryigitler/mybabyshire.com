@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Heart, ShieldCheck, ShoppingBag, Sparkles, Truck, X } from 'lucide-react';
+import { ArrowLeft, Heart, ShieldCheck, ShoppingBag, Sparkles, Truck } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { BrandLogo } from './components/BrandLogo';
 import { CartDrawer } from './components/CartDrawer';
@@ -14,7 +14,6 @@ export default function ProductDetailPage() {
   const { openPersonalizationModal, addToCart, openCart } = useStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(true);
-  const [showSkipModal, setShowSkipModal] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -27,7 +26,11 @@ export default function ProductDetailPage() {
       try {
         const response = await fetch(`/api/products/${encodeURIComponent(slug)}`);
         if (!response.ok) throw new Error('Product API failed');
-        setProduct(await response.json());
+        const loadedProduct = await response.json();
+        if (loadedProduct.status && loadedProduct.status !== 'active') {
+          throw new Error('Product is not active');
+        }
+        setProduct(loadedProduct);
       } catch (error) {
         console.error('Failed to load product:', error);
         setProduct(null);
@@ -39,20 +42,21 @@ export default function ProductDetailPage() {
     loadProduct();
   }, [slug]);
 
-  const addProductWithoutPersonalization = () => {
+  const hasPersonalization = Boolean(product?.personalizationRequired || product?.personalizationFields?.length);
+
+  const addProductDirectly = () => {
     if (!product) return;
     addToCart({ product, quantity: 1, personalizationData: {} });
-    setShowSkipModal(false);
     openCart();
   };
 
   const handlePrimaryAction = () => {
     if (!product) return;
-    if (product.personalizationRequired) {
+    if (hasPersonalization) {
       openPersonalizationModal(product);
       return;
     }
-    addProductWithoutPersonalization();
+    addProductDirectly();
   };
 
   const productJsonLd = useMemo(() => {
@@ -87,25 +91,6 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-white font-sans text-[#202020]">
       <CartDrawer />
       <PersonalizationModal />
-
-      {showSkipModal && product && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4 backdrop-blur-[2px]">
-          <div className="relative w-full max-w-md rounded-[12px] bg-white p-6 shadow-[var(--shadow-modal)] sm:p-7">
-            <button type="button" onClick={() => setShowSkipModal(false)} className="commerce-focus absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Close"><X className="h-4.5 w-4.5" /></button>
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[9px] bg-[#f8e9ed] text-[#6d4651]"><Sparkles className="h-5 w-5" /></div>
-            <h2 className="pr-10 text-xl font-semibold">Continue without customization?</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#6f6f6f]">You can add {product.name} as-is, or go back and enter the available personalization details.</p>
-            <div className="mt-5 flex items-center gap-3 rounded-[10px] border border-[#e8e8e8] bg-[#fafafa] p-3">
-              <img src={product.imageUrl} alt="" className="h-16 w-16 rounded-[8px] object-contain" />
-              <div className="min-w-0"><p className="truncate text-sm font-semibold">{product.name}</p><p className="mt-1 text-sm text-[#666]">${product.price.toFixed(2)}</p></div>
-            </div>
-            <div className="mt-6 grid gap-2.5">
-              <button type="button" onClick={addProductWithoutPersonalization} className="commerce-focus rounded-[9px] bg-[#202020] px-4 py-3 text-sm font-semibold text-white hover:bg-[#383838]">Add without customization</button>
-              <button type="button" onClick={() => setShowSkipModal(false)} className="commerce-focus rounded-[9px] border border-[#dcdcdc] bg-white px-4 py-3 text-sm font-semibold hover:border-[#202020]">Go back</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="border-b border-[#ececec] bg-[#f8e9ed] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#4e3d42] sm:text-xs">
         Free shipping on orders over $150
@@ -164,28 +149,23 @@ export default function ProductDetailPage() {
 
                 <p className="mt-5 text-[15px] leading-7 text-[#666]">{product.description}</p>
 
-                {product.personalizationRequired && (
+                {hasPersonalization && (
                   <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4">
                     <Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" />
-                    <div><p className="text-sm font-semibold text-[#553a42]">Personalization available</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Enter your custom details in the next step before adding this item to the cart.</p></div>
+                    <div><p className="text-sm font-semibold text-[#553a42]">Options required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Choose the required product details before adding this item to your cart.</p></div>
                   </div>
                 )}
 
                 <div className="mt-6 grid gap-2.5">
                   <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">
-                    {product.personalizationRequired ? 'Customize & add to cart' : 'Add to cart'}
+                    {hasPersonalization ? 'Choose options & add to cart' : 'Add to cart'}
                   </button>
-                  {product.personalizationRequired && (
-                    <button type="button" onClick={() => setShowSkipModal(true)} className="commerce-focus flex min-h-[48px] w-full items-center justify-center rounded-[9px] border border-[#dcdcdc] bg-white px-6 text-sm font-semibold transition-colors hover:border-[#202020]">
-                      Buy without personalization
-                    </button>
-                  )}
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
                   <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Secure checkout</span>
                   <span className="flex flex-col items-center gap-2"><Truck className="h-4 w-4 text-[#202020]" /> US shipping</span>
-                  <span className="flex flex-col items-center gap-2"><Sparkles className="h-4 w-4 text-[#202020]" /> Custom ready</span>
+                  <span className="flex flex-col items-center gap-2"><Sparkles className="h-4 w-4 text-[#202020]" /> Made for you</span>
                 </div>
 
                 <div className="mt-6 divide-y divide-[#ededed] border-y border-[#ededed]">

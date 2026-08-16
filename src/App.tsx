@@ -4,6 +4,7 @@ import { initAnalytics, trackPageView } from './utils/analytics';
 import Storefront from './Storefront';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
 
+const CollectionPage = lazy(() => import('./CollectionPage'));
 const ProductDetailPage = lazy(() => import('./ProductDetailPage'));
 const CheckoutPage = lazy(() => import('./CheckoutPage'));
 const TrackOrderPage = lazy(() => import('./TrackOrderPage'));
@@ -56,6 +57,7 @@ export default function App() {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Storefront />} />
+          <Route path="/collections/:collection" element={<CollectionPage />} />
           <Route path="/products/:slug" element={<ProductDetailPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />

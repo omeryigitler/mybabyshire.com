@@ -52,28 +52,28 @@ export const mapPersonalizationFields = (fields: any[] = []) =>
 
 export const defaultPersonalizationFieldCreateData = () => [
   {
-    label: "Baby's Name",
-    field_key: 'babyName',
+    label: 'Custom Text',
+    field_key: 'customText',
     field_type: 'text',
     required: true,
-    placeholder: 'e.g. Liam',
+    placeholder: 'Enter text',
     max_length: 32,
     sort_order: 0,
   },
   {
-    label: 'Thread Color',
-    field_key: 'threadColor',
+    label: 'Detail Color',
+    field_key: 'detailColor',
     field_type: 'color',
-    required: true,
-    options_json: JSON.stringify(['#D4AF37', '#FFC0CB', '#ADD8E6', '#F5F5DC', '#98FF98']),
+    required: false,
+    options_json: JSON.stringify(['#202020', '#F1DADF', '#DCEAF0']),
     sort_order: 1,
   },
   {
-    label: 'Font Style',
-    field_key: 'fontStyle',
+    label: 'Style Option',
+    field_key: 'styleOption',
     field_type: 'select',
     required: false,
-    options_json: JSON.stringify(['Classic Script', 'Modern Serif', 'Soft Rounded']),
+    options_json: JSON.stringify(['Option 1', 'Option 2']),
     sort_order: 2,
   },
 ];
@@ -81,8 +81,8 @@ export const defaultPersonalizationFieldCreateData = () => [
 const ALLOWED_PERSONALIZATION_FIELD_TYPES = ['text', 'color', 'select', 'date'];
 
 const DEFAULT_FIELD_OPTIONS: Record<string, string[]> = {
-  color: ['#D4AF37', '#FFC0CB', '#ADD8E6', '#F5F5DC', '#98FF98'],
-  select: ['Classic Script', 'Modern Serif', 'Soft Rounded'],
+  color: ['#202020', '#F1DADF', '#DCEAF0'],
+  select: ['Option 1', 'Option 2'],
 };
 
 const sanitizeString = (value: unknown, limit = 120) =>
@@ -190,9 +190,9 @@ export const mapProductPersonalizationFields = (product: any) => {
 };
 
 export const mapProductForStorefront = (product: any) => {
-  const primaryImage =
-    product.images?.find((image: any) => image.is_primary) ||
-    product.images?.[0];
+  const orderedImages = (product.images || []).slice().sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0));
+  const primaryImage = orderedImages.find((image: any) => image.is_primary) || orderedImages[0];
+  const secondaryImage = orderedImages.find((image: any) => image.id !== primaryImage?.id);
   const variants = (product.variants || [])
     .filter((variant: any) => variant.active !== false)
     .sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
@@ -212,10 +212,8 @@ export const mapProductForStorefront = (product: any) => {
     stockQuantity: variants.length ? variantStock : product.stock_quantity || 0,
     variants,
     imageUrl: primaryImage?.image_url || '',
-    bgImage:
-      product.card_bg_image ||
-      product.sku ||
-      '/product-card-cloud-blue.png',
+    hoverImageUrl: secondaryImage?.image_url || '',
+    bgImage: product.card_bg_image || '',
     badge: product.bestseller
       ? 'Bestseller'
       : product.new_arrival

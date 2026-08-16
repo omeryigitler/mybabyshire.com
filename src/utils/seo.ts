@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const SITE_NAME = 'MY BABY SHIRE';
-const DEFAULT_DESCRIPTION = 'Shop blank apparel and ready-to-customize essentials for baby, toddler and adult sizes from MY BABY SHIRE.';
+const DEFAULT_DESCRIPTION = 'Shop blank apparel and custom-ready essentials for baby, toddler, kids and adult sizes from MY BABY SHIRE.';
 const DEFAULT_IMAGE = 'https://www.mybabyshire.com/brand/mybabyshire-header-horizontal-logo_2x-removebg-preview.png';
 
 type SeoOptions = {

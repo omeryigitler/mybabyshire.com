@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         personalization_fields: true,
         variants: { where: { active: true }, orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }] },
       },
-      orderBy: { created_at: 'asc' },
+      orderBy: { created_at: 'desc' },
     });
 
     let summaries = new Map<string, { average: number; count: number }>();

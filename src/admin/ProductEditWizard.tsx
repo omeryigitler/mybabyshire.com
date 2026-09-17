@@ -7,7 +7,7 @@ import { WizardPricingStep } from './WizardPricingStep';
 import { WizardDetailsStep } from './WizardDetailsStep';
 import { WizardOrganizationStep } from './WizardOrganizationStep';
 import { WizardPersonalizationStep } from './WizardPersonalizationStep';
-import { validateProductWizardStep, type ProductWizardDraft } from './productWizardDraft';
+import { validateProductWizardStep, type ProductWizardDraft, type ProductWizardImage } from './productWizardDraft';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
 import { DEFAULT_PRODUCT_FIELDS, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 import { encodeCardDesign, parseCardDesign } from '../utils/cardDesign';
@@ -32,10 +32,28 @@ const normalizeFields = (fields: any[]): PersonalizationBuilderField[] => {
   })) as PersonalizationBuilderField[];
 };
 
+const normalizeImage = (image: any, fallbackId: string): ProductWizardImage => ({
+  id: String(image?.id || fallbackId),
+  url: String(image?.url || image?.imageUrl || ''),
+  publicId: image?.publicId || undefined,
+  focusX: Number.isFinite(Number(image?.focusX)) ? Number(image.focusX) : 50,
+  focusY: Number.isFinite(Number(image?.focusY)) ? Number(image.focusY) : 50,
+});
+
 const productToDraft = (product: ApiProduct): ProductWizardDraft => {
   const design = parseCardDesign(product.bgImage);
+  const savedImages = Array.isArray(product.images)
+    ? product.images.slice(0, 2).map((image: any, index: number) => normalizeImage(image, `${product.id}-image-${index}`)).filter((image: ProductWizardImage) => Boolean(image.url))
+    : [];
+  const fallbackImages: ProductWizardImage[] = product.imageUrl
+    ? [
+        normalizeImage({ id: `${product.id}-primary`, url: product.imageUrl, publicId: product.publicId, focusX: product.imageFocusX, focusY: product.imageFocusY }, `${product.id}-primary`),
+        ...(product.hoverImageUrl ? [normalizeImage({ id: `${product.id}-hover`, url: product.hoverImageUrl, focusX: product.hoverImageFocusX, focusY: product.hoverImageFocusY }, `${product.id}-hover`)] : []),
+      ]
+    : [];
+
   return {
-    name: product.name || '', description: product.description || '', images: product.imageUrl ? [{ url: product.imageUrl, publicId: product.publicId, id: product.id }] : [],
+    name: product.name || '', description: product.description || '', images: savedImages.length ? savedImages : fallbackImages,
     price: product.price != null ? String(product.price) : '', salePrice: product.salePrice != null ? String(product.salePrice) : '', sku: product.sku || '', stockQuantity: String(product.stockQuantity ?? 0),
     ageRange: product.ageRange || '', material: product.material || '', preparationTime: product.preparationTime || '', careInstructions: product.careInstructions || '', categoryId: product.categoryId || '',
     status: product.status === 'draft' ? 'draft' : 'active', promotionBadge: product.bestseller ? 'bestseller' : product.newArrival ? 'newArrival' : product.featured ? 'featured' : 'none',
@@ -103,10 +121,11 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
 
     setSaving(true);
     try {
+      const token = getAdminToken();
       const bgImage = encodeCardDesign({ cloud: draft.cloudShape, panel: draft.panelShape, color: draft.cardColor });
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAdminToken()}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: draft.name.trim(), description: draft.description.trim(), price: Number(draft.price), salePrice: draft.salePrice ? Number(draft.salePrice) : null,
           imageUrl: draft.images[0]?.url, publicId: draft.images[0]?.publicId, bgImage,
@@ -118,9 +137,18 @@ export const ProductEditWizard = ({ productId, onCancel, onSaved }: { productId:
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Product update failed.');
+
+      const mediaResponse = await fetch(`/api/admin/product-images?productId=${encodeURIComponent(productId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId, images: draft.images.slice(0, 2) }),
+      });
+      const mediaData = await mediaResponse.json();
+      if (!mediaResponse.ok) throw new Error(mediaData.details || mediaData.error || 'Product details were saved, but the image framing could not be saved.');
+
       await onSaved();
     } catch (error) {
-      setNotice({ kind: 'error', title: 'Product could not be updated', message: 'Nothing was changed.', issues: [(error as Error).message] });
+      setNotice({ kind: 'error', title: 'Product could not be updated', message: 'The product update did not finish cleanly.', issues: [(error as Error).message] });
     } finally {
       setSaving(false);
     }

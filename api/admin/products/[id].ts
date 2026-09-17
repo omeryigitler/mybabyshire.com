@@ -5,6 +5,7 @@ import { getJwtSecret } from '../../../lib/auth.js';
 import {
   mapProductPersonalizationFields,
   normalizePersonalizationFieldCreateData,
+  parseProductImageFocus,
 } from '../../../lib/products.js';
 
 const JWT_SECRET = getJwtSecret();
@@ -37,8 +38,21 @@ const normalizePrice = (value: unknown) => {
 };
 
 const mapProductForAdmin = (product: any) => {
-  const primaryImage =
-    product.images?.find((image: any) => image.is_primary) || product.images?.[0];
+  const orderedImages = (product.images || []).slice().sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0));
+  const primaryImage = orderedImages.find((image: any) => image.is_primary) || orderedImages[0];
+  const secondaryImage = orderedImages.find((image: any) => image.id !== primaryImage?.id);
+  const primaryFocus = parseProductImageFocus(primaryImage);
+  const secondaryFocus = parseProductImageFocus(secondaryImage);
+  const images = orderedImages.map((image: any) => {
+    const focus = parseProductImageFocus(image);
+    return {
+      id: image.id,
+      url: image.image_url,
+      publicId: image.public_id || undefined,
+      focusX: focus.focusX,
+      focusY: focus.focusY,
+    };
+  });
 
   return {
     id: product.id,
@@ -51,7 +65,13 @@ const mapProductForAdmin = (product: any) => {
     categoryId: product.category_id || '',
     stockQuantity: product.stock_quantity || 0,
     imageUrl: primaryImage?.image_url || '',
+    hoverImageUrl: secondaryImage?.image_url || '',
     publicId: primaryImage?.public_id || '',
+    imageFocusX: primaryFocus.focusX,
+    imageFocusY: primaryFocus.focusY,
+    hoverImageFocusX: secondaryFocus.focusX,
+    hoverImageFocusY: secondaryFocus.focusY,
+    images,
     bgImage: product.card_bg_image || product.sku || '/product-card-cloud-blue.png',
     badge: product.bestseller ? 'Bestseller' : product.new_arrival ? 'New' : undefined,
     personalizationRequired: product.personalization_required,

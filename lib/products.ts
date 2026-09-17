@@ -189,10 +189,40 @@ export const mapProductPersonalizationFields = (product: any) => {
   );
 };
 
+const clampImageFocus = (value: unknown) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number * 10) / 10)) : 50;
+};
+
+export const parseProductImageFocus = (image: any) => {
+  const fallback = { focusX: 50, focusY: 50 };
+  const raw = String(image?.alt_text || '').trim();
+  if (!raw.startsWith('{')) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.mbsImageFocus !== 1) return fallback;
+    return {
+      focusX: clampImageFocus(parsed.focusX),
+      focusY: clampImageFocus(parsed.focusY),
+    };
+  } catch {
+    return fallback;
+  }
+};
+
+export const encodeProductImageFocus = (image: any) => JSON.stringify({
+  mbsImageFocus: 1,
+  focusX: clampImageFocus(image?.focusX),
+  focusY: clampImageFocus(image?.focusY),
+});
+
 export const mapProductForStorefront = (product: any) => {
   const orderedImages = (product.images || []).slice().sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0));
   const primaryImage = orderedImages.find((image: any) => image.is_primary) || orderedImages[0];
   const secondaryImage = orderedImages.find((image: any) => image.id !== primaryImage?.id);
+  const primaryFocus = parseProductImageFocus(primaryImage);
+  const secondaryFocus = parseProductImageFocus(secondaryImage);
   const variants = (product.variants || [])
     .filter((variant: any) => variant.active !== false)
     .sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
@@ -213,6 +243,10 @@ export const mapProductForStorefront = (product: any) => {
     variants,
     imageUrl: primaryImage?.image_url || '',
     hoverImageUrl: secondaryImage?.image_url || '',
+    imageFocusX: primaryFocus.focusX,
+    imageFocusY: primaryFocus.focusY,
+    hoverImageFocusX: secondaryFocus.focusX,
+    hoverImageFocusY: secondaryFocus.focusY,
     bgImage: product.card_bg_image || '',
     badge: product.bestseller
       ? 'Bestseller'

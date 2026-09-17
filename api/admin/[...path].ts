@@ -3,6 +3,7 @@ import express from 'express';
 import apiRoutes from '../../server/api.js';
 import { requireAdmin } from '../../lib/auth.js';
 import { prisma } from '../../lib/prisma.js';
+import { encodeProductImageFocus, parseProductImageFocus } from '../../lib/products.js';
 import { ensureProductVariantsTable, mapProductVariant, normalizeVariantPayload } from '../../lib/variants.js';
 
 const legacyApp = express();
@@ -116,11 +117,25 @@ const normalizeImages = (value: unknown) => {
     .map((image: any, index) => ({
       image_url: String(image?.url || image?.imageUrl || '').trim(),
       public_id: String(image?.publicId || '').trim() || null,
+      alt_text: encodeProductImageFocus(image),
       is_primary: index === 0,
       sort_order: index,
     }))
     .filter((image) => /^https?:\/\//i.test(image.image_url) || image.image_url.startsWith('/'))
     .slice(0, 2);
+};
+
+const mapImageForAdmin = (image: any) => {
+  const focus = parseProductImageFocus(image);
+  return {
+    id: image.id,
+    url: image.image_url,
+    publicId: image.public_id || undefined,
+    primary: image.is_primary,
+    sortOrder: image.sort_order,
+    focusX: focus.focusX,
+    focusY: focus.focusY,
+  };
 };
 
 const handleProductImages = async (req: VercelRequest, res: VercelResponse) => {
@@ -142,13 +157,7 @@ const handleProductImages = async (req: VercelRequest, res: VercelResponse) => {
         where: { product_id: productId },
         orderBy: { sort_order: 'asc' },
       });
-      return res.status(200).json(images.map((image) => ({
-        id: image.id,
-        url: image.image_url,
-        publicId: image.public_id || undefined,
-        primary: image.is_primary,
-        sortOrder: image.sort_order,
-      })));
+      return res.status(200).json(images.map(mapImageForAdmin));
     }
 
     if (req.method === 'PUT') {
@@ -165,13 +174,7 @@ const handleProductImages = async (req: VercelRequest, res: VercelResponse) => {
         orderBy: { sort_order: 'asc' },
       });
 
-      return res.status(200).json(saved.map((image) => ({
-        id: image.id,
-        url: image.image_url,
-        publicId: image.public_id || undefined,
-        primary: image.is_primary,
-        sortOrder: image.sort_order,
-      })));
+      return res.status(200).json(saved.map(mapImageForAdmin));
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

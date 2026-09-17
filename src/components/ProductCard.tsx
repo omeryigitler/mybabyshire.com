@@ -54,6 +54,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const variantPrices = activeVariants.map((variant) => variant.price ?? product.price);
   const lowestPrice = variantPrices.length ? Math.min(...variantPrices) : product.price;
   const hasVariantPriceRange = variantPrices.length > 1 && new Set(variantPrices.map((price) => Number(price).toFixed(2))).size > 1;
+  const primaryPosition = `${product.imageFocusX ?? 50}% ${product.imageFocusY ?? 50}%`;
+  const hoverPosition = `${product.hoverImageFocusX ?? 50}% ${product.hoverImageFocusY ?? 50}%`;
 
   const handleCustomize = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -74,7 +76,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
           alt={product.name}
           loading={preview ? 'eager' : 'lazy'}
           decoding="async"
-          className={`absolute inset-0 z-10 h-full w-full object-contain p-5 transition-all duration-300 ease-out sm:p-7 ${product.hoverImageUrl ? 'group-hover:opacity-0' : 'group-hover:scale-[1.025]'}`}
+          style={{ objectPosition: primaryPosition }}
+          className={`absolute inset-0 z-10 h-full w-full object-cover transition-all duration-300 ease-out ${product.hoverImageUrl ? 'group-hover:opacity-0' : 'group-hover:scale-[1.01]'}`}
         />
         {product.hoverImageUrl && (
           <img
@@ -83,18 +86,19 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
             loading="lazy"
             decoding="async"
             aria-hidden="true"
-            className="absolute inset-0 z-10 h-full w-full object-contain p-5 opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.025] group-hover:opacity-100 sm:p-7"
+            style={{ objectPosition: hoverPosition }}
+            className="absolute inset-0 z-10 h-full w-full object-cover opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.01] group-hover:opacity-100"
           />
         )}
 
         {(product.badge || product.newArrival || product.bestseller) && (
-          <span className="absolute left-3 top-3 z-20 rounded-md bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#202020] shadow-sm ring-1 ring-black/5">
+          <span className="absolute left-2 top-2 z-20 rounded-md bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#202020] shadow-sm ring-1 ring-black/5">
             {product.bestseller ? 'Best seller' : product.newArrival ? 'New' : product.badge}
           </span>
         )}
 
         {hasPersonalization && (
-          <span className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-md bg-[#f8e9ed]/95 px-2.5 py-1.5 text-[10px] font-semibold text-[#5a3540] backdrop-blur-sm">
+          <span className="absolute bottom-2 left-2 z-20 inline-flex items-center gap-1.5 rounded-md bg-[#f8e9ed]/95 px-2.5 py-1.5 text-[10px] font-semibold text-[#5a3540] backdrop-blur-sm">
             <Sparkles className="h-3 w-3" /> Customizable
           </span>
         )}

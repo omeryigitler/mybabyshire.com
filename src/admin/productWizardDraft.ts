@@ -1,7 +1,13 @@
 import { DEFAULT_CARD_DESIGN, type CardCloudShapeId, type CardColorId, type CardPanelShapeId } from '../utils/cardDesign';
 import { DEFAULT_PRODUCT_FIELDS, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 
-export type ProductWizardImage = { url: string; id: string; publicId?: string };
+export type ProductWizardImage = {
+  url: string;
+  id: string;
+  publicId?: string;
+  focusX?: number;
+  focusY?: number;
+};
 export type ProductWizardBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
 
 export type ProductWizardDraft = {

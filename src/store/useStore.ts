@@ -36,6 +36,10 @@ export type Product = {
   salePrice?: number | null;
   imageUrl: string;
   hoverImageUrl?: string;
+  imageFocusX?: number;
+  imageFocusY?: number;
+  hoverImageFocusX?: number;
+  hoverImageFocusY?: number;
   bgImage?: string;
   badge?: string;
   personalizationRequired?: boolean;

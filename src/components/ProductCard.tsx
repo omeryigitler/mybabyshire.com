@@ -44,6 +44,11 @@ const swatchColor = (name: string) => {
   return partial?.[1] || '#d9d9d9';
 };
 
+const clampCardZoom = (value: number | undefined) => {
+  const zoom = Number(value);
+  return Number.isFinite(zoom) ? Math.max(1, Math.min(5, zoom)) : 1;
+};
+
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
   const hasPersonalization = Boolean(product.personalizationRequired || product.personalizationFields?.length);
@@ -56,6 +61,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const hasVariantPriceRange = variantPrices.length > 1 && new Set(variantPrices.map((price) => Number(price).toFixed(2))).size > 1;
   const primaryPosition = `${product.imageFocusX ?? 50}% ${product.imageFocusY ?? 50}%`;
   const hoverPosition = `${product.hoverImageFocusX ?? 50}% ${product.hoverImageFocusY ?? 50}%`;
+  const primaryZoom = clampCardZoom(product.imageZoom);
+  const hoverZoom = clampCardZoom(product.hoverImageZoom);
 
   const handleCustomize = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -71,24 +78,28 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         className="commerce-focus relative block aspect-[4/5] overflow-hidden rounded-[10px] border border-[#e8e8e8] bg-[#f7f7f7]"
       >
         <div className="absolute inset-0 bg-[linear-gradient(145deg,#ffffff_0%,#f7f7f7_72%,#f5e9ec_100%)]" />
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          loading={preview ? 'eager' : 'lazy'}
-          decoding="async"
-          style={{ objectPosition: primaryPosition }}
-          className={`absolute inset-0 z-10 h-full w-full object-cover transition-all duration-300 ease-out ${product.hoverImageUrl ? 'group-hover:opacity-0' : 'group-hover:scale-[1.01]'}`}
-        />
-        {product.hoverImageUrl && (
+        <div className={`absolute inset-0 z-10 overflow-hidden transition-all duration-300 ease-out ${product.hoverImageUrl ? 'group-hover:opacity-0' : 'group-hover:scale-[1.01]'}`}>
           <img
-            src={product.hoverImageUrl}
-            alt=""
-            loading="lazy"
+            src={product.imageUrl}
+            alt={product.name}
+            loading={preview ? 'eager' : 'lazy'}
             decoding="async"
-            aria-hidden="true"
-            style={{ objectPosition: hoverPosition }}
-            className="absolute inset-0 z-10 h-full w-full object-cover opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.01] group-hover:opacity-100"
+            style={{ objectPosition: primaryPosition, transform: `scale(${primaryZoom})`, transformOrigin: 'center' }}
+            className="h-full w-full object-cover will-change-transform"
           />
+        </div>
+        {product.hoverImageUrl && (
+          <div className="absolute inset-0 z-10 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:scale-[1.01] group-hover:opacity-100">
+            <img
+              src={product.hoverImageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              aria-hidden="true"
+              style={{ objectPosition: hoverPosition, transform: `scale(${hoverZoom})`, transformOrigin: 'center' }}
+              className="h-full w-full object-cover will-change-transform"
+            />
+          </div>
         )}
 
         {(product.badge || product.newArrival || product.bestseller) && (

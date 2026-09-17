@@ -38,8 +38,10 @@ export type Product = {
   hoverImageUrl?: string;
   imageFocusX?: number;
   imageFocusY?: number;
+  imageZoom?: number;
   hoverImageFocusX?: number;
   hoverImageFocusY?: number;
+  hoverImageZoom?: number;
   bgImage?: string;
   badge?: string;
   personalizationRequired?: boolean;

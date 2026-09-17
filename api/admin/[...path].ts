@@ -135,6 +135,7 @@ const mapImageForAdmin = (image: any) => {
     sortOrder: image.sort_order,
     focusX: focus.focusX,
     focusY: focus.focusY,
+    zoom: focus.zoom,
   };
 };
 

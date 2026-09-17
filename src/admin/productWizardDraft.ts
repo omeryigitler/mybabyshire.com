@@ -7,6 +7,7 @@ export type ProductWizardImage = {
   publicId?: string;
   focusX?: number;
   focusY?: number;
+  zoom?: number;
 };
 export type ProductWizardBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
 

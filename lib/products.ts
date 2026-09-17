@@ -194,8 +194,13 @@ const clampImageFocus = (value: unknown) => {
   return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number * 10) / 10)) : 50;
 };
 
+const clampImageZoom = (value: unknown) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(1, Math.min(5, Math.round(number * 100) / 100)) : 1;
+};
+
 export const parseProductImageFocus = (image: any) => {
-  const fallback = { focusX: 50, focusY: 50 };
+  const fallback = { focusX: 50, focusY: 50, zoom: 1 };
   const raw = String(image?.alt_text || '').trim();
   if (!raw.startsWith('{')) return fallback;
 
@@ -205,6 +210,7 @@ export const parseProductImageFocus = (image: any) => {
     return {
       focusX: clampImageFocus(parsed.focusX),
       focusY: clampImageFocus(parsed.focusY),
+      zoom: clampImageZoom(parsed.zoom),
     };
   } catch {
     return fallback;
@@ -215,6 +221,7 @@ export const encodeProductImageFocus = (image: any) => JSON.stringify({
   mbsImageFocus: 1,
   focusX: clampImageFocus(image?.focusX),
   focusY: clampImageFocus(image?.focusY),
+  zoom: clampImageZoom(image?.zoom),
 });
 
 export const mapProductForStorefront = (product: any) => {
@@ -245,8 +252,10 @@ export const mapProductForStorefront = (product: any) => {
     hoverImageUrl: secondaryImage?.image_url || '',
     imageFocusX: primaryFocus.focusX,
     imageFocusY: primaryFocus.focusY,
+    imageZoom: primaryFocus.zoom,
     hoverImageFocusX: secondaryFocus.focusX,
     hoverImageFocusY: secondaryFocus.focusY,
+    hoverImageZoom: secondaryFocus.zoom,
     bgImage: product.card_bg_image || '',
     badge: product.bestseller
       ? 'Bestseller'

@@ -38,6 +38,7 @@ const normalizeImage = (image: any, fallbackId: string): ProductWizardImage => (
   publicId: image?.publicId || undefined,
   focusX: Number.isFinite(Number(image?.focusX)) ? Number(image.focusX) : 50,
   focusY: Number.isFinite(Number(image?.focusY)) ? Number(image.focusY) : 50,
+  zoom: Number.isFinite(Number(image?.zoom)) ? Math.max(1, Math.min(5, Number(image.zoom))) : 1,
 });
 
 const productToDraft = (product: ApiProduct): ProductWizardDraft => {
@@ -47,8 +48,8 @@ const productToDraft = (product: ApiProduct): ProductWizardDraft => {
     : [];
   const fallbackImages: ProductWizardImage[] = product.imageUrl
     ? [
-        normalizeImage({ id: `${product.id}-primary`, url: product.imageUrl, publicId: product.publicId, focusX: product.imageFocusX, focusY: product.imageFocusY }, `${product.id}-primary`),
-        ...(product.hoverImageUrl ? [normalizeImage({ id: `${product.id}-hover`, url: product.hoverImageUrl, focusX: product.hoverImageFocusX, focusY: product.hoverImageFocusY }, `${product.id}-hover`)] : []),
+        normalizeImage({ id: `${product.id}-primary`, url: product.imageUrl, publicId: product.publicId, focusX: product.imageFocusX, focusY: product.imageFocusY, zoom: product.imageZoom }, `${product.id}-primary`),
+        ...(product.hoverImageUrl ? [normalizeImage({ id: `${product.id}-hover`, url: product.hoverImageUrl, focusX: product.hoverImageFocusX, focusY: product.hoverImageFocusY, zoom: product.hoverImageZoom }, `${product.id}-hover`)] : []),
       ]
     : [];
 

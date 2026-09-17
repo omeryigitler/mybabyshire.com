@@ -51,6 +51,7 @@ const mapProductForAdmin = (product: any) => {
       publicId: image.public_id || undefined,
       focusX: focus.focusX,
       focusY: focus.focusY,
+      zoom: focus.zoom,
     };
   });
 
@@ -69,8 +70,10 @@ const mapProductForAdmin = (product: any) => {
     publicId: primaryImage?.public_id || '',
     imageFocusX: primaryFocus.focusX,
     imageFocusY: primaryFocus.focusY,
+    imageZoom: primaryFocus.zoom,
     hoverImageFocusX: secondaryFocus.focusX,
     hoverImageFocusY: secondaryFocus.focusY,
+    hoverImageZoom: secondaryFocus.zoom,
     images,
     bgImage: product.card_bg_image || product.sku || '/product-card-cloud-blue.png',
     badge: product.bestseller ? 'Bestseller' : product.new_arrival ? 'New' : undefined,

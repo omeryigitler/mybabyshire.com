@@ -39,9 +39,17 @@ export type Product = {
   imageFocusX?: number;
   imageFocusY?: number;
   imageZoom?: number;
+  imageCropX?: number;
+  imageCropY?: number;
+  imageCropWidth?: number;
+  imageCropHeight?: number;
   hoverImageFocusX?: number;
   hoverImageFocusY?: number;
   hoverImageZoom?: number;
+  hoverImageCropX?: number;
+  hoverImageCropY?: number;
+  hoverImageCropWidth?: number;
+  hoverImageCropHeight?: number;
   bgImage?: string;
   badge?: string;
   personalizationRequired?: boolean;

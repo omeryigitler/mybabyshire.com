@@ -8,6 +8,10 @@ export type ProductWizardImage = {
   focusX?: number;
   focusY?: number;
   zoom?: number;
+  cropX?: number;
+  cropY?: number;
+  cropWidth?: number;
+  cropHeight?: number;
 };
 export type ProductWizardBadge = 'none' | 'featured' | 'newArrival' | 'bestseller';
 

@@ -52,6 +52,10 @@ const mapProductForAdmin = (product: any) => {
       focusX: focus.focusX,
       focusY: focus.focusY,
       zoom: focus.zoom,
+      cropX: focus.cropX,
+      cropY: focus.cropY,
+      cropWidth: focus.cropWidth,
+      cropHeight: focus.cropHeight,
     };
   });
 
@@ -71,9 +75,17 @@ const mapProductForAdmin = (product: any) => {
     imageFocusX: primaryFocus.focusX,
     imageFocusY: primaryFocus.focusY,
     imageZoom: primaryFocus.zoom,
+    imageCropX: primaryFocus.cropX,
+    imageCropY: primaryFocus.cropY,
+    imageCropWidth: primaryFocus.cropWidth,
+    imageCropHeight: primaryFocus.cropHeight,
     hoverImageFocusX: secondaryFocus.focusX,
     hoverImageFocusY: secondaryFocus.focusY,
     hoverImageZoom: secondaryFocus.zoom,
+    hoverImageCropX: secondaryFocus.cropX,
+    hoverImageCropY: secondaryFocus.cropY,
+    hoverImageCropWidth: secondaryFocus.cropWidth,
+    hoverImageCropHeight: secondaryFocus.cropHeight,
     images,
     bgImage: product.card_bg_image || product.sku || '/product-card-cloud-blue.png',
     badge: product.bestseller ? 'Bestseller' : product.new_arrival ? 'New' : undefined,

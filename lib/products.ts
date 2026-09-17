@@ -191,7 +191,7 @@ export const mapProductPersonalizationFields = (product: any) => {
 
 const clampImageFocus = (value: unknown) => {
   const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number * 10) / 10)) : 50;
+  return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number * 100) / 100)) : 50;
 };
 
 const clampImageZoom = (value: unknown) => {
@@ -199,30 +199,54 @@ const clampImageZoom = (value: unknown) => {
   return Number.isFinite(number) ? Math.max(1, Math.min(5, Math.round(number * 100) / 100)) : 1;
 };
 
+const parseCrop = (value: any) => {
+  const cropX = Number(value?.cropX);
+  const cropY = Number(value?.cropY);
+  const cropWidth = Number(value?.cropWidth);
+  const cropHeight = Number(value?.cropHeight);
+  if (![cropX, cropY, cropWidth, cropHeight].every(Number.isFinite)) return null;
+  if (cropWidth <= 0 || cropHeight <= 0 || cropX < 0 || cropY < 0 || cropX + cropWidth > 100.1 || cropY + cropHeight > 100.1) return null;
+  return {
+    cropX: clampImageFocus(cropX),
+    cropY: clampImageFocus(cropY),
+    cropWidth: Math.max(0.1, Math.min(100, Math.round(cropWidth * 100) / 100)),
+    cropHeight: Math.max(0.1, Math.min(100, Math.round(cropHeight * 100) / 100)),
+  };
+};
+
 export const parseProductImageFocus = (image: any) => {
-  const fallback = { focusX: 50, focusY: 50, zoom: 1 };
+  const fallback = { focusX: 50, focusY: 50, zoom: 1, cropX: undefined, cropY: undefined, cropWidth: undefined, cropHeight: undefined };
   const raw = String(image?.alt_text || '').trim();
   if (!raw.startsWith('{')) return fallback;
 
   try {
     const parsed = JSON.parse(raw);
     if (parsed?.mbsImageFocus !== 1) return fallback;
+    const crop = parseCrop(parsed);
     return {
       focusX: clampImageFocus(parsed.focusX),
       focusY: clampImageFocus(parsed.focusY),
       zoom: clampImageZoom(parsed.zoom),
+      cropX: crop?.cropX,
+      cropY: crop?.cropY,
+      cropWidth: crop?.cropWidth,
+      cropHeight: crop?.cropHeight,
     };
   } catch {
     return fallback;
   }
 };
 
-export const encodeProductImageFocus = (image: any) => JSON.stringify({
-  mbsImageFocus: 1,
-  focusX: clampImageFocus(image?.focusX),
-  focusY: clampImageFocus(image?.focusY),
-  zoom: clampImageZoom(image?.zoom),
-});
+export const encodeProductImageFocus = (image: any) => {
+  const crop = parseCrop(image);
+  return JSON.stringify({
+    mbsImageFocus: 1,
+    focusX: clampImageFocus(image?.focusX),
+    focusY: clampImageFocus(image?.focusY),
+    zoom: clampImageZoom(image?.zoom),
+    ...(crop || {}),
+  });
+};
 
 export const mapProductForStorefront = (product: any) => {
   const orderedImages = (product.images || []).slice().sort((left: any, right: any) => Number(left.sort_order || 0) - Number(right.sort_order || 0));
@@ -253,9 +277,17 @@ export const mapProductForStorefront = (product: any) => {
     imageFocusX: primaryFocus.focusX,
     imageFocusY: primaryFocus.focusY,
     imageZoom: primaryFocus.zoom,
+    imageCropX: primaryFocus.cropX,
+    imageCropY: primaryFocus.cropY,
+    imageCropWidth: primaryFocus.cropWidth,
+    imageCropHeight: primaryFocus.cropHeight,
     hoverImageFocusX: secondaryFocus.focusX,
     hoverImageFocusY: secondaryFocus.focusY,
     hoverImageZoom: secondaryFocus.zoom,
+    hoverImageCropX: secondaryFocus.cropX,
+    hoverImageCropY: secondaryFocus.cropY,
+    hoverImageCropWidth: secondaryFocus.cropWidth,
+    hoverImageCropHeight: secondaryFocus.cropHeight,
     bgImage: product.card_bg_image || '',
     badge: product.bestseller
       ? 'Bestseller'

@@ -136,6 +136,10 @@ const mapImageForAdmin = (image: any) => {
     focusX: focus.focusX,
     focusY: focus.focusY,
     zoom: focus.zoom,
+    cropX: focus.cropX,
+    cropY: focus.cropY,
+    cropWidth: focus.cropWidth,
+    cropHeight: focus.cropHeight,
   };
 };
 

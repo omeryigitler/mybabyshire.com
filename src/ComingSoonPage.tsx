@@ -144,15 +144,12 @@ export default function ComingSoonPage() {
           line-height: 1.4;
         }
 
-        .cs-mark {
-          width: 56px;
-          aspect-ratio: 1;
-          display: grid;
-          place-items: center;
-          border: 2px solid var(--ink);
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: -.06em;
+        .cs-sizing {
+          font-size: clamp(16px, 1.45vw, 22px);
+          line-height: 1.08;
+          font-weight: 800;
+          letter-spacing: -.03em;
+          text-transform: uppercase;
         }
 
         .cs-footer {
@@ -232,8 +229,8 @@ export default function ComingSoonPage() {
           <div>Under Construction</div>
         </div>
         <div className="cs-hide-mobile">
-          <div className="cs-label">Edition</div>
-          <div>001 / New Chapter</div>
+          <div className="cs-label">Focus</div>
+          <div>Personalized Apparel</div>
         </div>
         <div className="cs-hide-mobile">
           <div className="cs-label">Release</div>
@@ -244,7 +241,7 @@ export default function ComingSoonPage() {
       <section className="cs-hero" aria-labelledby="coming-soon-title">
         <div className="cs-eyebrow">
           <span className="cs-dot" aria-hidden="true" />
-          New direction in progress
+          Custom clothing, made personal
         </div>
 
         <h1 id="coming-soon-title" className="cs-title">
@@ -253,20 +250,20 @@ export default function ComingSoonPage() {
 
         <div className="cs-grid">
           <div className="cs-cell">
-            <div className="cs-kicker">01 — Statement</div>
-            <div className="cs-copy">We are rebuilding the brand from the ground up.</div>
+            <div className="cs-kicker">01 — Personalized / Custom / Made to Order</div>
+            <div className="cs-copy">Custom clothing made around you.</div>
           </div>
 
           <div className="cs-cell">
-            <div className="cs-kicker">02 — Position</div>
+            <div className="cs-kicker">02 — Apparel</div>
             <div className="cs-small">
-              A sharper identity. A tighter point of view. No noise, no placeholders — just a considered next chapter.
+              Personalized apparel, custom designs and made-to-order pieces — created around your name, idea and size.
             </div>
           </div>
 
           <div className="cs-cell">
-            <div className="cs-kicker">03 — Mark</div>
-            <div className="cs-mark" aria-label="MBS">MBS</div>
+            <div className="cs-kicker">03 — Sizing</div>
+            <div className="cs-sizing">Adult / Kids / Custom Sizing</div>
           </div>
         </div>
       </section>

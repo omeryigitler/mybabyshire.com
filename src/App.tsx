@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { initAnalytics, trackPageView } from './utils/analytics';
 import Storefront from './Storefront';
+import ComingSoonPage from './ComingSoonPage';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
 
 const CollectionPage = lazy(() => import('./CollectionPage'));
@@ -49,47 +50,59 @@ function AdminProductEditRedirect() {
   return <Navigate to={`/admin/products?edit=${encodeURIComponent(id || '')}`} replace />;
 }
 
+function SiteGate() {
+  const location = useLocation();
+
+  if (!location.pathname.startsWith('/admin')) {
+    return <ComingSoonPage />;
+  }
+
+  return (
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<Storefront />} />
+        <Route path="/collections/:collection" element={<CollectionPage />} />
+        <Route path="/products/:slug" element={<ProductDetailPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/track-order" element={<TrackOrderPage />} />
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        <Route path="/payment-cancel" element={<PaymentCancelPage />} />
+        <Route path="/paypal-success" element={<PayPalSuccessPage />} />
+        <Route path="/login" element={<AccountLoginPage />} />
+        <Route path="/account/login" element={<Navigate to="/login" replace />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/policies/shipping" element={<ShippingPolicyPage />} />
+        <Route path="/policies/returns" element={<RefundPolicyPage />} />
+        <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/policies/terms" element={<TermsPage />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="products/new" element={<Navigate to="/admin/products?create=1" replace />} />
+          <Route path="products/:id/edit" element={<AdminProductEditRedirect />} />
+          <Route path="inventory" element={<AdminInventory />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="templates" element={<PersonalizationTemplateManager />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="coupons" element={<AdminCoupons />} />
+          <Route path="customers" element={<AdminCustomers />} />
+          <Route path="images" element={<AdminImageLibrary />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <GlobalCustomFormControls />
       <RouteAnalytics />
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route path="/" element={<Storefront />} />
-          <Route path="/collections/:collection" element={<CollectionPage />} />
-          <Route path="/products/:slug" element={<ProductDetailPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/track-order" element={<TrackOrderPage />} />
-          <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          <Route path="/payment-cancel" element={<PaymentCancelPage />} />
-          <Route path="/paypal-success" element={<PayPalSuccessPage />} />
-          <Route path="/login" element={<AccountLoginPage />} />
-          <Route path="/account/login" element={<Navigate to="/login" replace />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/policies/shipping" element={<ShippingPolicyPage />} />
-          <Route path="/policies/returns" element={<RefundPolicyPage />} />
-          <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/policies/terms" element={<TermsPage />} />
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="products/new" element={<Navigate to="/admin/products?create=1" replace />} />
-            <Route path="products/:id/edit" element={<AdminProductEditRedirect />} />
-            <Route path="inventory" element={<AdminInventory />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="templates" element={<PersonalizationTemplateManager />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="reviews" element={<AdminReviews />} />
-            <Route path="coupons" element={<AdminCoupons />} />
-            <Route path="customers" element={<AdminCustomers />} />
-            <Route path="images" element={<AdminImageLibrary />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="*" element={<Navigate to="/admin" replace />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+      <SiteGate />
     </BrowserRouter>
   );
 }

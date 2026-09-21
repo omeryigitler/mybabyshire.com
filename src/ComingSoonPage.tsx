@@ -44,7 +44,7 @@ export default function ComingSoonPage() {
 
         .cs-top {
           display: grid;
-          grid-template-columns: 1.5fr 1fr 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 18px;
           padding-top: 12px;
           border-top: 2px solid var(--ink);
@@ -53,12 +53,6 @@ export default function ComingSoonPage() {
           font-weight: 700;
           letter-spacing: .12em;
           text-transform: uppercase;
-        }
-
-        .cs-brand {
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: -.025em;
         }
 
         .cs-label {
@@ -223,12 +217,11 @@ export default function ComingSoonPage() {
       `}</style>
 
       <header className="cs-top">
-        <div className="cs-brand">MYBABYSHIRE®</div>
         <div>
           <div className="cs-label">Status</div>
           <div>Under Construction</div>
         </div>
-        <div className="cs-hide-mobile">
+        <div>
           <div className="cs-label">Focus</div>
           <div>Personalized Apparel</div>
         </div>
@@ -263,7 +256,7 @@ export default function ComingSoonPage() {
 
           <div className="cs-cell">
             <div className="cs-kicker">03 — Sizing</div>
-            <div className="cs-sizing">Adult / Kids / Custom Sizing</div>
+            <div className="cs-sizing">Adult Sizes / Custom Sizing</div>
           </div>
         </div>
       </section>

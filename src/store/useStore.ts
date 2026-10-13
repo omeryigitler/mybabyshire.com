@@ -68,6 +68,10 @@ export type Product = {
   careInstructions?: string;
   preparationTime?: string;
   personalizationFields?: PersonalizationField[];
+  purchaseProvider?: 'internal' | 'etsy';
+  purchaseEnabled?: boolean;
+  etsyListingId?: string | null;
+  purchaseUrl?: string | null;
   ratingAverage?: number;
   ratingCount?: number;
 };

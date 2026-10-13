@@ -4,6 +4,7 @@ import apiRoutes from '../../server/api.js';
 import { requireAdmin } from '../../lib/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { encodeProductImageFocus, parseProductImageFocus } from '../../lib/products.js';
+import { ensureProductPurchaseFields } from '../../lib/purchase.js';
 import { ensureProductVariantsTable, mapProductVariant, normalizeVariantPayload } from '../../lib/variants.js';
 
 const legacyApp = express();
@@ -193,6 +194,10 @@ const handleProductImages = async (req: VercelRequest, res: VercelResponse) => {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const parts = getPathParts(req);
+
+  if (parts[0] === 'products' || parts[0] === 'product-images') {
+    await ensureProductPurchaseFields();
+  }
 
   if (parts[0] === 'variants') {
     return handleVariants(req, res, parts);

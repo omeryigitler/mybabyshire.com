@@ -3,6 +3,7 @@ import express from 'express';
 import apiRoutes from '../../server/api.js';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
+import { ensureProductPurchaseFields, getProductPurchaseMetadata } from '../../lib/purchase.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 const legacyApp = express();
@@ -56,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const slug = parts[0];
 
     try {
-      await ensureProductVariantsTable();
+      await Promise.all([ensureProductPurchaseFields(), ensureProductVariantsTable()]);
       const product = await prisma.products.findFirst({
         where: { slug, status: 'active' },
         include: {
@@ -74,6 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const summary = await getApprovedReviewSummary(product.id);
       return res.status(200).json({
         ...mapProductForStorefront(product),
+        ...getProductPurchaseMetadata(product),
         ratingAverage: summary.average,
         ratingCount: summary.count,
       });
@@ -83,5 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  await ensureProductPurchaseFields();
   return legacyApp(req as any, res as any);
 }

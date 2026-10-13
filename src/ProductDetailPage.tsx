@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Boxes, Heart, ShieldCheck, ShoppingBag, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Boxes, ExternalLink, Heart, ShieldCheck, ShoppingBag, SlidersHorizontal } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { BrandLogo } from './components/BrandLogo';
 import { CartDrawer } from './components/CartDrawer';
@@ -47,6 +47,8 @@ export default function ProductDetailPage() {
   const colors = useMemo(() => Array.from(new Set(variants.map((variant) => variant.color || '').filter(Boolean))), [variants]);
   const sizes = useMemo(() => Array.from(new Set(variants.map((variant) => variant.size || '').filter(Boolean))), [variants]);
   const totalVariantStock = useMemo(() => variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stockQuantity || 0)), 0), [variants]);
+  const isEtsyPurchase = product?.purchaseProvider === 'etsy';
+  const etsyPurchaseReady = Boolean(isEtsyPurchase && product?.purchaseEnabled && product?.purchaseUrl);
 
   useEffect(() => {
     setVariantError('');
@@ -72,8 +74,8 @@ export default function ProductDetailPage() {
   const selectedPrice = selectedVariant?.price ?? product?.price ?? 0;
   const variantPrices = variants.map((variant) => variant.price ?? product?.price ?? 0);
   const minimumVariantPrice = variantPrices.length ? Math.min(...variantPrices) : product?.price ?? 0;
-  const displayPrice = variants.length && !selectedVariant ? minimumVariantPrice : selectedPrice;
-  const hasPriceRange = variants.length > 1 && new Set(variantPrices.map((price) => price.toFixed(2))).size > 1;
+  const displayPrice = isEtsyPurchase ? product?.price ?? 0 : variants.length && !selectedVariant ? minimumVariantPrice : selectedPrice;
+  const hasPriceRange = !isEtsyPurchase && variants.length > 1 && new Set(variantPrices.map((price) => price.toFixed(2))).size > 1;
 
   const isColorAvailable = (color: string) => variants.some((variant) => variant.color === color && (sizes.length === 0 || !selectedSize || variant.size === selectedSize) && variant.stockQuantity > 0);
   const isSizeAvailable = (size: string) => variants.some((variant) => variant.size === size && (colors.length === 0 || !selectedColor || variant.color === selectedColor) && variant.stockQuantity > 0);
@@ -86,6 +88,18 @@ export default function ProductDetailPage() {
 
   const handlePrimaryAction = () => {
     if (!product) return;
+
+    if (isEtsyPurchase) {
+      if (!etsyPurchaseReady || !product.purchaseUrl) {
+        setVariantError('This product is not connected to Etsy yet. Please check back shortly.');
+        return;
+      }
+
+      setVariantError('');
+      window.open(product.purchaseUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     if (variants.length) {
       if (!selectedVariant) {
         setVariantError(`Choose ${[colors.length ? 'color' : '', sizes.length ? 'size' : ''].filter(Boolean).join(' and ')} before adding this item.`);
@@ -111,10 +125,14 @@ export default function ProductDetailPage() {
   const productJsonLd = useMemo(() => {
     if (!product) return null;
     const hasVariants = variants.length > 0;
-    const inStock = hasVariants ? totalVariantStock > 0 : Number(product.stockQuantity || 0) > 0;
+    const inStock = isEtsyPurchase
+      ? etsyPurchaseReady
+      : hasVariants
+        ? totalVariantStock > 0
+        : Number(product.stockQuantity || 0) > 0;
     const availability = inStock
       ? 'https://schema.org/InStock'
-      : !hasVariants && hasPersonalization
+      : !isEtsyPurchase && !hasVariants && hasPersonalization
         ? 'https://schema.org/MadeToOrder'
         : 'https://schema.org/OutOfStock';
 
@@ -126,15 +144,16 @@ export default function ProductDetailPage() {
       image: product.imageUrl || undefined,
       offers: {
         '@type': 'Offer',
-        price: minimumVariantPrice || product.price,
+        price: isEtsyPurchase ? product.price : minimumVariantPrice || product.price,
         priceCurrency: 'USD',
         availability,
+        ...(isEtsyPurchase && product.purchaseUrl ? { url: product.purchaseUrl } : {}),
       },
       ...((product.ratingCount ?? 0) > 0
         ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.ratingAverage, reviewCount: product.ratingCount } }
         : {}),
     };
-  }, [hasPersonalization, minimumVariantPrice, product, totalVariantStock, variants.length]);
+  }, [etsyPurchaseReady, hasPersonalization, isEtsyPurchase, minimumVariantPrice, product, totalVariantStock, variants.length]);
 
   useSeo({
     title: product?.name,
@@ -149,6 +168,15 @@ export default function ProductDetailPage() {
     : hasPersonalization
       ? 'Made to order'
       : 'Out of stock';
+  const availabilityLabel = isEtsyPurchase
+    ? etsyPurchaseReady
+      ? 'Available to order on Etsy'
+      : 'Currently unavailable'
+    : variants.length
+      ? totalVariantStock > 0
+        ? `${totalVariantStock} units across active variants`
+        : 'Sold out'
+      : baseAvailability;
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#202020]">
@@ -163,7 +191,9 @@ export default function ProductDetailPage() {
         <div className="mx-auto flex min-h-[72px] max-w-[1500px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/collections/all" className="commerce-focus inline-flex items-center gap-2 text-sm font-semibold text-[#555] hover:text-[#202020]"><ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Back to products</span></Link>
           <Link to="/" className="group/logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" aria-label="MY BABY SHIRE home"><BrandLogo variant="nav" className="!h-[38px] sm:!h-[44px] md:!h-[48px] !drop-shadow-none" /></Link>
-          <button type="button" onClick={openCart} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Open cart"><ShoppingBag className="h-5 w-5" /></button>
+          {isEtsyPurchase
+            ? <span className="hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-[#777] sm:inline">Checkout on Etsy</span>
+            : <button type="button" onClick={openCart} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Open cart"><ShoppingBag className="h-5 w-5" /></button>}
         </div>
       </header>
 
@@ -198,7 +228,7 @@ export default function ProductDetailPage() {
                 <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{hasPriceRange && !selectedVariant ? 'From ' : ''}${displayPrice.toFixed(2)}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">${product.salePrice.toFixed(2)}</p>}</div>
                 <p className="mt-5 text-[15px] leading-7 text-[#666]">{product.description}</p>
 
-                {variants.length > 0 && (
+                {!isEtsyPurchase && variants.length > 0 && (
                   <div className="mt-7 space-y-5 border-y border-[#ededed] py-5">
                     {colors.length > 0 && <div><div className="mb-2.5 flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#555]">Color</span>{selectedColor && <span className="text-xs text-[#777]">{selectedColor}</span>}</div><div className="flex flex-wrap gap-2">{colors.map((color) => { const available = isColorAvailable(color); const active = selectedColor === color; return <button key={color} type="button" onClick={() => { setSelectedColor(color); setVariantError(''); }} className={`commerce-focus min-h-10 rounded-[8px] border px-3.5 text-sm font-medium ${active ? 'border-[#202020] bg-[#202020] text-white' : available ? 'border-[#d8d8d8] bg-white hover:border-[#888]' : 'border-[#e5e5e5] bg-[#f7f7f7] text-[#aaa] line-through'}`}>{color}</button>; })}</div></div>}
                     {sizes.length > 0 && <div><div className="mb-2.5 flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#555]">Size</span>{selectedSize && <span className="text-xs text-[#777]">{selectedSize}</span>}</div><div className="flex flex-wrap gap-2">{sizes.map((size) => { const available = isSizeAvailable(size); const active = selectedSize === size; return <button key={size} type="button" onClick={() => { setSelectedSize(size); setVariantError(''); }} className={`commerce-focus min-h-10 min-w-12 rounded-[8px] border px-3.5 text-sm font-medium ${active ? 'border-[#202020] bg-[#202020] text-white' : available ? 'border-[#d8d8d8] bg-white hover:border-[#888]' : 'border-[#e5e5e5] bg-[#f7f7f7] text-[#aaa] line-through'}`}>{size}</button>; })}</div></div>}
@@ -206,22 +236,37 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" /><div><p className="text-sm font-semibold text-[#553a42]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
+                {isEtsyPurchase && <div className="mt-6 rounded-[10px] border border-[#e4e4e4] bg-[#fafafa] p-4"><p className="text-sm font-semibold text-[#333]">Complete your order on Etsy</p><p className="mt-1 text-xs leading-relaxed text-[#707070]">Size, color, quantity and personalization are selected on the Etsy listing before secure checkout.</p></div>}
+
+                {hasPersonalization && !isEtsyPurchase && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" /><div><p className="text-sm font-semibold text-[#553a42]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
 
                 {variantError && <p role="alert" className="mt-4 rounded-[8px] border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">{variantError}</p>}
-                <div className="mt-6 grid gap-2.5"><button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button></div>
-
-                <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
-                  <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Server-verified options</span>
-                  <span className="flex flex-col items-center gap-2"><Boxes className="h-4 w-4 text-[#202020]" /> Variant inventory</span>
-                  <span className="flex flex-col items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-[#202020]" /> Customization when needed</span>
+                <div className="mt-6 grid gap-2.5">
+                  <button type="button" onClick={handlePrimaryAction} disabled={isEtsyPurchase && !etsyPurchaseReady} className="commerce-focus flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:bg-[#b8b8b8]">
+                    {isEtsyPurchase ? <>{hasPersonalization ? 'Customize & Buy on Etsy' : 'Buy on Etsy'}<ExternalLink className="h-4 w-4" /></> : hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}
+                  </button>
+                  {isEtsyPurchase && <p className="text-center text-[11px] leading-relaxed text-[#777]">Secure payment and order processing through Etsy.</p>}
                 </div>
+
+                {isEtsyPurchase ? (
+                  <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
+                    <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Secure Etsy checkout</span>
+                    <span className="flex flex-col items-center gap-2"><Boxes className="h-4 w-4 text-[#202020]" /> Etsy order processing</span>
+                    <span className="flex flex-col items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-[#202020]" /> Options on Etsy</span>
+                  </div>
+                ) : (
+                  <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
+                    <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Server-verified options</span>
+                    <span className="flex flex-col items-center gap-2"><Boxes className="h-4 w-4 text-[#202020]" /> Variant inventory</span>
+                    <span className="flex flex-col items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-[#202020]" /> Customization when needed</span>
+                  </div>
+                )}
 
                 <div className="mt-6 divide-y divide-[#ededed] border-y border-[#ededed]">
                   {product.material && <InfoRow label="Material" value={product.material} />}
                   {product.ageRange && <InfoRow label="Size / age" value={product.ageRange} />}
                   {product.preparationTime && <InfoRow label="Preparation" value={product.preparationTime} />}
-                  <InfoRow label="Availability" value={variants.length ? totalVariantStock > 0 ? `${totalVariantStock} units across active variants` : 'Sold out' : baseAvailability} />
+                  <InfoRow label="Availability" value={availabilityLabel} />
                   {product.careInstructions && <InfoRow label="Care" value={product.careInstructions} />}
                 </div>
               </section>

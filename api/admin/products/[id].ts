@@ -7,6 +7,7 @@ import {
   normalizePersonalizationFieldCreateData,
   parseProductImageFocus,
 } from '../../../lib/products.js';
+import { ensureProductPurchaseFields, getProductPurchaseMetadata } from '../../../lib/purchase.js';
 
 const JWT_SECRET = getJwtSecret();
 
@@ -103,6 +104,7 @@ const mapProductForAdmin = (product: any) => {
     material: product.material || '',
     careInstructions: product.care_instructions || '',
     preparationTime: product.preparation_time || '',
+    ...getProductPurchaseMetadata(product),
   };
 };
 
@@ -248,6 +250,8 @@ const deleteProduct = async (req: VercelRequest, res: VercelResponse, id: string
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!requireAdmin(req, res)) return;
+
+  await ensureProductPurchaseFields();
 
   const id = getProductId(req);
   if (!id) return res.status(400).json({ error: 'Product id is required.' });

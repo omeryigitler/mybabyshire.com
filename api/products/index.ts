@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
+import { ensureProductPurchaseFields, getProductPurchaseMetadata } from '../../lib/purchase.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await ensureProductVariantsTable();
+    await Promise.all([ensureProductPurchaseFields(), ensureProductVariantsTable()]);
     const products = await prisma.products.findMany({
       where: { status: 'active' },
       include: {
@@ -45,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const summary = summaries.get(product.id) || { average: 0, count: 0 };
       return {
         ...mapProductForStorefront(product),
+        ...getProductPurchaseMetadata(product),
         ratingAverage: summary.average,
         ratingCount: summary.count,
       };

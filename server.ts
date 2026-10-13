@@ -6,6 +6,9 @@ dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 async function startServer() {
+  const { ensureProductPurchaseFields } = await import("./lib/purchase.js");
+  await ensureProductPurchaseFields();
+
   const { default: apiRoutes } = await import("./server/api.js");
   const { default: accountRoutes } = await import("./server/accountApi.js");
   const app = express();

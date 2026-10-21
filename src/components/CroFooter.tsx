@@ -11,5 +11,11 @@ export function CroFooter() {
       <div className="py-4 md:pl-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-boutique-brown">Legal</p><div className="mt-3 flex flex-col gap-2 text-xs text-boutique-brown-light"><Link to="/policies/privacy">Privacy</Link><Link to="/policies/terms">Terms</Link></div></div>
     </div>
     <p className="mx-auto mt-4 max-w-[1300px] px-6 text-[10px] text-boutique-brown-light/70">© {new Date().getFullYear()} MY BABY SHIRE. All rights reserved.</p>
-  </footer>;
+  
+      <div className="relative z-10 w-full px-4 pt-6 text-center">
+        <a href="https://omeryigitler.com" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] max-w-full flex-wrap items-center justify-center gap-x-1 text-xs leading-relaxed underline-offset-4 transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 motion-reduce:transition-none text-boutique-brown-light hover:text-boutique-brown">
+          <span>Designed &amp; developed by</span> <span className="font-medium">Ömer YİĞİTLER</span><span aria-hidden="true"> ↗</span>
+        </a>
+      </div>
+    </footer>;
 }

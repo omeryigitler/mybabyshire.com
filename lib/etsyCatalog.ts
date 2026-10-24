@@ -19,6 +19,7 @@ export type EtsyCatalogRecord = {
   custom_title: string | null;
   synced_at: Date | string;
   category_name?: string | null;
+  category_slug?: string | null;
 };
 
 export const moneyFromEtsy = (value: any): { price: number; currency: string } | null => {
@@ -105,7 +106,7 @@ export async function readManagedEtsyCatalog(): Promise<EtsyCatalogRecord[]> {
     return await prisma.$queryRaw<EtsyCatalogRecord[]>`
       SELECT e.listing_id, e.etsy_title, e.description, e.price, e.currency_code,
         e.quantity, e.image_urls, e.active, e.published, e.category_id, e.custom_title,
-        e.synced_at, c.name AS category_name
+        e.synced_at, c.name AS category_name, c.slug AS category_slug
       FROM etsy_catalog_items e LEFT JOIN categories c ON c.id = e.category_id
       ORDER BY e.imported_at DESC
     `;
@@ -207,6 +208,7 @@ export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
     hoverImageUrl: images[1] || '',
     categoryId: item.category_id,
     categoryName: item.category_name || null,
+    categorySlug: item.category_slug || null,
     stockQuantity: item.quantity,
     variants: [],
     personalizationRequired: false,
@@ -223,7 +225,7 @@ export async function getPublishedEtsyProducts() {
     const rows = await prisma.$queryRaw<EtsyCatalogRecord[]>`
       SELECT e.listing_id, e.etsy_title, e.description, e.price, e.currency_code,
         e.quantity, e.image_urls, e.active, e.published, e.category_id, e.custom_title,
-        e.synced_at, c.name AS category_name
+        e.synced_at, c.name AS category_name, c.slug AS category_slug
       FROM etsy_catalog_items e
       LEFT JOIN categories c ON c.id = e.category_id
       WHERE e.active = TRUE AND e.published = TRUE AND e.quantity > 0

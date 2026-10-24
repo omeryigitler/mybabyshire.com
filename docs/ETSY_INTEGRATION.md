@@ -28,12 +28,12 @@ Admin route: `/admin/etsy`
 
 All endpoints require existing admin bearer authentication:
 
-- `GET /api/admin/etsy/status`: keys configured, shop reachable, current number of mapped products.
-- `GET /api/admin/etsy/listings?offset=0`: 100 active Etsy listings at a time.
-- `GET /api/admin/etsy/links`: current local mappings.
-- `POST /api/admin/etsy/link`: verify and map a single `{ productId, listingId }`.
-- `DELETE /api/admin/etsy/link`: unlink by `{ productId }`.
-- `POST /api/admin/etsy/bulk-link`: map up to 100 same-page unique exact-title pairs with `{ confirmed: true, offset, pairs }`.
+- `GET /api/admin/etsy?action=status`: keys configured, shop reachable, current number of mapped products.
+- `GET /api/admin/etsy?action=listings&offset=0`: 100 active Etsy listings at a time.
+- `GET /api/admin/etsy?action=links`: current local mappings.
+- `POST /api/admin/etsy?action=link`: verify and map a single `{ productId, listingId }`.
+- `DELETE /api/admin/etsy?action=link`: unlink by `{ productId }`.
+- `POST /api/admin/etsy?action=bulk-link`: map up to 100 same-page unique exact-title pairs with `{ confirmed: true, offset, pairs }`.
 
 All Etsy requests happen on the server. No API key, shared secret, or OAuth token is sent to browsers.
 

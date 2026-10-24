@@ -30,6 +30,9 @@ async function startServer() {
     res.status(404).json({ error: "Not found" }),
   );
 
+  const { handleEtsyAdmin } = await import('./lib/etsyAdmin.js');
+  app.all('/api/admin/etsy/:action?', (req, res) => void handleEtsyAdmin(req as any, res as any, req.params.action || String(req.query.action || 'status')));
+
   app.use("/api", apiRoutes);
   app.use("/api", accountRoutes);
 

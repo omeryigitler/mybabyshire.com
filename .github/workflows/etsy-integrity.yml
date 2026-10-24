@@ -1,0 +1,33 @@
+name: Etsy integration integrity
+on:
+  pull_request:
+    paths:
+      - 'lib/etsy.ts'
+      - 'lib/etsyAdmin.ts'
+      - 'src/admin/AdminEtsy.tsx'
+      - 'api/**'
+      - 'src/**'
+      - 'server.ts'
+      - 'tests/etsy-links.test.ts'
+      - 'package*.json'
+      - '.github/workflows/etsy-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsx --test tests/etsy-links.test.ts
+      - run: npm run build

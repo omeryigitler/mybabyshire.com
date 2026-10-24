@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Product, useStore } from '../store/useStore';
 
 interface ProductCardProps {
+  key?: React.Key;
   product: Product;
   preview?: boolean;
 }
@@ -66,6 +67,7 @@ const CardImage = ({ src, alt, crop, focusX, focusY, zoom, eager = false }: { sr
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
   const hasPersonalization = Boolean(product.personalizationRequired || product.personalizationFields?.length);
+  const etsyOnlyMode = import.meta.env.VITE_ETSY_ONLY_MODE === 'true';
   const detailPath = `/products/${product.slug || product.id}`;
   const hasComparePrice = Boolean(product.salePrice && product.salePrice > product.price);
   const activeVariants = (product.variants || []).filter((variant) => variant.active !== false);
@@ -144,7 +146,9 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         </div>
 
         <div className="mt-auto pt-3 sm:pt-4">
-          {hasPersonalization ? (
+          {product.etsyUrl ? (
+            <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#202020] bg-[#202020] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#3a3a3a] sm:text-sm">Buy on Etsy <ArrowUpRight className="h-3.5 w-3.5" /></a>
+          ) : hasPersonalization && !etsyOnlyMode ? (
             <button type="button" onClick={handleCustomize} disabled={preview} className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#202020] bg-[#202020] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#3a3a3a] disabled:cursor-default disabled:opacity-70 sm:text-sm">
               Customize <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
@@ -153,6 +157,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
               View product <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
+          {product.etsyUrl && <p className="mt-2 text-center text-[11px] text-[#888]">Final price and availability on Etsy</p>}
         </div>
       </div>
     </article>

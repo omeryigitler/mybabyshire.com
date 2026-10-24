@@ -3,6 +3,7 @@ import express from 'express';
 import apiRoutes from '../../server/api.js';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
+import { getProductEtsyUrl } from '../../lib/etsy.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 const legacyApp = express();
@@ -74,6 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const summary = await getApprovedReviewSummary(product.id);
       return res.status(200).json({
         ...mapProductForStorefront(product),
+        etsyUrl: await getProductEtsyUrl(product.id),
         ratingAverage: summary.average,
         ratingCount: summary.count,
       });

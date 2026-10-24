@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
+import { getEtsyLinks } from '../../lib/etsy.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -41,10 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Failed to load catalog review summaries', error);
     }
 
+    const etsyLinks = new Map((await getEtsyLinks()).map((link) => [link.productId, link.url]));
     return res.status(200).json(products.map((product) => {
       const summary = summaries.get(product.id) || { average: 0, count: 0 };
       return {
         ...mapProductForStorefront(product),
+        etsyUrl: etsyLinks.get(product.id) || null,
         ratingAverage: summary.average,
         ratingCount: summary.count,
       };

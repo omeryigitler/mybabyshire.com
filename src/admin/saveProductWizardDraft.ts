@@ -14,7 +14,7 @@ export const saveProductWizardDraft = async (draft: ProductWizardDraft) => {
       name: draft.name.trim(), description: draft.description.trim(), price: Number(draft.price), salePrice: draft.salePrice ? Number(draft.salePrice) : null,
       imageUrl: draft.images[0]?.url, publicId: draft.images[0]?.publicId, bgImage,
       cloudVariants: draft.createCloudVariants ? cloudVariants : undefined,
-      sku: draft.sku.trim(), stockQuantity: Number(draft.stockQuantity) || 0, categoryId: draft.categoryId || null, status: draft.status,
+      sku: draft.sku.trim(), stockQuantity: Number(draft.stockQuantity) || 0, categoryId: draft.categoryId || null, status: 'draft',
       featured: draft.promotionBadge === 'featured', newArrival: true, bestseller: draft.promotionBadge === 'bestseller',
       ageRange: draft.ageRange.trim(), material: draft.material.trim(), careInstructions: draft.careInstructions.trim(), preparationTime: draft.preparationTime.trim(),
       personalizationRequired: draft.personalizationRequired, personalizationFields: draft.personalizationRequired ? draft.personalizationFields : [],

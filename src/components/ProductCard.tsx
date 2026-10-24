@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Product, useStore } from '../store/useStore';
 
 interface ProductCardProps {
+  key?: React.Key;
   product: Product;
   preview?: boolean;
 }

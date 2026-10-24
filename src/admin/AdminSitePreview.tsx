@@ -10,6 +10,7 @@ type Item = {
   imageUrl: string; price: number; currency: string; published: boolean;
   categoryId: string | null; categoryName: string | null; detailUrl?: string | null;
   previewUrl?: string | null; checkoutEtsyUrl?: string | null; available?: boolean; syncedAt?: string;
+  possibleDuplicates?: string[];
 };
 type Category = { id: string; name: string };
 const money = (value: number, currency: string) =>
@@ -55,6 +56,7 @@ export const AdminSitePreview = () => {
     const data = await api('site-preview');
     setItems(Array.isArray(data.items) ? data.items : []);
     setCategories(Array.isArray(data.categories) ? data.categories : []);
+    setSelected([]);
   };
   useEffect(() => { void reload().catch(error => setMessage(error.message)); }, []);
 
@@ -65,7 +67,8 @@ export const AdminSitePreview = () => {
   const selectable = visible.map(keyFor);
   const staged = items.filter(item => !item.published).length;
   const published = items.filter(item => item.published).length;
-  const chosen = items.filter(item => selected.includes(keyFor(item)) && item.published === (view === 'active'));
+  // Only items still visible under the current source/search/status filter can be processed.
+  const chosen = visible.filter(item => selected.includes(keyFor(item)));
 
   const prepareAction = (operation: 'publish' | 'unpublish' | 'category') => {
     if (!chosen.length) {
@@ -86,12 +89,14 @@ export const AdminSitePreview = () => {
       return;
     }
     const newCategory = categoryId ? categories.find(item => item.id === categoryId)?.name : null;
+    const duplicateWarnings = operation === 'publish' ? chosen.filter(item => item.source === 'etsy').flatMap(item => item.possibleDuplicates || []) : [];
     const warnings = operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
       ? ['Etsy ilanına bağlı olmayan site ürünleri mevcut site ödeme akışını kullanmaya devam eder.']
       : [];
     const details = [
       ...(newCategory ? ['Kategori: ' + newCategory + (operation === 'publish' ? ' (yayınla birlikte atanacak)' : '')] : []),
       ...warnings,
+      ...(duplicateWarnings.length ? ['Benzer ürün uyarıları:', ...duplicateWarnings.slice(0, 8)] : []),
     ];
     setPendingOperation(operation);
     setDialog({
@@ -103,6 +108,7 @@ export const AdminSitePreview = () => {
           ? chosen.length + ' ürün önizleme kuyruğuna geri alınacak.'
           : chosen.length + ' ürünün kategorisi güncellenecek.',
       details, confirmLabel: operation === 'publish' ? 'Yayına al' : operation === 'unpublish' ? 'Yayından kaldır' : 'Kategoriyi kaydet',
+      requiresDuplicateAcknowledgment: duplicateWarnings.length > 0,
     });
   };
 
@@ -118,6 +124,7 @@ export const AdminSitePreview = () => {
           await api('site-preview', 'POST', {
             source: groupSource, ids: batch.map(item => item.id), operation,
             ...(categoryId && (operation === 'category' || operation === 'publish') ? { categoryId } : {}),
+            ...(operation === 'publish' ? { confirmPossibleDuplicates: true } : {}),
           });
           done += batch.length;
         }
@@ -201,7 +208,7 @@ export const AdminSitePreview = () => {
           options={[{ value: 'all', label: 'Tüm kaynaklar' }, { value: 'etsy', label: "Etsy'den" }, { value: 'site', label: 'Siteden' }]}
           onChange={value => { setSource(value as typeof source); setSelected([]); }}
         />
-        <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adına göre ara" className="h-11 min-w-[190px] flex-1 rounded-lg border px-3 text-sm" />
+        <input type="search" value={search} onChange={e => { setSearch(e.target.value); setSelected([]); }} placeholder="Ürün adına göre ara" className="h-11 min-w-[190px] flex-1 rounded-lg border px-3 text-sm" />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectable.length > 0 && selectable.every(k => selected.includes(k))} onChange={e => setSelectedVisible(e.target.checked)} /> Tümünü seç ({visible.length})</label>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
@@ -227,6 +234,7 @@ export const AdminSitePreview = () => {
             <h2 className="line-clamp-3 text-sm font-semibold">{item.title}</h2>
             <p className="mt-2 text-sm font-semibold">{money(item.price, item.currency)}</p>
             {item.source === 'etsy' && item.available === false && <p className="mt-1 text-xs text-red-600">Etsy'de kullanılabilir değil</p>}
+            {item.source === 'etsy' && Boolean(item.possibleDuplicates?.length) && <p className="mt-1 text-xs font-semibold text-[#9c6500]">Benzer site ürünü var · Yayından önce inceleyin</p>}
             {item.source === 'site' && !item.checkoutEtsyUrl && <p className="mt-1 text-[11px] text-[#a46b15]">Etsy linki yok · Site ödemesi geçerli</p>}
           </div>
         </div>

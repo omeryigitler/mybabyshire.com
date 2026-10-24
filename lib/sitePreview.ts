@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
 import { readManagedEtsyCatalog, ensureEtsyCatalogTable } from './etsyCatalog.js';
+import { getEtsyLinks } from './etsy.js';
 
 const isNativeId = (id: unknown): id is string => typeof id === 'string' && /^[a-f0-9-]{32,40}$/i.test(id);
 const isEtsyId = (id: unknown): id is string => typeof id === 'string' && /^\d{1,20}$/.test(id);
@@ -14,7 +15,7 @@ const extractImages = (raw: unknown): string[] => {
 
 export async function handleSitePreview(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   if (req.method === 'GET') {
-    const [native, etsy, categories] = await Promise.all([
+    const [native, etsy, categories, links] = await Promise.all([
       prisma.products.findMany({
         select: { id: true, name: true, description: true, price: true, status: true, slug: true,
           category_id: true, category: { select: { name: true } }, images: { select: { image_url: true }, orderBy: { sort_order: 'asc' }, take: 2 } },
@@ -22,12 +23,14 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       }),
       readManagedEtsyCatalog(),
       prisma.categories.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      getEtsyLinks(),
     ]);
+    const etsyByNative = new Map(links.map(link => [link.productId, link.url]));
     const nativeItems = native.filter(item => item.status === 'draft' || item.status === 'active').map(item => ({
       source: 'site', id: item.id, title: item.name, description: item.description || '',
       price: Number(item.price), currency: 'USD', imageUrl: item.images[0]?.image_url || '',
       published: item.status === 'active', categoryId: item.category_id, categoryName: item.category?.name || null,
-      detailUrl: '/products/' + item.slug, previewUrl: null,
+      detailUrl: '/products/' + item.slug, previewUrl: null, checkoutEtsyUrl: etsyByNative.get(item.id) || null,
     }));
     const etsyItems = etsy.map(item => ({
       source: 'etsy', id: item.listing_id, title: item.custom_title || item.etsy_title,

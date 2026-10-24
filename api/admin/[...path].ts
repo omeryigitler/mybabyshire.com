@@ -5,6 +5,7 @@ import { requireAdmin } from '../../lib/auth.js';
 import { prisma } from '../../lib/prisma.js';
 import { encodeProductImageFocus, parseProductImageFocus } from '../../lib/products.js';
 import { ensureProductVariantsTable, mapProductVariant, normalizeVariantPayload } from '../../lib/variants.js';
+import { handleEtsyAdmin } from '../../lib/etsyAdmin.js';
 
 const legacyApp = express();
 legacyApp.use(express.json({ limit: '25mb' }));
@@ -193,6 +194,10 @@ const handleProductImages = async (req: VercelRequest, res: VercelResponse) => {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const parts = getPathParts(req);
+
+  if (parts[0] === 'etsy') {
+    return handleEtsyAdmin(req, res, parts[1] || 'status');
+  }
 
   if (parts[0] === 'variants') {
     return handleVariants(req, res, parts);

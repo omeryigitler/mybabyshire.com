@@ -123,7 +123,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         )}
 
         {hasPersonalization && (
-          <span className="absolute bottom-2 left-2 z-20 inline-flex items-center gap-1.5 rounded-md bg-[#f8e9ed]/95 px-2.5 py-1.5 text-[10px] font-semibold text-[#5a3540] backdrop-blur-sm">
+          <span className="absolute bottom-2 left-2 z-20 inline-flex items-center gap-1.5 rounded-md bg-white/95 px-2.5 py-1.5 text-[10px] font-semibold text-[#333] backdrop-blur-sm">
             <Sparkles className="h-3 w-3" /> Customizable
           </span>
         )}
@@ -131,7 +131,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
 
       <div className="flex flex-1 flex-col pt-3 sm:pt-4">
         {product.categoryName && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a8a]">{product.categoryName}</p>}
-        <Link to={preview ? '#' : detailPath} onClick={preview ? (event) => event.preventDefault() : undefined} className="commerce-focus line-clamp-2 text-[13px] font-semibold leading-snug text-[#202020] transition-colors hover:text-[#895b67] sm:text-[15px]">
+        <Link to={preview ? '#' : detailPath} onClick={preview ? (event) => event.preventDefault() : undefined} className="commerce-focus line-clamp-2 text-[13px] font-semibold leading-snug text-[#202020] transition-colors hover:text-[#555] sm:text-[15px]">
           {product.name}
         </Link>
 

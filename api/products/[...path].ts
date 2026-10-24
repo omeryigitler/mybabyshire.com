@@ -4,6 +4,7 @@ import apiRoutes from '../../server/api.js';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
 import { getProductEtsyUrl } from '../../lib/etsy.js';
+import { getPublishedEtsyProducts, refreshPublishedEtsyWhenDue } from '../../lib/etsyCatalog.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
 
 const legacyApp = express();
@@ -55,6 +56,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET' && parts.length === 1) {
     const slug = parts[0];
+    if (/^etsy-[0-9]{1,20}$/.test(slug)) {
+      try {
+        await refreshPublishedEtsyWhenDue();
+        const item = (await getPublishedEtsyProducts()).find(product => product.slug === slug);
+        return item ? res.status(200).json(item) : res.status(404).json({ error: 'Product unavailable' });
+      } catch (error) {
+        console.error('Etsy product detail lookup failed', error);
+        return res.status(503).json({ error: 'Etsy item temporarily unavailable' });
+      }
+    }
 
     try {
       await ensureProductVariantsTable();

@@ -36,6 +36,8 @@ export type Product = {
   salePrice?: number | null;
   imageUrl: string;
   etsyUrl?: string | null;
+  priceCurrency?: string;
+  source?: 'etsy' | 'native';
   hoverImageUrl?: string;
   imageFocusX?: number;
   imageFocusY?: number;
@@ -58,6 +60,7 @@ export type Product = {
   sku?: string;
   categoryId?: string | null;
   categoryName?: string | null;
+  categorySlug?: string | null;
   stockQuantity?: number;
   variants?: ProductVariant[];
   featured?: boolean;

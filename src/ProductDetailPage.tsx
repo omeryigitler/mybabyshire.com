@@ -70,6 +70,7 @@ export default function ProductDetailPage() {
 
   const hasPersonalization = Boolean(product?.personalizationRequired || product?.personalizationFields?.length);
   const etsyOnlyMode = import.meta.env.VITE_ETSY_ONLY_MODE === 'true';
+  const formatPrice = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: product?.priceCurrency || 'USD' }).format(value);
   const selectedPrice = selectedVariant?.price ?? product?.price ?? 0;
   const variantPrices = variants.map((variant) => variant.price ?? product?.price ?? 0);
   const minimumVariantPrice = variantPrices.length ? Math.min(...variantPrices) : product?.price ?? 0;
@@ -196,7 +197,7 @@ export default function ProductDetailPage() {
 
                 {(product.ratingCount ?? 0) > 0 && <div className="mt-4 flex items-center gap-2"><StarRating value={product.ratingAverage ?? 0} size={16} /><span className="text-xs font-semibold">{(product.ratingAverage ?? 0).toFixed(1)}</span><span className="text-xs text-[#777]">({product.ratingCount} reviews)</span></div>}
 
-                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{hasPriceRange && !selectedVariant ? 'From ' : ''}${displayPrice.toFixed(2)}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">${product.salePrice.toFixed(2)}</p>}</div>
+                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{hasPriceRange && !selectedVariant ? 'From ' : ''}{formatPrice(displayPrice)}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">{formatPrice(product.salePrice)}</p>}</div>
                 <p className="mt-5 text-[15px] leading-7 text-[#666]">{product.description}</p>
 
                 {variants.length > 0 && (

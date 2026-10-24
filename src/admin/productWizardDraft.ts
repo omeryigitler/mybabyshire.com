@@ -43,7 +43,7 @@ const STORAGE_KEY = 'mybabyshire-product-wizard-v1';
 export const createEmptyProductWizardDraft = (): ProductWizardDraft => ({
   name: '', description: '', images: [], price: '', salePrice: '', sku: '', stockQuantity: '0',
   ageRange: '', material: '', preparationTime: '', careInstructions: '', categoryId: '',
-  status: 'active', promotionBadge: 'none', cloudShape: DEFAULT_CARD_DESIGN.cloud,
+  status: 'draft', promotionBadge: 'none', cloudShape: DEFAULT_CARD_DESIGN.cloud,
   panelShape: DEFAULT_CARD_DESIGN.panel, cardColor: DEFAULT_CARD_DESIGN.color,
   createCloudVariants: false, personalizationRequired: false,
   personalizationFields: DEFAULT_PRODUCT_FIELDS.map((field) => ({ ...field, options: field.options ? [...field.options] : undefined })),

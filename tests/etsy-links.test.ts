@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getCanonicalEtsyUrl, normalizeEtsyTitle } from '../lib/etsy.js';
 import { makeEtsyCatalogCsv } from '../src/utils/etsyCsv.js';
+import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText } from '../lib/etsyCatalog.js';
 import { titleMatchType, suggestUniqueTitleMatches } from '../lib/etsyMatching.js';
 
 test('normalizes exact product titles without making fuzzy guesses', () => {
@@ -44,4 +45,43 @@ test('avoids duplicate and already mapped site product suggestions', () => {
   assert.equal(suggestUniqueTitleMatches(products,listings,[{productId:'a',listingId:'10'}]).length,1);
   assert.equal(suggestUniqueTitleMatches([...products,{id:'c',name:products[0].name}],listings,[]).length,1);
   assert.equal(suggestUniqueTitleMatches(products,[...listings,{listingId:'12',title:listings[0].title,offset:100}],[]).length,1);
+});
+
+test('Etsy money keeps its native currency and decimal divisor', () => {
+  assert.deepEqual(moneyFromEtsy({ amount: 1599, divisor: 100, currency_code: 'EUR' }), { price: 15.99, currency: 'EUR' });
+  assert.equal(moneyFromEtsy({ amount: 1599, divisor: 0, currency_code: 'USD' }), null);
+});
+
+test('only images hosted by Etsy are accepted', () => {
+  const images = etsyImageUrls({ images: [
+    { rank: 2, url_570xN: 'https://i.etsystatic.com/safe2.jpg' },
+    { rank: 1, url_570xN: 'https://example.com/unsafe.jpg' },
+    { rank: 0, url_570xN: 'https://i.etsystatic.com/safe1.jpg' },
+  ]});
+  assert.deepEqual(images, ['https://i.etsystatic.com/safe1.jpg', 'https://i.etsystatic.com/safe2.jpg']);
+});
+
+test('only active listings belonging to the configured shop can be imported', () => {
+  const listing = { listing_id: 123, shop_id: 42, state: 'active', title: 'Birthday Shirt',
+    price: { amount: 1200, divisor: 100, currency_code: 'USD' },
+    images: [{ rank: 1, url_570xN: 'https://i.etsystatic.com/a.jpg' }] };
+  assert.equal(mapEtsyApiItem({ ...listing, shop_id: 43 }, 42), null);
+  assert.equal(mapEtsyApiItem({ ...listing, state: 'inactive' }, 42), null);
+  assert.equal(mapEtsyApiItem(listing, 42)?.images.length, 1);
+});
+
+test('published Etsy catalog products have an Etsy checkout destination', () => {
+  const item = toStoreEtsyProduct({
+    listing_id: '123', etsy_title: 'Original name', description: 'Custom shirt', price: 14.5,
+    currency_code: 'EUR', quantity: 3, image_urls: ['https://i.etsystatic.com/a.jpg'],
+    active: true, published: true, category_id: null, custom_title: 'Short title', synced_at: new Date(),
+  });
+  assert.equal(item.slug, 'etsy-123');
+  assert.equal(item.name, 'Short title');
+  assert.equal(item.priceCurrency, 'EUR');
+  assert.equal(item.etsyUrl, 'https://www.etsy.com/listing/123');
+});
+
+test('Etsy HTML entities are rendered as readable product text', () => {
+  assert.equal(decodeEtsyText('It&#39;s My First Birthday &amp; More'), "It's My First Birthday & More");
 });

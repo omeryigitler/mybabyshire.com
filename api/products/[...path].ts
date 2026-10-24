@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET' && parts.length === 1) {
     const slug = parts[0];
-    if (/^etsy-\\d{1,20}$/.test(slug)) {
+    if (/^etsy-[0-9]{1,20}$/.test(slug)) {
       try {
         await refreshPublishedEtsyWhenDue();
         const item = (await getPublishedEtsyProducts()).find(product => product.slug === slug);

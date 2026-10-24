@@ -37,9 +37,9 @@ export const AdminEtsy = () => {
 
   const refresh = async () => {
     const [nextStatus, nextProducts, nextLinks] = await Promise.all([
-      adminRequest('/api/admin/etsy/status'),
+      adminRequest('/api/admin/etsy?action=status'),
       adminRequest('/api/admin/products'),
-      adminRequest('/api/admin/etsy/links'),
+      adminRequest('/api/admin/etsy?action=links'),
     ]);
     setStatus(nextStatus);
     setProducts(Array.isArray(nextProducts) ? nextProducts : []);
@@ -49,9 +49,9 @@ export const AdminEtsy = () => {
   useEffect(() => {
     let active = true;
     void Promise.all([
-      adminRequest('/api/admin/etsy/status'),
+      adminRequest('/api/admin/etsy?action=status'),
       adminRequest('/api/admin/products'),
-      adminRequest('/api/admin/etsy/links'),
+      adminRequest('/api/admin/etsy?action=links'),
     ]).then(([shop, ownProducts, existing]) => {
       if (!active) return;
       setStatus(shop);
@@ -72,7 +72,7 @@ export const AdminEtsy = () => {
       let offset = 0;
       let expectedTotal = 0;
       while (offset <= 12000) {
-        const data = await adminRequest(`/api/admin/etsy/listings?offset=${offset}`);
+        const data = await adminRequest(`/api/admin/etsy?action=listings&offset=${offset}`);
         expectedTotal = data.total;
         const batch = (data.listings || []).map((entry: Omit<Listing, 'offset'>) => ({ ...entry, offset }));
         all.push(...batch);
@@ -130,7 +130,7 @@ export const AdminEtsy = () => {
       let created = 0;
       let skipped = 0;
       for (const [offset, group] of batches) {
-        const result = await adminRequest('/api/admin/etsy/bulk-link', {
+        const result = await adminRequest('/api/admin/etsy?action=bulk-link', {
           method: 'POST',
           body: JSON.stringify({ offset, confirmed: true, pairs: group.map(({ productId, listingId }) => ({ productId, listingId })) }),
         });
@@ -152,7 +152,7 @@ export const AdminEtsy = () => {
     if (!selected) return;
     setBusy(true);
     try {
-      await adminRequest('/api/admin/etsy/link', { method: 'POST', body: JSON.stringify({ listingId: selected.listingId, productId }) });
+      await adminRequest('/api/admin/etsy?action=link', { method: 'POST', body: JSON.stringify({ listingId: selected.listingId, productId }) });
       await refresh();
       setSelected(null);
       setLocalSearch('');
@@ -168,7 +168,7 @@ export const AdminEtsy = () => {
     if (!window.confirm('Remove this Etsy product link?')) return;
     setBusy(true);
     try {
-      await adminRequest('/api/admin/etsy/link', { method: 'DELETE', body: JSON.stringify({ productId }) });
+      await adminRequest('/api/admin/etsy?action=link', { method: 'DELETE', body: JSON.stringify({ productId }) });
       await refresh();
       setMessage('Link removed.');
     } catch (error) {

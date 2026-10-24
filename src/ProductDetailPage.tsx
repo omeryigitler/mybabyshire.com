@@ -217,6 +217,7 @@ export default function ProductDetailPage() {
                 ) : (
                   <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button>
                 )}</div>
+                {product.etsyUrl && <p className="mt-2 text-xs text-[#777]">Final pricing, availability, customization and shipping are confirmed on Etsy.</p>}
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
                   <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Server-verified options</span>

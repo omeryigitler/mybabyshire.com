@@ -121,7 +121,6 @@ export async function getProductEtsyUrl(productId: string): Promise<string | nul
 }
 
 export async function saveEtsyLink(productId: string, listing: EtsyListing): Promise<boolean> {
-  await createEtsyLinksTable();
   const result = await prisma.$executeRaw`
     INSERT INTO etsy_product_links(product_id, etsy_listing_id, etsy_url, etsy_title)
     VALUES (${productId}, ${listing.listingId}, ${listing.url}, ${listing.title})

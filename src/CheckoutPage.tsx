@@ -288,6 +288,8 @@ export default function CheckoutPage() {
 
           {formError && <div role="alert" className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{formError}</div>}
 
+          <p className="text-xs leading-5 text-[#666]">For direct MY BABY SHIRE purchases, please review our <Link to="/policies/returns" className="font-semibold underline">30-day standard-item Returns &amp; Refunds Policy</Link> and <Link to="/policies/shipping" className="font-semibold underline">shipping and delay policy</Link> before proceeding to payment.</p>
+
           <button disabled={isSubmitting || cartItems.length === 0} className={`commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${selectedPaymentMethod === 'paypal' ? 'bg-[#ffc439] text-[#003087]' : 'bg-[#202020] text-white hover:bg-[#383838]'}`}>{buttonLabel}</button>
           <div className="flex items-start gap-2 px-1 text-xs leading-5 text-[#777]"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" /><p>Card details and PayPal credentials are handled by the selected payment provider. By continuing, you agree to our <Link to="/policies/terms" className="underline">Terms</Link>, <Link to="/policies/returns" className="underline">Returns</Link> and <Link to="/policies/privacy" className="underline">Privacy Policy</Link>.</p></div>
         </form>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getCanonicalEtsyUrl, normalizeEtsyTitle } from '../lib/etsy.js';
 import { makeEtsyCatalogCsv } from '../src/utils/etsyCsv.js';
-import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText, isEtsyPriceStale } from '../lib/etsyCatalog.js';
+import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText, isEtsyPriceStale, isConfirmedUnavailableListingError } from '../lib/etsyCatalog.js';
 import { titleMatchType, suggestUniqueTitleMatches } from '../lib/etsyMatching.js';
 import { findLikelyDuplicateProducts, selectVisibleProductKeys } from '../lib/catalogSafety.js';
 
@@ -124,4 +124,12 @@ test('filtered bulk selection excludes invisible products', () => {
     ['etsy:11'],
   );
   assert.deepEqual(selectVisibleProductKeys(['etsy:10'], []), []);
+});
+
+test('transient batch or auth errors never prove Etsy listing deactivation', () => {
+  assert.equal(isConfirmedUnavailableListingError(new Error('Etsy catalog API HTTP 503')), false);
+  assert.equal(isConfirmedUnavailableListingError(new Error('Etsy API request failed (HTTP 429).')), false);
+  assert.equal(isConfirmedUnavailableListingError(new Error('Etsy rejected API access.')), false);
+  assert.equal(isConfirmedUnavailableListingError(new Error('Etsy API request failed (HTTP 404).')), true);
+  assert.equal(isConfirmedUnavailableListingError(new Error('Listing is not an active listing in babyshirekids.')), true);
 });

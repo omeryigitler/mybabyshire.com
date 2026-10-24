@@ -197,20 +197,24 @@ export const AdminSitePreview = () => {
 
     <section className="rounded-xl border border-[#e2e2e2] bg-white p-4">
       <div className="flex flex-wrap gap-3">
-        <select value={source} onChange={e => { setSource(e.target.value as typeof source); setSelected([]); }} className="h-11 rounded-lg border px-3 text-sm">
-          <option value="all">Tüm kaynaklar</option><option value="etsy">Etsy'den</option><option value="site">Siteden</option>
-        </select>
+        <CatalogSelect value={source} label="Kaynak seç"
+          options={[{ value: 'all', label: 'Tüm kaynaklar' }, { value: 'etsy', label: "Etsy'den" }, { value: 'site', label: 'Siteden' }]}
+          onChange={value => { setSource(value as typeof source); setSelected([]); }}
+        />
         <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adına göre ara" className="h-11 min-w-[190px] flex-1 rounded-lg border px-3 text-sm" />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectable.length > 0 && selectable.every(k => selected.includes(k))} onChange={e => setSelectedVisible(e.target.checked)} /> Tümünü seç ({visible.length})</label>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
         <span className="mr-1 text-sm font-semibold">{chosen.length} seçili</span>
-        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="h-10 rounded-lg border px-2 text-sm">
-          <option value="">Kategori seç…</option>{categories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}
-        </select>
-        <button disabled={busy || !chosen.length || !categoryId} onClick={() => void submit('category')} className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40">Kategori ata</button>
-        <button disabled={busy || !chosen.length} onClick={() => void submit(view === 'draft' ? 'publish' : 'unpublish')} className="inline-flex items-center gap-2 rounded-lg bg-[#222] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"><UploadCloud className="h-4 w-4" />{view === 'draft' ? 'Seçilenleri yayına al' : 'Önizlemeye geri al'}</button>
+        <CatalogSelect value={categoryId} label="Kategori seç"
+          className="min-w-[240px] max-w-full"
+          options={[{ value: '', label: 'Kategori seç…' }, ...categories.map(category => ({ value: category.id, label: category.name }))]}
+          onChange={setCategoryId}
+        />
+        <button disabled={busy || !chosen.length || !categoryId} onClick={() => prepareAction('category')} className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40">Kategori ata</button>
+        <button disabled={busy || !chosen.length} onClick={() => prepareAction(view === 'draft' ? 'publish' : 'unpublish')} className="inline-flex items-center gap-2 rounded-lg bg-[#222] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"><UploadCloud className="h-4 w-4" />{view === 'draft' ? 'Seçilenleri yayına al' : 'Önizlemeye geri al'}</button>
       </div>
+      {categoryId && chosen.length > 0 && <p className="mt-3 text-xs text-[#666]">Seçilen kategori henüz ürünlere uygulanmadı. “Kategori ata” ile kaydedebilir veya “Seçilenleri yayına al” ile aynı işlemde kategoriyi atayıp yayımlayabilirsiniz.</p>}
       {message && <p role="status" className="mt-3 rounded-lg bg-[#f5f5f5] p-3 text-sm text-[#555]">{message}</p>}
     </section>
 
@@ -227,13 +231,17 @@ export const AdminSitePreview = () => {
           </div>
         </div>
         <div className="flex items-center justify-between border-t px-3 py-3">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium"><input type="checkbox" checked={selected.includes(keyFor(item))} onChange={e => setSelected(current => e.target.checked ? [...current, keyFor(item)] : current.filter(k => k !== keyFor(item)))} /> Yayın için seç</label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium"><input type="checkbox" checked={selected.includes(keyFor(item))} onChange={e => setSelected(current => e.target.checked ? [...current, keyFor(item)] : current.filter(k => k !== keyFor(item)))} /> {view === 'draft' ? 'Yayın için seç' : 'İşlem için seç'}</label>
           <button onClick={() => openPreview(item)} className="inline-flex items-center gap-1 text-xs font-semibold underline"><Eye className="h-3.5 w-3.5" /> Önizle</button>
         </div>
       </article>)}
       {!visible.length && <div className="col-span-full rounded-xl border border-dashed p-12 text-center text-sm text-[#888]">Burada ürün yok. Etsy'den ürün alabilir veya sitede taslak oluşturabilirsin.</div>}
     </section>
 
+    {dialog && <CatalogActionDialog dialog={dialog} busy={busy}
+      onClose={() => { if (!busy) { setDialog(null); setPendingOperation(null); } }}
+      onConfirm={() => { if (pendingOperation && !busy) void submit(pendingOperation); }}
+    />}
     {preview && <div role="dialog" aria-modal="true" aria-label="Ürün önizleme" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => setPreview(null)}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between"><h2 className="text-lg font-semibold">Ürün önizleme · {preview.source === 'etsy' ? 'Etsy' : 'Sitemiz'}</h2><button onClick={() => setPreview(null)} className="text-sm underline">Kapat</button></div>

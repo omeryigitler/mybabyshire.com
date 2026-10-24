@@ -70,6 +70,7 @@ export const AdminEtsy = () => {
     setLoadedAll(false);
     setListings([]);
     setPage(0);
+    setExcludedMatches([]);
     try {
       const all: Listing[] = [];
       let offset = 0;
@@ -120,6 +121,7 @@ export const AdminEtsy = () => {
         setMessage(`Linked ${created} products; skipped ${skipped}. Processing remaining pages…`);
       }
       await refresh();
+      setExcludedMatches([]);
       setMessage(`Completed: ${created} linked, ${skipped} skipped. Review the unmatched products manually.`);
     } catch (error) {
       await refresh().catch(() => undefined);
@@ -208,8 +210,8 @@ export const AdminEtsy = () => {
       </div>
       {message && <p role="status" className="mt-3 rounded-lg bg-[#f7f7f7] px-3 py-2.5 text-sm text-[#555]">{message}</p>}
       {loadedAll && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#eee] pt-4">
-        <p className="text-sm"><strong>{total}</strong> active Etsy listings · <strong>{matches.length}</strong> unique exact-title matches awaiting approval</p>
-        <button type="button" disabled={busy || matches.length === 0} onClick={() => void applyMatches()} className="rounded-lg border border-[#202020] bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-40">Review & apply {matches.length} exact matches</button>
+        <p className="text-sm"><strong>{total}</strong> active Etsy listings · <strong>{matches.length}</strong> uniquely matched titles awaiting review</p>
+        <button type="button" disabled={busy || selectedMatches.length === 0} onClick={() => void applyMatches()} className="rounded-lg border border-[#202020] bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-40">Apply {selectedMatches.length} reviewed matches</button>
       </div>}
       <p className="mt-3 text-xs text-[#999]">Only exact unique titles can be bulk-linked. Duplicate titles and unmatched items remain unlinked for review. Existing links are never overwritten.</p>
     </section>

@@ -196,7 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const parts = getPathParts(req);
 
   if (parts[0] === 'etsy') {
-    return handleEtsyAdmin(req, res, parts[1] || 'status');
+    return handleEtsyAdmin(req, res, parts[1] || String(req.query.action || 'status'));
   }
 
   if (parts[0] === 'variants') {

@@ -124,7 +124,7 @@ export const AdminSitePreview = () => {
           await api('site-preview', 'POST', {
             source: groupSource, ids: batch.map(item => item.id), operation,
             ...(categoryId && (operation === 'category' || operation === 'publish') ? { categoryId } : {}),
-            ...(operation === 'publish' ? { confirmPossibleDuplicates: true } : {}),
+            ...(operation === 'publish' && chosen.some(item => item.source === 'etsy' && (item.possibleDuplicates?.length || 0) > 0) ? { confirmPossibleDuplicates: true } : {}),
           });
           done += batch.length;
         }

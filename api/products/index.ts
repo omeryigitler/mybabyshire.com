@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
 import { ensureProductVariantsTable } from '../../lib/variants.js';
 import { getEtsyLinks } from '../../lib/etsy.js';
+import { getPublishedEtsyProducts, refreshPublishedEtsyWhenDue } from '../../lib/etsyCatalog.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -42,8 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Failed to load catalog review summaries', error);
     }
 
-    const etsyLinks = new Map((await getEtsyLinks()).map((link) => [link.productId, link.url]));
-    return res.status(200).json(products.map((product) => {
+    try { await refreshPublishedEtsyWhenDue(); } catch (error) { console.error('Etsy refresh failed', error); }
+    const [links, managed] = await Promise.all([getEtsyLinks(), getPublishedEtsyProducts()]);
+    const etsyLinks = new Map(links.map(link => [link.productId, link.url]));
+    const nativeProducts = products.map((product) => {
       const summary = summaries.get(product.id) || { average: 0, count: 0 };
       return {
         ...mapProductForStorefront(product),
@@ -51,7 +54,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ratingAverage: summary.average,
         ratingCount: summary.count,
       };
-    }));
+    });
+    const mappedIds = new Set(links.map(link => link.listingId));
+    return res.status(200).json([...nativeProducts, ...managed.filter(item => !mappedIds.has(item.id.slice(5)))]);
   } catch (error) {
     console.error('Failed to fetch products', error);
     return res.status(500).json({ error: 'Failed to fetch products' });

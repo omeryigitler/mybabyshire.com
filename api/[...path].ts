@@ -272,6 +272,17 @@ app.post('/api/paypal/capture-order', capturePayPalOrderHandler);
 app.post('/api/paypal-capture-order', capturePayPalOrderHandler);
 app.post('/api/newsletter', newsletterPostHandler);
 app.get('/api/newsletter', newsletterGetHandler);
+// Temporary read-only integration smoke probe for Preview; remove before production merge.
+app.get('/api/etsy-preview-probe', async (_req, res) => {
+  try {
+    const { getEtsyListings } = await import('../lib/etsy.js');
+    const page = await getEtsyListings(0);
+    return res.status(200).json({ connected: true, shopName: page.shopName, shopId: page.shopId, activeListings: page.total, firstPageCount: page.listings.length });
+  } catch (error) {
+    console.error('Etsy smoke test failed:', (error as Error).message);
+    return res.status(502).json({ connected: false, reason: String((error as Error).message).slice(0, 160) });
+  }
+});
 app.get('/api/sitemap', sitemapHandler);
 app.get('/sitemap.xml', sitemapHandler);
 

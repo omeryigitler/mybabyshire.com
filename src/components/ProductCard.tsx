@@ -143,8 +143,10 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         )}
 
         <div className="mt-2 flex items-center gap-2 text-sm sm:text-[15px]">
-          <span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}{formatPrice(lowestPrice)}</span>
-          {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">{formatPrice(product.salePrice!)}</span>}
+          {product.source === 'etsy' && product.priceStale
+            ? <span className="font-semibold text-[#202020]">Güncel fiyat Etsy'de</span>
+            : <><span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}{formatPrice(lowestPrice)}</span>
+              {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">{formatPrice(product.salePrice!)}</span>}</>}
         </div>
 
         <div className="mt-auto pt-3 sm:pt-4">

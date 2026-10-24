@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ProductWizardDraft } from './productWizardDraft';
 import { CatalogSelect } from './CatalogSelect';
-import { WizardChoice, WizardFieldLabel, wizardInputClass } from './productWizardUi';
+import { WizardChoice, WizardFieldLabel } from './productWizardUi';
 
 type Category = { id: string; name: string };
 

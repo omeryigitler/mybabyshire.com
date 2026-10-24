@@ -13,6 +13,7 @@ import {
   Ticket,
   Users,
   Wand2,
+  ExternalLink,
   X,
 } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
@@ -39,6 +40,7 @@ const navSections: { label?: string; items: NavItem[] }[] = [
       { name: 'Products', path: '/admin/products', icon: Package },
       { name: 'Inventory', path: '/admin/inventory', icon: Boxes },
       { name: 'Categories', path: '/admin/categories', icon: Tags },
+      { name: 'Etsy Catalog', path: '/admin/etsy', icon: ExternalLink },
     ],
   },
   {

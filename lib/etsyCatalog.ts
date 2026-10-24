@@ -150,7 +150,10 @@ export async function importCatalogIds(ids: string[]) {
 }
 
 // One verified sync page of at most 100 previously imported listings.
-// Missing/inactive listings are disabled without deleting their local configuration.
+// A missing batch result alone never marks an Etsy product inactive.
+export const isConfirmedUnavailableListingError = (error: unknown) =>
+  /HTTP 404|not an active listing/i.test(String((error as Error)?.message || ''));
+
 export async function syncCatalogBatch(ids: string[]) {
   if (!ids.length || ids.length > 100 || ids.some(id => !validId(id))) throw new Error('Invalid sync batch.');
   const items = await fetchEtsyDetails(ids);
@@ -167,8 +170,7 @@ export async function syncCatalogBatch(ids: string[]) {
       await getVerifiedEtsyListing(id);
       unverified++;
     } catch (error) {
-      const message = String((error as Error).message || '');
-      if (/HTTP 404|not an active listing/i.test(message)) {
+      if (isConfirmedUnavailableListingError(error)) {
         await prisma.$executeRaw`UPDATE etsy_catalog_items SET active = FALSE, synced_at = NOW() WHERE listing_id = ${id}`;
         unavailable++;
       } else {

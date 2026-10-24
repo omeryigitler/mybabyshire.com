@@ -60,6 +60,7 @@ export type Product = {
   sku?: string;
   categoryId?: string | null;
   categoryName?: string | null;
+  categorySlug?: string | null;
   stockQuantity?: number;
   variants?: ProductVariant[];
   featured?: boolean;

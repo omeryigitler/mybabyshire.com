@@ -3,7 +3,7 @@
 import express from 'express';
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
-import apiRoutes from '../server/api.js';
+// Temporary isolated Preview smoke test: import the legacy router only when needed.
 import { prisma } from '../lib/prisma.js';
 import { requireAdmin } from '../lib/auth.js';
 import {
@@ -286,6 +286,14 @@ app.get('/api/etsy-preview-probe', async (_req, res) => {
 app.get('/api/sitemap', sitemapHandler);
 app.get('/sitemap.xml', sitemapHandler);
 
-app.use('/api', apiRoutes);
+app.use('/api', async (req, res, next) => {
+  try {
+    const { default: apiRoutes } = await import('../server/api.js');
+    return apiRoutes(req, res, next);
+  } catch (error) {
+    console.error('API import failed', (error as Error).message);
+    return res.status(500).json({ error: 'API temporarily unavailable.' });
+  }
+});
 
 export default app;

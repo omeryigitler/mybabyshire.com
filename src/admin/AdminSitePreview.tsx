@@ -67,13 +67,47 @@ export const AdminSitePreview = () => {
   const published = items.filter(item => item.published).length;
   const chosen = items.filter(item => selected.includes(keyFor(item)) && item.published === (view === 'active'));
 
+  const prepareAction = (operation: 'publish' | 'unpublish' | 'category') => {
+    if (!chosen.length) {
+      setDialog({ kind: 'error', title: 'Ürün seçilmedi', message: 'İşleme devam etmek için en az bir ürün seçin.' });
+      return;
+    }
+    if (operation === 'category' && !categoryId) {
+      setDialog({ kind: 'error', title: 'Kategori seçilmedi', message: 'Ürünleri kategorize etmek için bir kategori seçin.' });
+      return;
+    }
+    const missingCategory = chosen.filter(item => !item.categoryId && !categoryId);
+    if (operation === 'publish' && missingCategory.length) {
+      setDialog({
+        kind: 'error', title: 'Önce kategori belirleyin',
+        message: 'Seçilen bazı ürünlerin kategorisi bulunmuyor. Yukarıdan bir kategori seçip doğrudan “Seçilenleri yayına al” butonuna basabilirsiniz; kategori ve yayın birlikte kaydedilir.',
+        details: missingCategory.slice(0, 8).map(item => item.title),
+      });
+      return;
+    }
+    const newCategory = categoryId ? categories.find(item => item.id === categoryId)?.name : null;
+    const warnings = operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
+      ? ['Etsy ilanına bağlı olmayan site ürünleri mevcut site ödeme akışını kullanmaya devam eder.']
+      : [];
+    const details = [
+      ...(newCategory ? ['Kategori: ' + newCategory + (operation === 'publish' ? ' (yayınla birlikte atanacak)' : '')] : []),
+      ...warnings,
+    ];
+    setPendingOperation(operation);
+    setDialog({
+      kind: 'confirm',
+      title: operation === 'publish' ? 'Ürünleri yayına al' : operation === 'unpublish' ? 'Ürünleri yayından kaldır' : 'Kategori değişikliğini onayla',
+      message: operation === 'publish'
+        ? chosen.length + ' ürün mağazada görünür olacak. Devam etmek istiyor musunuz?'
+        : operation === 'unpublish'
+          ? chosen.length + ' ürün önizleme kuyruğuna geri alınacak.'
+          : chosen.length + ' ürünün kategorisi güncellenecek.',
+      details, confirmLabel: operation === 'publish' ? 'Yayına al' : operation === 'unpublish' ? 'Yayından kaldır' : 'Kategoriyi kaydet',
+    });
+  };
+
   const submit = async (operation: 'publish' | 'unpublish' | 'category') => {
-    if (!chosen.length) return setMessage('Önce ürün seç.');
-    if (operation === 'category' && !categoryId) return setMessage('Kategori seç.');
-    if (operation === 'publish' && !window.confirm(chosen.length + ' ürünü yayına almak istiyor musun?')) return;
-    if (operation === 'unpublish' && !window.confirm(chosen.length + ' ürünü yayından kaldırıp taslağa döndürmek istiyor musun?')) return;
-    if (operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
-      && !window.confirm('Bazı site ürünlerinin Etsy ilan bağlantısı yok. Bu ürünlerde mevcut site sepeti ve ödeme akışı devam edecek. Yine de yayımlansın mı?')) return;
+    if (!chosen.length) return;
     setBusy(true); setMessage('');
     let done = 0;
     try {
@@ -83,19 +117,26 @@ export const AdminSitePreview = () => {
           const batch = group.slice(offset, offset + 25);
           await api('site-preview', 'POST', {
             source: groupSource, ids: batch.map(item => item.id), operation,
-            ...(operation === 'category' ? { categoryId } : {}),
+            ...(categoryId && (operation === 'category' || operation === 'publish') ? { categoryId } : {}),
           });
           done += batch.length;
         }
       }
       setSelected([]);
       await reload();
-      setMessage(done + ' ürün ' + (operation === 'publish' ? 'yayına alındı.' : operation === 'unpublish' ? 'önizleme kuyruğuna geri alındı.' : 'için kategori güncellendi.'));
+      const result = done + ' ürün ' + (operation === 'publish' ? 'yayına alındı.' : operation === 'unpublish' ? 'önizleme kuyruğuna geri alındı.' : 'için kategori güncellendi.');
+      setMessage(result);
+      setDialog({ kind: 'success', title: 'İşlem tamamlandı', message: result });
     } catch (error) {
       await reload().catch(() => undefined);
-      setSelected([]);
-      setMessage(done + ' üründe işlem tamamlandı; devamı uygulanmadı: ' + (error as Error).message);
-    } finally { setBusy(false); }
+      const reason = error as CatalogRequestError;
+      // Keep the selected products selected for easy correction/retry.
+      setDialog({
+        kind: 'error', title: 'Yayın işlemi tamamlanamadı',
+        message: (done ? done + ' üründe işlem tamamlandı. ' : 'Hiçbir ürün yayımlanmadı. ') + reason.message,
+        details: reason.issues,
+      });
+    } finally { setBusy(false); setPendingOperation(null); }
   };
 
   const refreshEtsy = async () => {

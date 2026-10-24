@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
 import { readManagedEtsyCatalog, ensureEtsyCatalogTable, syncCatalogBatch } from './etsyCatalog.js';
 import { getEtsyLinks } from './etsy.js';
+import { findLikelyDuplicateProducts } from './catalogSafety.js';
 
 const isNativeId = (id: unknown): id is string => typeof id === 'string' && /^[a-f0-9-]{32,40}$/i.test(id);
 const isEtsyId = (id: unknown): id is string => typeof id === 'string' && /^\d{1,20}$/.test(id);
@@ -26,6 +27,7 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       getEtsyLinks(),
     ]);
     const etsyByNative = new Map(links.map(link => [link.productId, link.url]));
+    const alreadyLinkedListings = new Set(links.map(link => link.listingId));
     const nativeItems = native.filter(item => item.status === 'draft' || item.status === 'active').map(item => ({
       source: 'site', id: item.id, title: item.name, description: item.description || '',
       price: Number(item.price), currency: 'USD', imageUrl: item.images[0]?.image_url || '',
@@ -41,6 +43,10 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       detailUrl: item.published ? '/products/etsy-' + item.listing_id : null,
       previewUrl: 'https://www.etsy.com/listing/' + item.listing_id,
       syncedAt: item.synced_at,
+      possibleDuplicates: [
+        ...(alreadyLinkedListings.has(item.listing_id) ? ['Bu Etsy ilanı zaten bir site ürününe bağlanmış.'] : []),
+        ...findLikelyDuplicateProducts(item.etsy_title, native).map(product => product.name),
+      ],
     }));
     return res.status(200).json({ items: [...nativeItems, ...etsyItems], categories });
   }
@@ -139,6 +145,27 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
     });
     if (issues.length) {
       return res.status(409).json({ error: 'Seçilen Etsy ürünleri yayın koşullarını karşılamıyor.', issues });
+    }
+    const [nativeProducts, existingLinks] = await Promise.all([
+      prisma.products.findMany({
+        where: { status: { in: ['active', 'draft'] } },
+        select: { id: true, name: true, status: true },
+      }),
+      getEtsyLinks(),
+    ]);
+    const mappedIds = new Set(existingLinks.map(link => link.listingId));
+    if (selectedIds.some(id => mappedIds.has(id))) {
+      return res.status(409).json({ error: 'Seçilen Etsy ilanlarından biri zaten mevcut bir site ürününe bağlı. Aynı ilan ikinci kez yayımlanamaz.' });
+    }
+    const possibleDuplicates = selectedIds.flatMap(id =>
+      findLikelyDuplicateProducts(byId.get(id)!.etsy_title, nativeProducts)
+        .map(product => byId.get(id)!.etsy_title.slice(0, 65) + ' → ' + product.name.slice(0, 65)),
+    );
+    if (possibleDuplicates.length && req.body?.confirmPossibleDuplicates !== true) {
+      return res.status(409).json({
+        error: 'Benzer site ürünleri tespit edildi. Tekrarlanan tasarımları kontrol edip açıkça onaylayın.',
+        issues: possibleDuplicates.slice(0, 20),
+      });
     }
   }
 

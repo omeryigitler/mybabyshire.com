@@ -29,6 +29,7 @@ const AdminCategories = lazy(() => import('./admin/AdminCategories').then((modul
 const AdminCustomers = lazy(() => import('./admin/AdminCustomers').then((module) => ({ default: module.AdminCustomers })));
 const AdminImageLibrary = lazy(() => import('./admin/AdminImageLibrary').then((module) => ({ default: module.AdminImageLibrary })));
 const AdminSettings = lazy(() => import('./admin/AdminSettings').then((module) => ({ default: module.AdminSettings })));
+const AdminEtsy = lazy(() => import('./admin/AdminEtsy').then((module) => ({ default: module.AdminEtsy })));
 const PersonalizationTemplateManager = lazy(() => import('./admin/PersonalizationTemplateManager').then((module) => ({ default: module.PersonalizationTemplateManager })));
 
 const RouteFallback = () => (
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="images" element={<AdminImageLibrary />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="etsy" element={<AdminEtsy />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

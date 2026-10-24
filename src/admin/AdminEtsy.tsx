@@ -98,14 +98,16 @@ export const AdminEtsy = () => {
 
   const matches = useMemo<Match[]>(() => loadedAll ? suggestUniqueTitleMatches(products, listings, links) : [], [listings, products, links, loadedAll]);
 
+  const selectedMatches = matches.filter(match => !excludedMatches.includes(match.listingId));
+
   const applyMatches = async () => {
-    if (!matches.length) return;
-    if (!window.confirm(`Link ${matches.length} uniquely matched product titles to Etsy? This only adds missing links; it never replaces existing links.`)) return;
+    if (!selectedMatches.length) return;
+    if (!window.confirm(`Link ${selectedMatches.length} reviewed product titles to Etsy? This only adds missing links; it never replaces existing links.`)) return;
     setBusy(true);
     setMessage('');
     try {
       const batches = new Map<number, Match[]>();
-      matches.forEach((match) => batches.set(match.offset, [...(batches.get(match.offset) || []), match]));
+      selectedMatches.forEach((match) => batches.set(match.offset, [...(batches.get(match.offset) || []), match]));
       let created = 0;
       let skipped = 0;
       for (const [offset, group] of batches) {

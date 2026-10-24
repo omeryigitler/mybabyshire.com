@@ -22,6 +22,13 @@ export type EtsyCatalogRecord = {
   category_slug?: string | null;
 };
 
+export const decodeEtsyText = (value: unknown): string =>
+  String(value ?? '').replace(/&#(x[0-9a-f]+|[0-9]+);|&(amp|quot|apos|lt|gt|nbsp);/gi, (match, numeric: string, named: string) => {
+    if (named) return ({ amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ' } as Record<string, string>)[named.toLowerCase()] || match;
+    const code = numeric.toLowerCase().startsWith('x') ? parseInt(numeric.slice(1), 16) : parseInt(numeric, 10);
+    return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : match;
+  });
+
 export const moneyFromEtsy = (value: any): { price: number; currency: string } | null => {
   const amount = Number(value?.amount);
   const divisor = Number(value?.divisor);
@@ -48,8 +55,8 @@ export const mapEtsyApiItem = (item: any, shopId: number) => {
   if (!validId(id) || Number(item?.shop_id) !== shopId || item?.state !== 'active' || !money) return null;
   return {
     listingId: id,
-    title: String(item?.title || '').trim().slice(0, 500),
-    description: String(item?.description || '').slice(0, 20000),
+    title: decodeEtsyText(item?.title).trim().slice(0, 500),
+    description: decodeEtsyText(item?.description).slice(0, 20000),
     price: money.price,
     currency: money.currency,
     quantity: Math.max(0, Number(item?.quantity) || 0),

@@ -269,6 +269,7 @@ export const mapProductForStorefront = (product: any) => {
     salePrice: product.sale_price ? Number(product.sale_price) : null,
     categoryId: product.category_id || null,
     categoryName: product.category?.name || null,
+    categorySlug: product.category?.slug || null,
     sku: product.sku || '',
     stockQuantity: variants.length ? variantStock : product.stock_quantity || 0,
     variants,

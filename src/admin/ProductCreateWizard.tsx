@@ -73,11 +73,11 @@ export const ProductCreateWizard = ({ onCancel, onSaved }: { onCancel: () => voi
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Catalog</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-[-0.025em] text-[#202020]">Add product</h1>
-          <p className="mt-1 text-sm text-[#777]">Create the product here. Manage Color × Size inventory from Inventory after saving.</p>
+          <p className="mt-1 text-sm text-[#777]">Ürünü taslak olarak kaydet. Site Önizleme ekranından inceleyip yayına al. Varyasyon stoklarını Envanter bölümünden yönet.</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={onCancel} className="commerce-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7]"><X className="h-4 w-4" /> Cancel</button>
-          <button type="button" onClick={() => void save()} disabled={saving} className="commerce-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save product'}</button>
+          <button type="button" onClick={() => void save()} disabled={saving} className="commerce-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Önizlemeye kaydet'}</button>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export const ProductCreateWizard = ({ onCancel, onSaved }: { onCancel: () => voi
       <Section title="Media" description="Use a clean primary product image. Additional variant imagery can be managed as the catalog grows."><WizardMediaStep images={draft.images} onImagesChange={(images) => update({ images })} /></Section>
       <Section title="Pricing & base stock" description="Base price and SKU. For products with Color × Size variants, manage exact stock in Inventory."><WizardPricingStep draft={draft} update={update} /></Section>
       <Section title="Product details" description="Material, sizing guidance, care and preparation details."><WizardDetailsStep draft={draft} update={update} /></Section>
-      <Section title="Organization & visibility" description="Choose category, storefront status and merchandising badge."><WizardOrganizationStep draft={draft} categories={categories} update={update} /></Section>
+      <Section title="Organization & visibility" description="Choose category, storefront status and merchandising badge."><WizardOrganizationStep draft={{ ...draft, status: 'draft' }} categories={categories} update={update} /></Section>
 
       <section className="overflow-hidden rounded-[12px] border border-[#e2e2e2] bg-white">
         <button type="button" onClick={() => setAdvancedOpen((open) => !open)} className="commerce-focus flex w-full items-center justify-between gap-4 p-4 text-left sm:p-6" aria-expanded={advancedOpen}>

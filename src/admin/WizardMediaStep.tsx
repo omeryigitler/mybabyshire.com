@@ -33,7 +33,7 @@ const getSavedCrop = (image: ProductWizardImage): Crop | null => {
   return { x: clamp(x, 0, 100), y: clamp(y, 0, 100), width: clamp(width, 0.1, 100), height: clamp(height, 0.1, 100) };
 };
 
-const CropEditor = ({ image, index, onChange }: { image: ProductWizardImage; index: number; onChange: (image: ProductWizardImage) => void }) => {
+const CropEditor = ({ image, index, onChange }: { key?: React.Key; image: ProductWizardImage; index: number; onChange: (image: ProductWizardImage) => void }) => {
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
   const initialized = useRef(false);
   const dragState = useRef<null | { pointerId: number; startX: number; startY: number; crop: Crop }>(null);
@@ -181,7 +181,7 @@ const CropEditor = ({ image, index, onChange }: { image: ProductWizardImage; ind
   const handleFramePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (activePointers.current.size >= 2) {
-      const points = Array.from(activePointers.current.values());
+      const points = Array.from(activePointers.current.values()) as { x: number; y: number }[];
       pinchState.current = { distance: Math.max(pointerDistance(points), 1), zoom };
     }
   };
@@ -190,7 +190,7 @@ const CropEditor = ({ image, index, onChange }: { image: ProductWizardImage; ind
     if (!activePointers.current.has(event.pointerId)) return;
     activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (activePointers.current.size >= 2 && pinchState.current) {
-      const points = Array.from(activePointers.current.values());
+      const points = Array.from(activePointers.current.values()) as { x: number; y: number }[];
       setZoom(pinchState.current.zoom * (pointerDistance(points) / pinchState.current.distance));
     }
   };

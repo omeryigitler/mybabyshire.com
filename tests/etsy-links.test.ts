@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getCanonicalEtsyUrl, normalizeEtsyTitle } from '../lib/etsy.js';
 import { makeEtsyCatalogCsv } from '../src/utils/etsyCsv.js';
+import { titleMatchType, suggestUniqueTitleMatches } from '../lib/etsyMatching.js';
 
 test('normalizes exact product titles without making fuzzy guesses', () => {
   assert.equal(normalizeEtsyTitle('  Bébé   Shirt — Blue! '), 'bebe shirt blue');
@@ -27,4 +28,20 @@ test('exports all Etsy URLs as Excel-friendly, formula-safe CSV', () => {
   assert.ok(csv.includes('"A ""custom"" shirt"'));
   assert.ok(csv.includes('https://www.etsy.com/listing/124'));
   assert.equal(csv.split('\r\n').filter(Boolean).length, 3);
+});
+
+test('matches full leading product name in longer Etsy SEO title', () => {
+  assert.equal(titleMatchType('Personalized One Today 1st Birthday Shirt', 'Personalized One Today 1st Birthday Shirt, Colorful Smiley Face'), 'prefix');
+  assert.equal(titleMatchType('Custom Shirt', 'Custom Shirt, Baby'), null);
+  assert.equal(titleMatchType('Three Rex 3rd Birthday Shirt', 'Three Rex 3rd Birthday Shirt'), 'exact');
+  assert.equal(titleMatchType('Birthday Shirt', 'Fancy Birthday Shirt'), null);
+});
+
+test('avoids duplicate and already mapped site product suggestions', () => {
+  const products = [{id:'a',name:'Personalized Two Cool 2nd Birthday Shirt'},{id:'b',name:'Personalized Three Rex 3rd Birthday Shirt'}];
+  const listings = [{listingId:'10',title:'Personalized Two Cool 2nd Birthday Shirt, Cute Race Car',offset:0},{listingId:'11',title:'Personalized Three Rex 3rd Birthday Shirt, Dinosaur Party',offset:0}];
+  assert.equal(suggestUniqueTitleMatches(products,listings,[]).length,2);
+  assert.equal(suggestUniqueTitleMatches(products,listings,[{productId:'a',listingId:'10'}]).length,1);
+  assert.equal(suggestUniqueTitleMatches([...products,{id:'c',name:products[0].name}],listings,[]).length,1);
+  assert.equal(suggestUniqueTitleMatches(products,[...listings,{listingId:'12',title:listings[0].title,offset:100}],[]).length,1);
 });

@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
+import { titleMatchType } from './etsyMatching.js';
 import { requireAdmin } from './auth.js';
 import {
   etsyIsConfigured, getEtsyShopId, getEtsyListings, getVerifiedEtsyListing,
-  getEtsyLinks, saveEtsyLink, removeEtsyLink, createEtsyLinksTable, normalizeEtsyTitle,
+  getEtsyLinks, saveEtsyLink, removeEtsyLink, createEtsyLinksTable,
 } from './etsy.js';
 
 const getAuth = (req: VercelRequest) => Array.isArray(req.headers.authorization) ? req.headers.authorization[0] : req.headers.authorization;
@@ -78,8 +79,9 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
       for (const pair of pairs as Array<{ productId: string; listingId: string }>) {
         const product = productById.get(pair.productId);
         const listing = available.get(String(pair.listingId));
-        if (!product || !listing || !normalizeEtsyTitle(product.name) ||
-            normalizeEtsyTitle(product.name) !== normalizeEtsyTitle(listing.title) ||
+        if (!product || !listing || !titleMatchType(product.name, listing.title) ||
+            products.filter(p => titleMatchType(p.name, listing.title)).length !== 1 ||
+            page.listings.filter(l => titleMatchType(product.name, l.title)).length !== 1 ||
             reservedProducts.has(product.id) || reservedListings.has(listing.listingId)) {
           skipped++;
           continue;

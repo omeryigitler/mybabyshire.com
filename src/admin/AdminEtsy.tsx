@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Download, ExternalLink, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
 import { makeEtsyCatalogCsv } from '../utils/etsyCsv';
+import { suggestUniqueTitleMatches, type SuggestedMatch } from '../../lib/etsyMatching';
 
 type Listing = { listingId: string; title: string; url: string; state: 'active'; offset: number };
 type LocalProduct = { id: string; name: string; sku?: string; status?: string };
 type LinkRecord = { productId: string; listingId: string; url: string; title: string };
 type ShopStatus = { configured: boolean; connected: boolean; shopName?: string; shopId?: number; linkedProducts?: number };
-type Match = { productId: string; listingId: string; offset: number; title: string };
+type Match = SuggestedMatch;
 
 const normalize = (value: string) => value.normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 
@@ -35,6 +36,7 @@ export const AdminEtsy = () => {
   const [search, setSearch] = useState('');
   const [localSearch, setLocalSearch] = useState('');
   const [page, setPage] = useState(0);
+  const [excludedMatches, setExcludedMatches] = useState<string[]>([]);
 
   const refresh = async () => {
     const [nextStatus, nextProducts, nextLinks] = await Promise.all([
@@ -68,6 +70,7 @@ export const AdminEtsy = () => {
     setLoadedAll(false);
     setListings([]);
     setPage(0);
+    setExcludedMatches([]);
     try {
       const all: Listing[] = [];
       let offset = 0;
@@ -94,40 +97,18 @@ export const AdminEtsy = () => {
     }
   };
 
-  const matches = useMemo<Match[]>(() => {
-    if (!loadedAll) return [];
-    const names = new Map<string, Listing[]>();
-    const locals = new Map<string, LocalProduct[]>();
-    listings.forEach((listing) => {
-      const key = normalize(listing.title);
-      if (key) names.set(key, [...(names.get(key) || []), listing]);
-    });
-    products.forEach((product) => {
-      const key = normalize(product.name);
-      if (key && product.status !== 'archived') locals.set(key, [...(locals.get(key) || []), product]);
-    });
-    const linkedProducts = new Set(links.map((link) => link.productId));
-    const linkedListings = new Set(links.map((link) => link.listingId));
-    const suggestions: Match[] = [];
-    names.forEach((etsyListings, title) => {
-      const localProducts = locals.get(title) || [];
-      if (etsyListings.length !== 1 || localProducts.length !== 1) return; // Never guess between duplicate titles.
-      const item = etsyListings[0];
-      const product = localProducts[0];
-      if (linkedProducts.has(product.id) || linkedListings.has(item.listingId)) return;
-      suggestions.push({ productId: product.id, listingId: item.listingId, offset: item.offset, title: item.title });
-    });
-    return suggestions;
-  }, [listings, products, links, loadedAll]);
+  const matches = useMemo<Match[]>(() => loadedAll ? suggestUniqueTitleMatches(products, listings, links) : [], [listings, products, links, loadedAll]);
+
+  const selectedMatches = matches.filter(match => !excludedMatches.includes(match.listingId));
 
   const applyMatches = async () => {
-    if (!matches.length) return;
-    if (!window.confirm(`Link ${matches.length} uniquely matched product titles to Etsy? This only adds missing links; it never replaces existing links.`)) return;
+    if (!selectedMatches.length) return;
+    if (!window.confirm(`Link ${selectedMatches.length} reviewed product titles to Etsy? This only adds missing links; it never replaces existing links.`)) return;
     setBusy(true);
     setMessage('');
     try {
       const batches = new Map<number, Match[]>();
-      matches.forEach((match) => batches.set(match.offset, [...(batches.get(match.offset) || []), match]));
+      selectedMatches.forEach((match) => batches.set(match.offset, [...(batches.get(match.offset) || []), match]));
       let created = 0;
       let skipped = 0;
       for (const [offset, group] of batches) {
@@ -140,6 +121,7 @@ export const AdminEtsy = () => {
         setMessage(`Linked ${created} products; skipped ${skipped}. Processing remaining pages…`);
       }
       await refresh();
+      setExcludedMatches([]);
       setMessage(`Completed: ${created} linked, ${skipped} skipped. Review the unmatched products manually.`);
     } catch (error) {
       await refresh().catch(() => undefined);
@@ -228,10 +210,23 @@ export const AdminEtsy = () => {
       </div>
       {message && <p role="status" className="mt-3 rounded-lg bg-[#f7f7f7] px-3 py-2.5 text-sm text-[#555]">{message}</p>}
       {loadedAll && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#eee] pt-4">
-        <p className="text-sm"><strong>{total}</strong> active Etsy listings · <strong>{matches.length}</strong> unique exact-title matches awaiting approval</p>
-        <button type="button" disabled={busy || matches.length === 0} onClick={() => void applyMatches()} className="rounded-lg border border-[#202020] bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-40">Review & apply {matches.length} exact matches</button>
+        <p className="text-sm"><strong>{total}</strong> active Etsy listings · <strong>{matches.length}</strong> uniquely matched titles awaiting review</p>
+        <button type="button" disabled={busy || selectedMatches.length === 0} onClick={() => void applyMatches()} className="rounded-lg border border-[#202020] bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-40">Apply {selectedMatches.length} reviewed matches</button>
       </div>}
-      <p className="mt-3 text-xs text-[#999]">Only exact unique titles can be bulk-linked. Duplicate titles and unmatched items remain unlinked for review. Existing links are never overwritten.</p>
+      <p className="mt-3 text-xs text-[#999]">Suggested links require a unique, exact leading product phrase; generic word overlap and duplicates are excluded. You can deselect any pair below.</p>
+      {loadedAll && matches.length > 0 && (
+        <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-[#e9e9e9]">
+          <p className="sticky top-0 border-b border-[#eee] bg-[#fafafa] px-3 py-2 text-xs font-semibold">Review proposed links ({selectedMatches.length} of {matches.length} selected)</p>
+          {matches.map((match) => (
+            <label key={match.listingId} className="flex cursor-pointer items-start gap-3 border-b border-[#eee] px-3 py-2.5 last:border-b-0">
+              <input type="checkbox" className="mt-1 h-4 w-4" checked={!excludedMatches.includes(match.listingId)}
+                onChange={(event) => setExcludedMatches(current => event.target.checked ? current.filter(id => id !== match.listingId) : [...current, match.listingId])} />
+              <span className="min-w-0 flex-1 text-xs leading-5"><strong className="block">Site: {match.productName}</strong><span className="block text-[#777]">Etsy: {match.title}</span></span>
+              <span className="shrink-0 rounded bg-[#eee] px-2 py-1 text-[10px]">{match.strategy}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </section>
 
     {selected && <section className="rounded-xl border border-[#d0d0d0] bg-white p-5">

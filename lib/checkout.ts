@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { getEtsyLinks } from './etsy.js';
 import { calculateTax, type TaxBreakdown } from '../src/utils/tax.js';
 import { resolveCoupon } from './coupons.js';
 import { ensureProductVariantsTable, variantDisplayName } from './variants.js';
@@ -260,6 +261,12 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
     },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
+  // Etsy-linked native catalog items must never be purchased through Stripe/PayPal.
+  // This server-side check prevents stale carts or direct API requests from bypassing the UI.
+  const etsyLinkedIds = new Set((await getEtsyLinks()).map(link => link.productId));
+  if (requestedItems.some(item => etsyLinkedIds.has(item.productId) || item.productId.startsWith('etsy-'))) {
+    throw new CheckoutValidationError('This item must be purchased on Etsy. Open the product listing and use Etsy checkout.');
+  }
 
   const items = requestedItems.map((item) => {
     const product = productsById.get(item.productId);

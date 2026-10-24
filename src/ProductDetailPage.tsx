@@ -220,10 +220,10 @@ export default function ProductDetailPage() {
                 ) : (
                   <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button>
                 )}</div>
-                {product.etsyUrl && <p className="mt-2 text-xs text-[#777]">Final pricing, availability, customization and shipping are confirmed on Etsy.</p>}
+                {product.etsyUrl && <p className="mt-2 text-xs leading-5 text-[#777]"><strong>Checkout on Etsy:</strong> Etsy confirms final price, applicable tax, shipping, options and payment. The seller's Etsy listing shows its own returns and cancellation rules. All Etsy order help, refund requests and Purchase Protection cases are handled through Etsy.</p>}
                 <p className="mt-3 text-xs leading-5 text-[#666]">
                   Please review the <Link to="/policies/returns" className="font-semibold underline underline-offset-2">Returns &amp; Refunds Policy</Link> before ordering.
-                  {product.etsyUrl ? ' Etsy orders follow the return terms shown by the seller at Etsy checkout.' : ' Direct website orders follow our posted direct-order policy.'}
+                  {product.etsyUrl ? ' The 30-day direct-site standard-item policy does not apply to Etsy orders. Review the seller-specific returns and cancellations on Etsy before paying.' : ' Direct website orders follow our posted direct-order policy.'}
                 </p>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">

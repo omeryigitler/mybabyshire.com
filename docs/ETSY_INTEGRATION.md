@@ -7,7 +7,7 @@ Admin route: `/admin/etsy`
 ## Safe rollout
 
 1. The **Production** project currently has `ETSY_API_KEY` and `ETSY_SHARED_SECRET`. Both are server-only. Never use a `VITE_` prefix for Etsy credentials.
-2. To test a Preview deployment, add the same environment variables to **Preview** via Vercel Settings (do not commit or paste the values).
+2. For Preview deployments, the Etsy variables are configured. A real admin test also requires an isolated Preview database and Preview-only admin authentication variables (`DATABASE_URL`, `JWT_SECRET`, and admin login credentials). **Never point an unreviewed Preview branch at the Production database or reuse Production admin secrets.**
 3. Open `/admin/etsy` with an authenticated admin account. The **Connected** status confirms that Etsy responded with the expected shop ID. It is not a promise of permanent availability.
 4. Click **Load all Etsy listings**; results are fetched 100 at a time, up to Etsy's maximum offset of 12,000, without writing anything to either storefront.
 5. Review exact unique-title matches, then explicitly approve **Review & apply exact matches**. The server re-fetches each page and validates each match before writing its association. Any ambiguity stays unlinked.

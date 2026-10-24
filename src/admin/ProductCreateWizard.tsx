@@ -85,7 +85,7 @@ export const ProductCreateWizard = ({ onCancel, onSaved }: { onCancel: () => voi
       <Section title="Media" description="Use a clean primary product image. Additional variant imagery can be managed as the catalog grows."><WizardMediaStep images={draft.images} onImagesChange={(images) => update({ images })} /></Section>
       <Section title="Pricing & base stock" description="Base price and SKU. For products with Color × Size variants, manage exact stock in Inventory."><WizardPricingStep draft={draft} update={update} /></Section>
       <Section title="Product details" description="Material, sizing guidance, care and preparation details."><WizardDetailsStep draft={draft} update={update} /></Section>
-      <Section title="Organization & visibility" description="Choose category, storefront status and merchandising badge."><WizardOrganizationStep draft={{ ...draft, status: 'draft' }} categories={categories} update={update} /></Section>
+      <Section title="Organization & visibility" description="Choose category, storefront status and merchandising badge."><WizardOrganizationStep draft={{ ...draft, status: 'draft' }} categories={categories} update={update} lockDraft /></Section>
 
       <section className="overflow-hidden rounded-[12px] border border-[#e2e2e2] bg-white">
         <button type="button" onClick={() => setAdvancedOpen((open) => !open)} className="commerce-focus flex w-full items-center justify-between gap-4 p-4 text-left sm:p-6" aria-expanded={advancedOpen}>

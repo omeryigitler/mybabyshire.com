@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
-import { readManagedEtsyCatalog, ensureEtsyCatalogTable } from './etsyCatalog.js';
+import { readManagedEtsyCatalog, ensureEtsyCatalogTable, syncCatalogBatch } from './etsyCatalog.js';
 import { getEtsyLinks } from './etsy.js';
 
 const isNativeId = (id: unknown): id is string => typeof id === 'string' && /^[a-f0-9-]{32,40}$/i.test(id);
@@ -47,55 +47,114 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const source = req.body?.source;
-  const ids = req.body?.ids;
+  const ids: unknown = req.body?.ids;
   const operation = req.body?.operation;
   if ((source !== 'site' && source !== 'etsy') || !isSelection(ids, source === 'site' ? isNativeId : isEtsyId)) {
-    return res.status(400).json({ error: 'Select 1–25 valid products from one source.' });
+    return res.status(400).json({ error: 'Aynı kaynaktan 1–25 geçerli ürün seçin.' });
   }
-  if (!['publish', 'unpublish', 'category'].includes(operation)) return res.status(400).json({ error: 'Unsupported operation.' });
+  if (!['publish', 'unpublish', 'category'].includes(operation)) {
+    return res.status(400).json({ error: 'Desteklenmeyen ürün işlemi.' });
+  }
 
-  const hasCategory = operation === 'category';
-  const categoryId = req.body?.categoryId;
-  if (hasCategory && categoryId !== null && (typeof categoryId !== 'string' || categoryId.length > 80)) {
-    return res.status(400).json({ error: 'Invalid category.' });
+  // A category selected during publishing is committed in the same operation.
+  // The dropdown is not a separate required step before "Publish".
+  const hasCategory = Object.prototype.hasOwnProperty.call(req.body || {}, 'categoryId');
+  const categoryId: unknown = req.body?.categoryId;
+  if (operation === 'category' && !hasCategory) {
+    return res.status(400).json({ error: 'Lütfen atanacak kategoriyi seçin.' });
+  }
+  if (hasCategory && categoryId !== null && (typeof categoryId !== 'string' || !categoryId || categoryId.length > 80)) {
+    return res.status(400).json({ error: 'Geçersiz kategori seçimi.' });
   }
   if (hasCategory && categoryId) {
-    const existing = await prisma.categories.findUnique({ where: { id: categoryId }, select: { id: true } });
-    if (!existing) return res.status(404).json({ error: 'Category does not exist.' });
+    const category = await prisma.categories.findUnique({ where: { id: categoryId as string }, select: { id: true } });
+    if (!category) return res.status(404).json({ error: 'Seçilen kategori artık bulunamıyor. Listeyi yenileyin.' });
   }
 
+  const selectedIds = ids as string[];
   if (source === 'site') {
     const current = await prisma.products.findMany({
-      where: { id: { in: ids } }, include: { images: { select: { image_url: true } } },
+      where: { id: { in: selectedIds } },
+      include: { images: { select: { image_url: true } } },
     });
-    if (current.length !== ids.length) return res.status(404).json({ error: 'Some products were not found.' });
-    if (operation === 'publish' && current.some(item =>
-      !item.name.trim() || Number(item.price) <= 0 || !item.images.length || !(item.category_id))) {
-      return res.status(409).json({ error: 'Each site product needs a title, image, positive price and category before publication.' });
+    if (current.length !== selectedIds.length) {
+      return res.status(404).json({ error: 'Seçilen site ürünlerinden bazıları bulunamadı.' });
+    }
+    if (operation === 'publish') {
+      const issues = current.flatMap(item => {
+        const problems: string[] = [];
+        if (!item.name.trim()) problems.push('ürün adı');
+        if (Number(item.price) <= 0) problems.push('geçerli fiyat');
+        if (!item.images.length) problems.push('görsel');
+        if (!(hasCategory ? categoryId : item.category_id)) problems.push('kategori');
+        return problems.length ? [item.name.slice(0, 90) + ': ' + problems.join(', ')] : [];
+      });
+      if (issues.length) return res.status(409).json({ error: 'Bazı site ürünleri yayımlanmaya hazır değil.', issues });
     }
     await prisma.products.updateMany({
-      where: { id: { in: ids } },
-      data: operation === 'category' ? { category_id: categoryId } : { status: operation === 'publish' ? 'active' : 'draft' },
+      where: { id: { in: selectedIds } },
+      data: {
+        ...(hasCategory ? { category_id: categoryId as string | null } : {}),
+        ...(operation !== 'category' ? { status: operation === 'publish' ? 'active' : 'draft' } : {}),
+      },
     });
-    return res.status(200).json({ updated: ids.length });
+    return res.status(200).json({ updated: selectedIds.length });
   }
 
   await ensureEtsyCatalogTable();
-  const existing = await readManagedEtsyCatalog();
-  const byId = new Map(existing.map(x => [x.listing_id, x]));
-  if (ids.some(id => !byId.has(id))) return res.status(404).json({ error: 'Import Etsy products before changing their status.' });
-  if (operation === 'publish' && ids.some(id => {
-    const item = byId.get(id)!;
-    return !item.active || item.quantity <= 0 || Number(item.price) <= 0 ||
-      extractImages(item.image_urls).length === 0 || !item.category_id ||
-      Date.now() - new Date(item.synced_at).getTime() > 4 * 60 * 60 * 1000;
-  })) {
-    return res.status(409).json({ error: 'Etsy products must have a category, price, image, stock and recent Etsy sync before publishing.' });
+  let current = await readManagedEtsyCatalog();
+  let byId = new Map(current.map(item => [item.listing_id, item]));
+  if (selectedIds.some(id => !byId.has(id))) {
+    return res.status(404).json({ error: 'Bazı Etsy ürünleri henüz içe aktarılmamış.' });
   }
-  for (const id of ids) {
-    if (hasCategory) await prisma.$executeRaw`UPDATE etsy_catalog_items SET category_id = ${categoryId} WHERE listing_id = ${id}`;
-    else if (operation === 'publish') await prisma.$executeRaw`UPDATE etsy_catalog_items SET published = TRUE WHERE listing_id = ${id}`;
-    else await prisma.$executeRaw`UPDATE etsy_catalog_items SET published = FALSE WHERE listing_id = ${id}`;
+
+  if (operation === 'publish') {
+    const stale = selectedIds.filter(id =>
+      Date.now() - new Date(byId.get(id)!.synced_at).getTime() > 4 * 60 * 60 * 1000,
+    );
+    if (stale.length) {
+      // Verify against Etsy again when the cached listing is older than the publishing freshness window.
+      // An invalid/inactive Etsy listing is never approved based on stale data.
+      try {
+        await syncCatalogBatch(stale);
+        current = await readManagedEtsyCatalog();
+        byId = new Map(current.map(item => [item.listing_id, item]));
+      } catch {
+        return res.status(503).json({
+          error: 'Etsy ürün bilgileri güncellenemedi. Etsy verilerini yenile butonunu kullanıp tekrar deneyin.',
+        });
+      }
+    }
+
+    const issues = selectedIds.flatMap(id => {
+      const item = byId.get(id)!;
+      const problems: string[] = [];
+      if (!item.active) problems.push('Etsy ilanı aktif değil');
+      if (item.quantity <= 0) problems.push('stok sıfır');
+      if (Number(item.price) <= 0) problems.push('fiyat geçersiz');
+      if (!extractImages(item.image_urls).length) problems.push('görsel eksik');
+      if (!(hasCategory ? categoryId : item.category_id)) problems.push('kategori eksik');
+      if (Date.now() - new Date(item.synced_at).getTime() > 4 * 60 * 60 * 1000) problems.push('Etsy bilgileri güncel değil');
+      return problems.length ? [item.etsy_title.slice(0, 90) + ': ' + problems.join(', ')] : [];
+    });
+    if (issues.length) {
+      return res.status(409).json({ error: 'Seçilen Etsy ürünleri yayın koşullarını karşılamıyor.', issues });
+    }
   }
-  return res.status(200).json({ updated: ids.length });
+
+  // Atomic per-source, per-batch updates prevent assigning the category without publishing (or vice versa).
+  await prisma.$transaction(async tx => {
+    for (const id of selectedIds) {
+      if (hasCategory && operation === 'publish') {
+        await tx.$executeRaw`UPDATE etsy_catalog_items SET category_id = ${categoryId as string | null}, published = TRUE WHERE listing_id = ${id}`;
+      } else if (operation === 'category') {
+        await tx.$executeRaw`UPDATE etsy_catalog_items SET category_id = ${categoryId as string | null} WHERE listing_id = ${id}`;
+      } else if (operation === 'publish') {
+        await tx.$executeRaw`UPDATE etsy_catalog_items SET published = TRUE WHERE listing_id = ${id}`;
+      } else {
+        await tx.$executeRaw`UPDATE etsy_catalog_items SET published = FALSE WHERE listing_id = ${id}`;
+      }
+    }
+  });
+  return res.status(200).json({ updated: selectedIds.length });
 }

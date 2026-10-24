@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckSquare, ExternalLink, Eye, RefreshCw, UploadCloud } from 'lucide-react';
+import { ExternalLink, Eye, RefreshCw, UploadCloud } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAdminToken } from './adminAuth';
+import { CatalogSelect } from './CatalogSelect';
+import { CatalogActionDialog, type CatalogDialogState } from './CatalogActionDialog';
 
 type Item = {
   source: 'etsy' | 'site'; id: string; title: string; description: string;
@@ -13,6 +15,14 @@ type Category = { id: string; name: string };
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(value);
 const keyFor = (product: Item) => product.source + ':' + product.id;
+
+class CatalogRequestError extends Error {
+  issues: string[];
+  constructor(message: string, issues?: string[]) {
+    super(message);
+    this.issues = Array.isArray(issues) ? issues : [];
+  }
+}
 
 export const AdminSitePreview = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -26,6 +36,8 @@ export const AdminSitePreview = () => {
   const [message, setMessage] = useState('');
   const [preview, setPreview] = useState<Item | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [dialog, setDialog] = useState<CatalogDialogState | null>(null);
+  const [pendingOperation, setPendingOperation] = useState<'publish' | 'unpublish' | 'category' | null>(null);
 
   const api = async (action: string, method = 'GET', body?: object) => {
     const response = await fetch('/api/admin/etsy?action=' + action, {
@@ -35,7 +47,7 @@ export const AdminSitePreview = () => {
       cache: 'no-store',
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'İşlem başarısız.');
+    if (!response.ok) throw new CatalogRequestError(data.error || 'İşlem başarısız.', data.issues);
     return data;
   };
 
@@ -55,13 +67,47 @@ export const AdminSitePreview = () => {
   const published = items.filter(item => item.published).length;
   const chosen = items.filter(item => selected.includes(keyFor(item)) && item.published === (view === 'active'));
 
+  const prepareAction = (operation: 'publish' | 'unpublish' | 'category') => {
+    if (!chosen.length) {
+      setDialog({ kind: 'error', title: 'Ürün seçilmedi', message: 'İşleme devam etmek için en az bir ürün seçin.' });
+      return;
+    }
+    if (operation === 'category' && !categoryId) {
+      setDialog({ kind: 'error', title: 'Kategori seçilmedi', message: 'Ürünleri kategorize etmek için bir kategori seçin.' });
+      return;
+    }
+    const missingCategory = chosen.filter(item => !item.categoryId && !categoryId);
+    if (operation === 'publish' && missingCategory.length) {
+      setDialog({
+        kind: 'error', title: 'Önce kategori belirleyin',
+        message: 'Seçilen bazı ürünlerin kategorisi bulunmuyor. Yukarıdan bir kategori seçip doğrudan “Seçilenleri yayına al” butonuna basabilirsiniz; kategori ve yayın birlikte kaydedilir.',
+        details: missingCategory.slice(0, 8).map(item => item.title),
+      });
+      return;
+    }
+    const newCategory = categoryId ? categories.find(item => item.id === categoryId)?.name : null;
+    const warnings = operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
+      ? ['Etsy ilanına bağlı olmayan site ürünleri mevcut site ödeme akışını kullanmaya devam eder.']
+      : [];
+    const details = [
+      ...(newCategory ? ['Kategori: ' + newCategory + (operation === 'publish' ? ' (yayınla birlikte atanacak)' : '')] : []),
+      ...warnings,
+    ];
+    setPendingOperation(operation);
+    setDialog({
+      kind: 'confirm',
+      title: operation === 'publish' ? 'Ürünleri yayına al' : operation === 'unpublish' ? 'Ürünleri yayından kaldır' : 'Kategori değişikliğini onayla',
+      message: operation === 'publish'
+        ? chosen.length + ' ürün mağazada görünür olacak. Devam etmek istiyor musunuz?'
+        : operation === 'unpublish'
+          ? chosen.length + ' ürün önizleme kuyruğuna geri alınacak.'
+          : chosen.length + ' ürünün kategorisi güncellenecek.',
+      details, confirmLabel: operation === 'publish' ? 'Yayına al' : operation === 'unpublish' ? 'Yayından kaldır' : 'Kategoriyi kaydet',
+    });
+  };
+
   const submit = async (operation: 'publish' | 'unpublish' | 'category') => {
-    if (!chosen.length) return setMessage('Önce ürün seç.');
-    if (operation === 'category' && !categoryId) return setMessage('Kategori seç.');
-    if (operation === 'publish' && !window.confirm(chosen.length + ' ürünü yayına almak istiyor musun?')) return;
-    if (operation === 'unpublish' && !window.confirm(chosen.length + ' ürünü yayından kaldırıp taslağa döndürmek istiyor musun?')) return;
-    if (operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
-      && !window.confirm('Bazı site ürünlerinin Etsy ilan bağlantısı yok. Bu ürünlerde mevcut site sepeti ve ödeme akışı devam edecek. Yine de yayımlansın mı?')) return;
+    if (!chosen.length) return;
     setBusy(true); setMessage('');
     let done = 0;
     try {
@@ -71,19 +117,26 @@ export const AdminSitePreview = () => {
           const batch = group.slice(offset, offset + 25);
           await api('site-preview', 'POST', {
             source: groupSource, ids: batch.map(item => item.id), operation,
-            ...(operation === 'category' ? { categoryId } : {}),
+            ...(categoryId && (operation === 'category' || operation === 'publish') ? { categoryId } : {}),
           });
           done += batch.length;
         }
       }
       setSelected([]);
       await reload();
-      setMessage(done + ' ürün ' + (operation === 'publish' ? 'yayına alındı.' : operation === 'unpublish' ? 'önizleme kuyruğuna geri alındı.' : 'için kategori güncellendi.'));
+      const result = done + ' ürün ' + (operation === 'publish' ? 'yayına alındı.' : operation === 'unpublish' ? 'önizleme kuyruğuna geri alındı.' : 'için kategori güncellendi.');
+      setMessage(result);
+      setDialog({ kind: 'success', title: 'İşlem tamamlandı', message: result });
     } catch (error) {
       await reload().catch(() => undefined);
-      setSelected([]);
-      setMessage(done + ' üründe işlem tamamlandı; devamı uygulanmadı: ' + (error as Error).message);
-    } finally { setBusy(false); }
+      const reason = error as CatalogRequestError;
+      // Keep the selected products selected for easy correction/retry.
+      setDialog({
+        kind: 'error', title: 'Yayın işlemi tamamlanamadı',
+        message: (done ? done + ' üründe işlem tamamlandı. ' : 'Hiçbir ürün yayımlanmadı. ') + reason.message,
+        details: reason.issues,
+      });
+    } finally { setBusy(false); setPendingOperation(null); }
   };
 
   const refreshEtsy = async () => {
@@ -144,20 +197,24 @@ export const AdminSitePreview = () => {
 
     <section className="rounded-xl border border-[#e2e2e2] bg-white p-4">
       <div className="flex flex-wrap gap-3">
-        <select value={source} onChange={e => { setSource(e.target.value as typeof source); setSelected([]); }} className="h-11 rounded-lg border px-3 text-sm">
-          <option value="all">Tüm kaynaklar</option><option value="etsy">Etsy'den</option><option value="site">Siteden</option>
-        </select>
+        <CatalogSelect value={source} label="Kaynak seç"
+          options={[{ value: 'all', label: 'Tüm kaynaklar' }, { value: 'etsy', label: "Etsy'den" }, { value: 'site', label: 'Siteden' }]}
+          onChange={value => { setSource(value as typeof source); setSelected([]); }}
+        />
         <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adına göre ara" className="h-11 min-w-[190px] flex-1 rounded-lg border px-3 text-sm" />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectable.length > 0 && selectable.every(k => selected.includes(k))} onChange={e => setSelectedVisible(e.target.checked)} /> Tümünü seç ({visible.length})</label>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
         <span className="mr-1 text-sm font-semibold">{chosen.length} seçili</span>
-        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="h-10 rounded-lg border px-2 text-sm">
-          <option value="">Kategori seç…</option>{categories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}
-        </select>
-        <button disabled={busy || !chosen.length || !categoryId} onClick={() => void submit('category')} className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40">Kategori ata</button>
-        <button disabled={busy || !chosen.length} onClick={() => void submit(view === 'draft' ? 'publish' : 'unpublish')} className="inline-flex items-center gap-2 rounded-lg bg-[#222] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"><UploadCloud className="h-4 w-4" />{view === 'draft' ? 'Seçilenleri yayına al' : 'Önizlemeye geri al'}</button>
+        <CatalogSelect value={categoryId} label="Kategori seç"
+          className="min-w-[240px] max-w-full"
+          options={[{ value: '', label: 'Kategori seç…' }, ...categories.map(category => ({ value: category.id, label: category.name }))]}
+          onChange={setCategoryId}
+        />
+        <button disabled={busy || !chosen.length || !categoryId} onClick={() => prepareAction('category')} className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40">Kategori ata</button>
+        <button disabled={busy || !chosen.length} onClick={() => prepareAction(view === 'draft' ? 'publish' : 'unpublish')} className="inline-flex items-center gap-2 rounded-lg bg-[#222] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"><UploadCloud className="h-4 w-4" />{view === 'draft' ? 'Seçilenleri yayına al' : 'Önizlemeye geri al'}</button>
       </div>
+      {categoryId && chosen.length > 0 && <p className="mt-3 text-xs text-[#666]">Seçilen kategori henüz ürünlere uygulanmadı. “Kategori ata” ile kaydedebilir veya “Seçilenleri yayına al” ile aynı işlemde kategoriyi atayıp yayımlayabilirsiniz.</p>}
       {message && <p role="status" className="mt-3 rounded-lg bg-[#f5f5f5] p-3 text-sm text-[#555]">{message}</p>}
     </section>
 
@@ -174,13 +231,17 @@ export const AdminSitePreview = () => {
           </div>
         </div>
         <div className="flex items-center justify-between border-t px-3 py-3">
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium"><input type="checkbox" checked={selected.includes(keyFor(item))} onChange={e => setSelected(current => e.target.checked ? [...current, keyFor(item)] : current.filter(k => k !== keyFor(item)))} /> Yayın için seç</label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium"><input type="checkbox" checked={selected.includes(keyFor(item))} onChange={e => setSelected(current => e.target.checked ? [...current, keyFor(item)] : current.filter(k => k !== keyFor(item)))} /> {view === 'draft' ? 'Yayın için seç' : 'İşlem için seç'}</label>
           <button onClick={() => openPreview(item)} className="inline-flex items-center gap-1 text-xs font-semibold underline"><Eye className="h-3.5 w-3.5" /> Önizle</button>
         </div>
       </article>)}
       {!visible.length && <div className="col-span-full rounded-xl border border-dashed p-12 text-center text-sm text-[#888]">Burada ürün yok. Etsy'den ürün alabilir veya sitede taslak oluşturabilirsin.</div>}
     </section>
 
+    {dialog && <CatalogActionDialog dialog={dialog} busy={busy}
+      onClose={() => { if (!busy) { setDialog(null); setPendingOperation(null); } }}
+      onConfirm={() => { if (pendingOperation && !busy) void submit(pendingOperation); }}
+    />}
     {preview && <div role="dialog" aria-modal="true" aria-label="Ürün önizleme" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => setPreview(null)}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between"><h2 className="text-lg font-semibold">Ürün önizleme · {preview.source === 'etsy' ? 'Etsy' : 'Sitemiz'}</h2><button onClick={() => setPreview(null)} className="text-sm underline">Kapat</button></div>

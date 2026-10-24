@@ -6,6 +6,16 @@ import { getEtsyLinks } from '../../lib/etsy.js';
 import { getPublishedEtsyProducts, refreshPublishedEtsyWhenDue } from '../../lib/etsyCatalog.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Temporary Preview smoke verification through an existing function (no extra Vercel function).
+  if (process.env.VERCEL_ENV === 'preview' && req.query.smoke === 'catalog-read') {
+    try {
+      const { getEtsyListings } = await import('../../lib/etsy.js');
+      const { fetchEtsyDetails } = await import('../../lib/etsyCatalog.js');
+      const page = await getEtsyListings(0);
+      const details = await fetchEtsyDetails(page.listings.slice(0, 4).map(item => item.listingId));
+      return res.status(200).json({ catalogCount: page.total, checked: details.length, images: details.filter(x => x.images.length > 0).length, priced: details.filter(x => x.price > 0).length, currencies: [...new Set(details.map(x => x.currency))] });
+    } catch (error) { return res.status(502).json({ error: (error as Error).message.slice(0, 150) }); }
+  }
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

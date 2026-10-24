@@ -34,8 +34,15 @@ const NAV_ITEMS = [['New', '/collections/new-arrivals'], ['Best Sellers', '/coll
 export default function CollectionPage() {
   const { collection = '' } = useParams();
   const [urlParams, setUrlParams] = useSearchParams();
-  const config = COLLECTIONS[collection];
   const { products, productsLoading, loadProducts, cartItems, openCart } = useStore();
+  const categorySlug = collection.startsWith('category-') ? collection.slice('category-'.length) : null;
+  const matchedCategory = categorySlug ? products.find(item => item.categorySlug === categorySlug) : undefined;
+  const config: CollectionConfig | undefined = COLLECTIONS[collection] || (categorySlug ? {
+    title: matchedCategory?.categoryName || 'Catalog Category',
+    eyebrow: 'Shop by category',
+    description: 'Browse the selected MY BABY SHIRE category.',
+    matches: (item: Product) => item.categorySlug === categorySlug,
+  } : undefined);
   const [searchTerm, setSearchTerm] = useState(urlParams.get('search') || '');
   const [sortBy, setSortBy] = useState<SortMode>('featured');
   const [isSortOpen, setIsSortOpen] = useState(false);

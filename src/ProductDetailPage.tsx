@@ -210,7 +210,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" /><div><p className="text-sm font-semibold text-[#553a42]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
+                {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#e6e6e6] bg-[#fafafa] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#202020]" /><div><p className="text-sm font-semibold text-[#333]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#666]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
 
                 {variantError && <p role="alert" className="mt-4 rounded-[8px] border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">{variantError}</p>}
                 <div className="mt-6 grid gap-2.5">{product.etsyUrl ? (

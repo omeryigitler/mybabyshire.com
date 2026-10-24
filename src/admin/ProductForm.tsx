@@ -7,6 +7,7 @@ import { ImageUploader } from './ImageUploader';
 import { DEFAULT_PRODUCT_FIELDS, PersonalizationFieldBuilder, type PersonalizationBuilderField } from './PersonalizationFieldBuilder';
 import { useStore } from '../store/useStore';
 import { getAdminToken } from './adminAuth';
+import { showAdminNotice } from './adminDialogs';
 import {
   CARD_CLOUD_SHAPES,
   CARD_COLORS,
@@ -163,7 +164,7 @@ export const ProductForm = () => {
         setStatus(data.status === 'draft' ? 'draft' : 'active'); setPromotionBadge(data.bestseller ? 'bestseller' : data.newArrival ? 'newArrival' : data.featured ? 'featured' : 'none');
         const loadedDesign = parseCardDesign(data.bgImage);
         setAgeRange(data.ageRange || ''); setMaterial(data.material || ''); setCareInstructions(data.careInstructions || ''); setPreparationTime(data.preparationTime || ''); setCloudShape(loadedDesign.cloud); setPanelShape(loadedDesign.panel); setCardColor(loadedDesign.color); setCreateCloudVariants(false); setPersonalizationRequired(Boolean(data.personalizationRequired)); setPersonalizationFields(normalizeProductFields(data.personalizationFields)); setImages(data.imageUrl ? [{ url: data.imageUrl, publicId: data.publicId, id: data.id }] : []);
-      } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsLoading(false); }
+      } catch (error) { console.error(error); showAdminNotice({ kind: 'error', title: 'Product editor', message: (error as Error).message }); } finally { setIsLoading(false); }
     };
     loadProduct();
   }, [id]);
@@ -174,12 +175,12 @@ export const ProductForm = () => {
   const productPreview = images[0] ? { id: id || 'new-product-preview', name: name.trim() || 'New personalized gift', description: description.trim() || 'Your uploaded product will appear inside the selected card design.', price: Number(price) || 0, imageUrl: images[0].url, bgImage, badge: promotionBadge === 'bestseller' ? 'Bestseller' : promotionBadge === 'newArrival' ? 'New' : undefined, personalizationRequired, personalizationFields } : null;
 
   const handleSave = async () => {
-    if (!name.trim() || !description.trim() || !price || images.length === 0) { alert('Please fill product name, description, price and upload one image.'); return; }
+    if (!name.trim() || !description.trim() || !price || images.length === 0) { showAdminNotice({ kind: 'error', title: 'Missing information', message: 'Please fill product name, description, price and upload one image.' }); return; }
     setIsSaving(true);
     try {
       const token = getAdminToken();
       const response = await fetch(isEditing ? `/api/admin/products/${id}` : '/api/admin/products', { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ name: name.trim(), description: description.trim(), price: Number(price), salePrice: salePrice ? Number(salePrice) : null, imageUrl: images[0].url, publicId: images[0].publicId, bgImage, cloudVariants: !isEditing && createCloudVariants ? colorVariants : undefined, sku: sku.trim(), stockQuantity: Number(stockQuantity) || 0, categoryId: categoryId || null, status, featured: promotionBadge === 'featured', newArrival: promotionBadge === 'newArrival', bestseller: promotionBadge === 'bestseller', ageRange: ageRange.trim(), material: material.trim(), careInstructions: careInstructions.trim(), preparationTime: preparationTime.trim(), personalizationRequired, personalizationFields: personalizationRequired ? personalizationFields : [] }) });
-      const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); alert(isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.'); navigate('/admin/products');
+      const data = await response.json(); if (!response.ok) throw new Error(data.details || data.error || 'Product save failed.'); const savedProducts = Array.isArray(data.products) ? data.products : [data.primaryProduct || data]; if (!isEditing) savedProducts.forEach(addProduct); showAdminNotice({ kind: 'success', title: 'Saved', message: isEditing ? 'Product updated successfully.' : createCloudVariants ? `${savedProducts.length} cloud color products saved successfully.` : 'Product saved to database successfully.' }); navigate('/admin/products');
     } catch (error) { console.error(error); alert((error as Error).message); } finally { setIsSaving(false); }
   };
 

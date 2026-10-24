@@ -29,3 +29,10 @@ test('exports all Etsy URLs as Excel-friendly, formula-safe CSV', () => {
   assert.ok(csv.includes('https://www.etsy.com/listing/124'));
   assert.equal(csv.split('\r\n').filter(Boolean).length, 3);
 });
+
+test('matches full leading product name in longer Etsy SEO title', () => {
+  assert.equal(titleMatchType('Personalized One Today 1st Birthday Shirt', 'Personalized One Today 1st Birthday Shirt, Colorful Smiley Face'), 'prefix');
+  assert.equal(titleMatchType('Custom Shirt', 'Custom Shirt, Baby'), null);
+  assert.equal(titleMatchType('Three Rex 3rd Birthday Shirt', 'Three Rex 3rd Birthday Shirt'), 'exact');
+  assert.equal(titleMatchType('Birthday Shirt', 'Fancy Birthday Shirt'), null);
+});

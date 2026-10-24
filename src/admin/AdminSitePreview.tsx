@@ -60,6 +60,8 @@ export const AdminSitePreview = () => {
     if (operation === 'category' && !categoryId) return setMessage('Kategori seç.');
     if (operation === 'publish' && !window.confirm(chosen.length + ' ürünü yayına almak istiyor musun?')) return;
     if (operation === 'unpublish' && !window.confirm(chosen.length + ' ürünü yayından kaldırıp taslağa döndürmek istiyor musun?')) return;
+    if (operation === 'publish' && chosen.some(item => item.source === 'site' && !item.checkoutEtsyUrl)
+      && !window.confirm('Bazı site ürünlerinin Etsy ilan bağlantısı yok. Bu ürünlerde mevcut site sepeti ve ödeme akışı devam edecek. Yine de yayımlansın mı?')) return;
     setBusy(true); setMessage('');
     let done = 0;
     try {

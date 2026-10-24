@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 const FOOTER_GROUPS: { title: string; links: [string, string][] }[] = [
   { title: 'Shop', links: [['All Products', '/collections/all'], ['New Arrivals', '/collections/new-arrivals'], ['Best Sellers', '/collections/best-sellers'], ['Baby', '/collections/baby'], ['Adult', '/collections/adult']] },
   { title: 'Customer', links: [['My Account', '/account'], ['Track Order', '/track-order'], ['Returns', '/policies/returns'], ['Shipping', '/policies/shipping']] },
-  { title: 'Information', links: [['Privacy', '/policies/privacy'], ['Terms', '/policies/terms']] },
+  { title: 'Information', links: [['Privacy', '/policies/privacy'], ['Terms', '/policies/terms'], ['Cookies', '/policies/cookies']] },
 ];
 
 const productText = (product: Product) => `${product.name} ${product.description || ''} ${product.categoryName || ''} ${product.ageRange || ''}`.toLowerCase();
@@ -218,7 +218,7 @@ export default function Storefront() {
             {FOOTER_GROUPS.map((group) => <FooterGroup key={group.title} title={group.title} links={group.links} />)}
           </div>
         </div>
-        <div className="border-t border-[#e8e8e8]"><div className="mx-auto flex max-w-[1560px] flex-col gap-2 px-4 py-5 text-xs text-[#888] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"><span>© {new Date().getFullYear()} MY BABY SHIRE</span><span>Mobile-first catalog experience.</span></div></div>
+        <div className="border-t border-[#e8e8e8]"><div className="mx-auto flex max-w-[1560px] flex-col gap-2 px-4 py-5 text-xs text-[#888] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"><span>© {new Date().getFullYear()} MY BABY SHIRE</span><span>Shop on MY BABY SHIRE or complete selected purchases on Etsy.</span></div></div>
       </footer>
     </div>
   );

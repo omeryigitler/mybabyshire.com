@@ -6,18 +6,23 @@
 // Meta Pixel stays OFF until VITE_META_PIXEL_ID is provided.
 // -------------------------------------------------------------------------
 
+import { readPrivacyConsent } from './privacyConsent';
+
 const env = (import.meta as any).env || {};
 const GA_ID: string = env.VITE_GA4_ID || 'G-WS8BX178V0';
 const META_PIXEL_ID: string = env.VITE_META_PIXEL_ID || '';
 
-let initialized = false;
+let gaInitialized = false;
+let metaInitialized = false;
+const consent = () => readPrivacyConsent() || { analytics: false, marketing: false };
 
 export function initAnalytics() {
-  if (initialized || typeof window === 'undefined') return;
-  initialized = true;
+  if (typeof window === 'undefined') return;
+  const allowed = consent();
   const w = window as any;
 
-  if (GA_ID) {
+  if (GA_ID && allowed.analytics && !gaInitialized) {
+    gaInitialized = true;
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
@@ -33,7 +38,8 @@ export function initAnalytics() {
     w.gtag('config', GA_ID, { send_page_view: false });
   }
 
-  if (META_PIXEL_ID) {
+  if (META_PIXEL_ID && allowed.marketing && !metaInitialized) {
+    metaInitialized = true;
     /* eslint-disable */
     (function (f: any, b, e, v, n?: any, t?: any, s?: any) {
       if (f.fbq) return;
@@ -52,14 +58,14 @@ export function initAnalytics() {
 export function trackPageView(path: string) {
   if (typeof window === 'undefined') return;
   const w = window as any;
-  if (GA_ID && typeof w.gtag === 'function') {
+  if (GA_ID && consent().analytics && typeof w.gtag === 'function') {
     w.gtag('event', 'page_view', {
       page_path: path,
       page_location: window.location.href,
       page_title: document.title,
     });
   }
-  if (META_PIXEL_ID && typeof w.fbq === 'function') {
+  if (META_PIXEL_ID && consent().marketing && typeof w.fbq === 'function') {
     w.fbq('track', 'PageView');
   }
 }
@@ -96,14 +102,24 @@ export function consumePendingPurchase(orderNumber?: string | null): { orderNumb
 export function trackPurchase(params: { orderNumber: string; value: number; currency?: string }) {
   if (typeof window === 'undefined') return;
   const w = window as any;
-  if (GA_ID && typeof w.gtag === 'function') {
+  if (GA_ID && consent().analytics && typeof w.gtag === 'function') {
     w.gtag('event', 'purchase', {
       transaction_id: params.orderNumber,
       value: params.value,
       currency: params.currency || 'USD',
     });
   }
-  if (META_PIXEL_ID && typeof w.fbq === 'function') {
+  if (META_PIXEL_ID && consent().marketing && typeof w.fbq === 'function') {
     w.fbq('track', 'Purchase', { value: params.value, currency: params.currency || 'USD' });
+  }
+}
+
+export function disableAnalytics() {
+  if (typeof window === 'undefined') return;
+  if (GA_ID) (window as any)['ga-disable-' + GA_ID] = true;
+  for (const key of document.cookie.split(';').map(v => v.trim().split('=')[0])) {
+    if (/^_ga(?:_|$)|^_gid$|^_gat/.test(key)) {
+      document.cookie = key + '=; Max-Age=0; Path=/; SameSite=Lax';
+    }
   }
 }

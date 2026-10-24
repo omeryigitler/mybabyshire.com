@@ -227,20 +227,22 @@ export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
   return {
     id: `etsy-${item.listing_id}`,
     slug: `etsy-${item.listing_id}`,
-    name,
-    description: item.description,
+    // Etsy terms restrict ALL listing content (not just price) to six hours.
+    // Retain the approved catalog slot but suppress stale Etsy text and imagery.
+    name: priceStale ? 'View this item on Etsy' : name,
+    description: priceStale ? 'Current product photos, details and prices are available on Etsy.' : item.description,
     price: priceStale ? 0 : Number(item.price),
     priceStale,
     salePrice: null,
     priceCurrency: item.currency_code,
     source: 'etsy',
     etsyUrl: `https://www.etsy.com/listing/${item.listing_id}`,
-    imageUrl: images[0] || '',
-    hoverImageUrl: images[1] || '',
+    imageUrl: priceStale ? '/brand/mybabyshire-favicon.png' : images[0] || '',
+    hoverImageUrl: priceStale ? '' : images[1] || '',
     categoryId: item.category_id,
     categoryName: item.category_name || null,
     categorySlug: item.category_slug || null,
-    stockQuantity: item.quantity,
+    stockQuantity: priceStale ? 0 : item.quantity,
     variants: [],
     personalizationRequired: false,
     personalizationFields: [],
@@ -250,9 +252,8 @@ export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
 };
 
 export async function getPublishedEtsyProducts() {
-  // Keep approved products in the catalog while Etsy is temporarily unreachable.
-  // A stale price is NEVER shown: toStoreEtsyProduct sets priceStale and 0,
-  // and the storefront directs the buyer to Etsy for the current price.
+  // Keep approved slots in the catalog without displaying stale Etsy text/images/prices.
+  // Etsy's API prohibits showing listing content more than six hours old.
   try {
     const rows = await prisma.$queryRaw<EtsyCatalogRecord[]>`
       SELECT e.listing_id, e.etsy_title, e.description, e.price, e.currency_code,

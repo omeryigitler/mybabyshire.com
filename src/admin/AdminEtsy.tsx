@@ -213,7 +213,20 @@ export const AdminEtsy = () => {
         <p className="text-sm"><strong>{total}</strong> active Etsy listings · <strong>{matches.length}</strong> uniquely matched titles awaiting review</p>
         <button type="button" disabled={busy || selectedMatches.length === 0} onClick={() => void applyMatches()} className="rounded-lg border border-[#202020] bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-40">Apply {selectedMatches.length} reviewed matches</button>
       </div>}
-      <p className="mt-3 text-xs text-[#999]">Only exact unique titles can be bulk-linked. Duplicate titles and unmatched items remain unlinked for review. Existing links are never overwritten.</p>
+      <p className="mt-3 text-xs text-[#999]">Suggested links require a unique, exact leading product phrase; generic word overlap and duplicates are excluded. You can deselect any pair below.</p>
+      {loadedAll && matches.length > 0 && (
+        <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-[#e9e9e9]">
+          <p className="sticky top-0 border-b border-[#eee] bg-[#fafafa] px-3 py-2 text-xs font-semibold">Review proposed links ({selectedMatches.length} of {matches.length} selected)</p>
+          {matches.map((match) => (
+            <label key={match.listingId} className="flex cursor-pointer items-start gap-3 border-b border-[#eee] px-3 py-2.5 last:border-b-0">
+              <input type="checkbox" className="mt-1 h-4 w-4" checked={!excludedMatches.includes(match.listingId)}
+                onChange={(event) => setExcludedMatches(current => event.target.checked ? current.filter(id => id !== match.listingId) : [...current, match.listingId])} />
+              <span className="min-w-0 flex-1 text-xs leading-5"><strong className="block">Site: {match.productName}</strong><span className="block text-[#777]">Etsy: {match.title}</span></span>
+              <span className="shrink-0 rounded bg-[#eee] px-2 py-1 text-[10px]">{match.strategy}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </section>
 
     {selected && <section className="rounded-xl border border-[#d0d0d0] bg-white p-5">

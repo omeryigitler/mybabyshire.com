@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, ExternalLink, Loader2, RefreshCw, Unlink } from 'lucide-react';
+import { Check, Download, ExternalLink, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
+import { makeEtsyCatalogCsv } from '../utils/etsyCsv';
 
 type Listing = { listingId: string; title: string; url: string; state: 'active'; offset: number };
 type LocalProduct = { id: string; name: string; sku?: string; status?: string };
@@ -179,6 +180,27 @@ export const AdminEtsy = () => {
   };
 
   const linkedByListing = useMemo(() => new Map(links.map((link) => [link.listingId, link])), [links]);
+  const exportAllListings = () => {
+    if (!loadedAll || !listings.length) return;
+    const mappedProducts = new Map(products.map((product) => [product.id, product.name]));
+    const csv = makeEtsyCatalogCsv(listings.map((listing) => {
+      const link = linkedByListing.get(listing.listingId);
+      return {
+        listingId: listing.listingId,
+        title: listing.title,
+        url: listing.url,
+        productName: link ? mappedProducts.get(link.productId) || '' : '',
+      };
+    }));
+    const blobUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = blobUrl;
+    anchor.download = 'babyshirekids-etsy-listings.csv';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  };
   const filtered = useMemo(() => listings.filter((listing) => normalize(listing.title).includes(normalize(search)) || listing.listingId.includes(search.trim())), [listings, search]);
   const visible = filtered.slice(page * 30, (page + 1) * 30);
   const selectableProducts = products.filter((product) => product.status !== 'archived' && (normalize(product.name).includes(normalize(localSearch)) || (product.sku || '').toLowerCase().includes(localSearch.toLowerCase()))).slice(0, 25);
@@ -195,9 +217,14 @@ export const AdminEtsy = () => {
         <div><h2 className="font-semibold">{status?.connected ? 'Etsy connected' : status?.configured === false ? 'Etsy credentials missing' : 'Checking Etsy connection'}</h2>
           <p className="mt-1 text-xs text-[#777]">Shop: babyshirekids {status?.shopId ? `· ID ${status.shopId}` : ''} · Stored links: {links.length}</p>
         </div>
-        <button type="button" onClick={() => void loadCatalog()} disabled={busy || !status?.connected} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#202020] px-4 text-sm font-semibold text-white disabled:opacity-40">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Load all Etsy listings
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={exportAllListings} disabled={busy || !loadedAll || listings.length === 0} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#dedede] bg-white px-4 text-sm font-semibold text-[#333] disabled:opacity-40">
+            <Download className="h-4 w-4" /> Export all URLs (CSV)
+          </button>
+          <button type="button" onClick={() => void loadCatalog()} disabled={busy || !status?.connected} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#202020] px-4 text-sm font-semibold text-white disabled:opacity-40">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Load all Etsy listings
+          </button>
+        </div>
       </div>
       {message && <p role="status" className="mt-3 rounded-lg bg-[#f7f7f7] px-3 py-2.5 text-sm text-[#555]">{message}</p>}
       {loadedAll && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#eee] pt-4">

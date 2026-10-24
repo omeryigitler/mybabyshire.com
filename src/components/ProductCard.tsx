@@ -157,6 +157,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
               View product <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
+          {product.etsyUrl && <p className="mt-2 text-center text-[11px] text-[#888]">Final price and availability on Etsy</p>}
         </div>
       </div>
     </article>

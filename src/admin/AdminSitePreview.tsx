@@ -59,6 +59,7 @@ export const AdminSitePreview = () => {
     if (!chosen.length) return setMessage('Önce ürün seç.');
     if (operation === 'category' && !categoryId) return setMessage('Kategori seç.');
     if (operation === 'publish' && !window.confirm(chosen.length + ' ürünü yayına almak istiyor musun?')) return;
+    if (operation === 'unpublish' && !window.confirm(chosen.length + ' ürünü yayından kaldırıp taslağa döndürmek istiyor musun?')) return;
     setBusy(true); setMessage('');
     let done = 0;
     try {

@@ -70,6 +70,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const etsyOnlyMode = import.meta.env.VITE_ETSY_ONLY_MODE === 'true';
   const detailPath = `/products/${product.slug || product.id}`;
   const hasComparePrice = Boolean(product.salePrice && product.salePrice > product.price);
+  const currency = product.priceCurrency || 'USD';
+  const formatPrice = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
   const activeVariants = (product.variants || []).filter((variant) => variant.active !== false);
   const colorOptions = useMemo(() => Array.from(new Set(activeVariants.map((variant) => variant.color || '').filter(Boolean))), [activeVariants]);
   const variantPrices = activeVariants.map((variant) => variant.price ?? product.price);
@@ -141,8 +143,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         )}
 
         <div className="mt-2 flex items-center gap-2 text-sm sm:text-[15px]">
-          <span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}${lowestPrice.toFixed(2)}</span>
-          {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">${product.salePrice!.toFixed(2)}</span>}
+          <span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}{formatPrice(lowestPrice)}</span>
+          {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">{formatPrice(product.salePrice!)}</span>}
         </div>
 
         <div className="mt-auto pt-3 sm:pt-4">

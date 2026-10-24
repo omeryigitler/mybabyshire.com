@@ -35,6 +35,7 @@ export type Product = {
   price: number;
   salePrice?: number | null;
   imageUrl: string;
+  etsyUrl?: string | null;
   hoverImageUrl?: string;
   imageFocusX?: number;
   imageFocusY?: number;

@@ -126,12 +126,12 @@ export default function ProductDetailPage() {
       name: product.name,
       description: product.description,
       image: product.imageUrl || undefined,
-      offers: {
+      ...(!product.priceStale ? { offers: {
         '@type': 'Offer',
         price: minimumVariantPrice || product.price,
-        priceCurrency: 'USD',
+        priceCurrency: product.priceCurrency || 'USD',
         availability,
-      },
+      } } : {}),
       ...((product.ratingCount ?? 0) > 0
         ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.ratingAverage, reviewCount: product.ratingCount } }
         : {}),
@@ -146,7 +146,9 @@ export default function ProductDetailPage() {
     jsonLd: productJsonLd,
   });
 
-  const baseAvailability = Number(product?.stockQuantity || 0) > 0
+  const baseAvailability = product?.source === 'etsy' && product.priceStale
+    ? 'Güncel stok bilgisi Etsy’de'
+    : Number(product?.stockQuantity || 0) > 0
     ? `${product?.stockQuantity} in stock`
     : hasPersonalization
       ? 'Made to order'
@@ -197,7 +199,7 @@ export default function ProductDetailPage() {
 
                 {(product.ratingCount ?? 0) > 0 && <div className="mt-4 flex items-center gap-2"><StarRating value={product.ratingAverage ?? 0} size={16} /><span className="text-xs font-semibold">{(product.ratingAverage ?? 0).toFixed(1)}</span><span className="text-xs text-[#777]">({product.ratingCount} reviews)</span></div>}
 
-                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{hasPriceRange && !selectedVariant ? 'From ' : ''}{formatPrice(displayPrice)}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">{formatPrice(product.salePrice)}</p>}</div>
+                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{product.source === 'etsy' && product.priceStale ? 'Güncel fiyat Etsy’de' : <>{hasPriceRange && !selectedVariant ? 'From ' : ''}{formatPrice(displayPrice)}</>}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">{formatPrice(product.salePrice)}</p>}</div>
                 <p className="mt-5 text-[15px] leading-7 text-[#666]">{product.description}</p>
 
                 {variants.length > 0 && (

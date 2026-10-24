@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getCanonicalEtsyUrl, normalizeEtsyTitle } from '../lib/etsy.js';
 import { makeEtsyCatalogCsv } from '../src/utils/etsyCsv.js';
-import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText } from '../lib/etsyCatalog.js';
+import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText, isEtsyPriceStale } from '../lib/etsyCatalog.js';
 import { titleMatchType, suggestUniqueTitleMatches } from '../lib/etsyMatching.js';
+import { findLikelyDuplicateProducts, selectVisibleProductKeys } from '../lib/catalogSafety.js';
 
 test('normalizes exact product titles without making fuzzy guesses', () => {
   assert.equal(normalizeEtsyTitle('  Bébé   Shirt — Blue! '), 'bebe shirt blue');
@@ -84,4 +85,43 @@ test('published Etsy catalog products have an Etsy checkout destination', () => 
 
 test('Etsy HTML entities are rendered as readable product text', () => {
   assert.equal(decodeEtsyText('It&#39;s My First Birthday &amp; More'), "It's My First Birthday & More");
+});
+
+test('keeps Etsy products catalog-visible but does not show stale prices', () => {
+  const stale = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  const item = {
+    listing_id: '12345', etsy_title: 'Custom Birthday Shirt',
+    description: 'Made to order', price: 24, currency_code: 'EUR', quantity: 5,
+    image_urls: ['https://i.etsystatic.com/item.jpg'], active: true, published: true,
+    category_id: null, custom_title: null, synced_at: stale,
+  };
+  assert.equal(isEtsyPriceStale(stale), true);
+  const card = toStoreEtsyProduct(item);
+  assert.equal(card.priceStale, true);
+  assert.equal(card.price, 0);
+  assert.equal(card.etsyUrl, 'https://www.etsy.com/listing/12345');
+  const fresh = toStoreEtsyProduct({ ...item, synced_at: new Date() });
+  assert.equal(fresh.priceStale, false);
+  assert.equal(fresh.price, 24);
+});
+
+test('high-confidence duplicate candidates must be reviewed', () => {
+  const candidates = [
+    { id: 'a', name: 'Personalized One Today 1st Birthday Shirt', status: 'active' },
+    { id: 'b', name: 'Different Halloween Costume', status: 'active' },
+    { id: 'c', name: 'Personalized One Today 1st Birthday Shirt', status: 'archived' },
+  ];
+  const matches = findLikelyDuplicateProducts(
+    'Personalized One Today 1st Birthday Shirt, Custom Name', candidates,
+  );
+  assert.deepEqual(matches.map(item => item.id), ['a']);
+  assert.deepEqual(findLikelyDuplicateProducts('Completely Unique Product With Cats', candidates), []);
+});
+
+test('filtered bulk selection excludes invisible products', () => {
+  assert.deepEqual(
+    selectVisibleProductKeys(['etsy:10','site:abc','etsy:11'], ['etsy:11']),
+    ['etsy:11'],
+  );
+  assert.deepEqual(selectVisibleProductKeys(['etsy:10'], []), []);
 });

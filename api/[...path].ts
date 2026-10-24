@@ -3,7 +3,7 @@
 import express from 'express';
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
-// Temporary isolated Preview smoke test: import the legacy router only when needed.
+import apiRoutes from '../server/api.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAdmin } from '../lib/auth.js';
 import {
@@ -272,34 +272,9 @@ app.post('/api/paypal/capture-order', capturePayPalOrderHandler);
 app.post('/api/paypal-capture-order', capturePayPalOrderHandler);
 app.post('/api/newsletter', newsletterPostHandler);
 app.get('/api/newsletter', newsletterGetHandler);
-// Temporary read-only integration smoke probe for Preview; remove before production merge.
-app.get('/api/etsy-preview-probe', async (_req, res) => {
-  try {
-    const { getEtsyListings, getVerifiedEtsyListing } = await import('../lib/etsy.js');
-    const [first, second] = await Promise.all([getEtsyListings(0), getEtsyListings(100)]);
-    const verified = first.listings[0] ? await getVerifiedEtsyListing(first.listings[0].listingId) : null;
-    const uniqueIds = new Set([...first.listings, ...second.listings].map((item) => item.listingId));
-    return res.status(200).json({
-      connected: true, shopName: first.shopName, shopId: first.shopId, activeListings: first.total,
-      firstPageCount: first.listings.length, secondPageCount: second.listings.length,
-      uniqueCount: uniqueIds.size, listingVerified: Boolean(verified),
-    });
-  } catch (error) {
-    console.error('Etsy smoke test failed:', (error as Error).message);
-    return res.status(502).json({ connected: false, reason: String((error as Error).message).slice(0, 160) });
-  }
-});
 app.get('/api/sitemap', sitemapHandler);
 app.get('/sitemap.xml', sitemapHandler);
 
-app.use('/api', async (req, res, next) => {
-  try {
-    const { default: apiRoutes } = await import('../server/api.js');
-    return apiRoutes(req, res, next);
-  } catch (error) {
-    console.error('API import failed', (error as Error).message);
-    return res.status(500).json({ error: 'API temporarily unavailable.' });
-  }
-});
+app.use('/api', apiRoutes);
 
 export default app;

@@ -145,7 +145,9 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         </div>
 
         <div className="mt-auto pt-3 sm:pt-4">
-          {hasPersonalization && !etsyOnlyMode ? (
+          {product.etsyUrl ? (
+            <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#202020] bg-[#202020] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#3a3a3a] sm:text-sm">Buy on Etsy <ArrowUpRight className="h-3.5 w-3.5" /></a>
+          ) : hasPersonalization && !etsyOnlyMode ? (
             <button type="button" onClick={handleCustomize} disabled={preview} className="commerce-focus inline-flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#202020] bg-[#202020] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#3a3a3a] disabled:cursor-default disabled:opacity-70 sm:text-sm">
               Customize <ArrowUpRight className="h-3.5 w-3.5" />
             </button>

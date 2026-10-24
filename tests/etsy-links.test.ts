@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getCanonicalEtsyUrl, normalizeEtsyTitle } from '../lib/etsy.js';
 import { makeEtsyCatalogCsv } from '../src/utils/etsyCsv.js';
-import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct } from '../lib/etsyCatalog.js';
+import { etsyImageUrls, moneyFromEtsy, mapEtsyApiItem, toStoreEtsyProduct, decodeEtsyText } from '../lib/etsyCatalog.js';
 import { titleMatchType, suggestUniqueTitleMatches } from '../lib/etsyMatching.js';
 
 test('normalizes exact product titles without making fuzzy guesses', () => {
@@ -80,4 +80,8 @@ test('published Etsy catalog products have an Etsy checkout destination', () => 
   assert.equal(item.name, 'Short title');
   assert.equal(item.priceCurrency, 'EUR');
   assert.equal(item.etsyUrl, 'https://www.etsy.com/listing/123');
+});
+
+test('Etsy HTML entities are rendered as readable product text', () => {
+  assert.equal(decodeEtsyText('It&#39;s My First Birthday &amp; More'), "It's My First Birthday & More");
 });

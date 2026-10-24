@@ -36,6 +36,7 @@ export const AdminEtsy = () => {
   const [search, setSearch] = useState('');
   const [localSearch, setLocalSearch] = useState('');
   const [page, setPage] = useState(0);
+  const [excludedMatches, setExcludedMatches] = useState<string[]>([]);
 
   const refresh = async () => {
     const [nextStatus, nextProducts, nextLinks] = await Promise.all([

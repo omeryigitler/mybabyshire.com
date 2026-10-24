@@ -133,3 +133,20 @@ test('transient batch or auth errors never prove Etsy listing deactivation', () 
   assert.equal(isConfirmedUnavailableListingError(new Error('Etsy API request failed (HTTP 404).')), true);
   assert.equal(isConfirmedUnavailableListingError(new Error('Listing is not an active listing in babyshirekids.')), true);
 });
+
+test('stale Etsy listing text and photographs are never publicly displayed', () => {
+  const stale = new Date(Date.now() - 7 * 60 * 60 * 1000);
+  const product = toStoreEtsyProduct({
+    listing_id: '123', etsy_title: 'OLD PRODUCT TITLE',
+    description: 'OLD PRODUCT DESCRIPTION', price: 99, currency_code: 'USD',
+    quantity: 20, image_urls: ['https://i.etsystatic.com/old-image.jpg'],
+    active: true, published: true, category_id: null, custom_title: null, synced_at: stale,
+  });
+  assert.equal(product.priceStale, true);
+  assert.equal(product.price, 0);
+  assert.equal(product.name.includes('OLD PRODUCT TITLE'), false);
+  assert.equal(product.description.includes('OLD PRODUCT DESCRIPTION'), false);
+  assert.equal(product.imageUrl.includes('etsystatic.com'), false);
+  assert.equal(product.stockQuantity, 0);
+  assert.equal(product.etsyUrl, 'https://www.etsy.com/listing/123');
+});

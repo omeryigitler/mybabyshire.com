@@ -362,7 +362,7 @@ export function GlobalCustomFormControls() {
                     isSelected
                       ? 'bg-[#202020] text-white shadow-sm'
                       : isToday
-                        ? 'bg-[#f0dcc5] text-[#202020]'
+                        ? 'bg-[#202020] text-white'
                         : 'text-[#666] hover:bg-[#f4f4f4] hover:text-[#202020]'
                   }`}
                 >
@@ -384,7 +384,7 @@ export function GlobalCustomFormControls() {
               type="button"
               disabled={todayIsDisabled}
               onClick={() => chooseValue(toIsoDate(today))}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#202020] px-3 py-2 text-xs font-bold text-white hover:bg-[#202020] disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#202020] px-3 py-2 text-xs font-bold text-white hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <CalendarDays className="h-3.5 w-3.5" /> Today
             </button>

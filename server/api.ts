@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { getEtsyLinks, getProductEtsyUrl } from '../lib/etsy.js';
 import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
 import Stripe from "stripe";
@@ -801,11 +802,13 @@ router.get("/products", async (req, res) => {
       products.map((product) => product.id),
     );
 
+    const etsyLinks = new Map((await getEtsyLinks()).map((link) => [link.productId, link.url]));
     res.json(
       products.map((product) => {
         const summary = summaries.get(product.id);
         return {
           ...mapProductForStorefront(product),
+          etsyUrl: etsyLinks.get(product.id) || null,
           ratingAverage: summary?.average || 0,
           ratingCount: summary?.count || 0,
         };
@@ -839,6 +842,7 @@ router.get("/products/:slug", async (req, res) => {
 
     res.json({
       ...mapProductForStorefront(product),
+      etsyUrl: await getProductEtsyUrl(product.id),
       ratingAverage: summary?.average || 0,
       ratingCount: summary?.count || 0,
     });

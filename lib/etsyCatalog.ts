@@ -169,7 +169,7 @@ export async function refreshPublishedEtsyWhenDue(): Promise<void> {
       SELECT listing_id FROM etsy_catalog_items
       WHERE published = TRUE AND synced_at < NOW() - INTERVAL '4 hours'
       ORDER BY listing_id
-      LIMIT 200
+      LIMIT 20
     `;
   } catch (err: any) {
     if (isMissingTable(err)) return;

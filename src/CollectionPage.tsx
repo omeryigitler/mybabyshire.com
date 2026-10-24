@@ -71,8 +71,11 @@ export default function CollectionPage() {
     const query = searchTerm.trim().toLowerCase();
     const result = products.filter((product) => config.matches(product) && (!query || productText(product).includes(query)));
     const sorted = [...result];
-    if (sortBy === 'price-asc') sorted.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+    // Unverified Etsy prices are intentionally not treated as $0 bargains.
+    if (sortBy === 'price-asc') sorted.sort((a, b) =>
+      Number(Boolean(a.priceStale)) - Number(Boolean(b.priceStale)) || a.price - b.price);
+    if (sortBy === 'price-desc') sorted.sort((a, b) =>
+      Number(Boolean(a.priceStale)) - Number(Boolean(b.priceStale)) || b.price - a.price);
     if (sortBy === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
     if (sortBy === 'featured') sorted.sort((a, b) => Number(Boolean(b.featured || b.bestseller)) - Number(Boolean(a.featured || a.bestseller)));
     return sorted;

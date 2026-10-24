@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Download, ExternalLink, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
 import { makeEtsyCatalogCsv } from '../utils/etsyCsv';
+import { suggestUniqueTitleMatches, type SuggestedMatch } from '../../lib/etsyMatching';
 
 type Listing = { listingId: string; title: string; url: string; state: 'active'; offset: number };
 type LocalProduct = { id: string; name: string; sku?: string; status?: string };
 type LinkRecord = { productId: string; listingId: string; url: string; title: string };
 type ShopStatus = { configured: boolean; connected: boolean; shopName?: string; shopId?: number; linkedProducts?: number };
-type Match = { productId: string; listingId: string; offset: number; title: string };
+type Match = SuggestedMatch;
 
 const normalize = (value: string) => value.normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 
@@ -94,31 +95,7 @@ export const AdminEtsy = () => {
     }
   };
 
-  const matches = useMemo<Match[]>(() => {
-    if (!loadedAll) return [];
-    const names = new Map<string, Listing[]>();
-    const locals = new Map<string, LocalProduct[]>();
-    listings.forEach((listing) => {
-      const key = normalize(listing.title);
-      if (key) names.set(key, [...(names.get(key) || []), listing]);
-    });
-    products.forEach((product) => {
-      const key = normalize(product.name);
-      if (key && product.status !== 'archived') locals.set(key, [...(locals.get(key) || []), product]);
-    });
-    const linkedProducts = new Set(links.map((link) => link.productId));
-    const linkedListings = new Set(links.map((link) => link.listingId));
-    const suggestions: Match[] = [];
-    names.forEach((etsyListings, title) => {
-      const localProducts = locals.get(title) || [];
-      if (etsyListings.length !== 1 || localProducts.length !== 1) return; // Never guess between duplicate titles.
-      const item = etsyListings[0];
-      const product = localProducts[0];
-      if (linkedProducts.has(product.id) || linkedListings.has(item.listingId)) return;
-      suggestions.push({ productId: product.id, listingId: item.listingId, offset: item.offset, title: item.title });
-    });
-    return suggestions;
-  }, [listings, products, links, loadedAll]);
+  const matches = useMemo<Match[]>(() => loadedAll ? suggestUniqueTitleMatches(products, listings, links) : [], [listings, products, links, loadedAll]);
 
   const applyMatches = async () => {
     if (!matches.length) return;

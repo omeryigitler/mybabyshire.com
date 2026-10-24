@@ -21,7 +21,11 @@ export async function handleEtsyCatalogAdmin(req: VercelRequest, res: VercelResp
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > 12000 || offset % 100 !== 0) return res.status(400).json({ error: 'Invalid preview page.' });
     const page = await getEtsyListings(offset);
     const details = page.listings.length ? await fetchEtsyDetails(page.listings.map(item => item.listingId)) : [];
-    return res.status(200).json({ ...page, listings: details });
+    const found = new Map(details.map(item => [item.listingId, item]));
+    const listings = page.listings.map(item => found.get(item.listingId) || {
+      ...item, description: '', price: 0, currency: 'USD', quantity: 0, images: [],
+    });
+    return res.status(200).json({ ...page, listings });
   }
 
   if (req.method === 'POST' && action === 'catalog-import') {

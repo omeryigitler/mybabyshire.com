@@ -36,3 +36,12 @@ test('matches full leading product name in longer Etsy SEO title', () => {
   assert.equal(titleMatchType('Three Rex 3rd Birthday Shirt', 'Three Rex 3rd Birthday Shirt'), 'exact');
   assert.equal(titleMatchType('Birthday Shirt', 'Fancy Birthday Shirt'), null);
 });
+
+test('avoids duplicate and already mapped site product suggestions', () => {
+  const products = [{id:'a',name:'Personalized Two Cool 2nd Birthday Shirt'},{id:'b',name:'Personalized Three Rex 3rd Birthday Shirt'}];
+  const listings = [{listingId:'10',title:'Personalized Two Cool 2nd Birthday Shirt, Cute Race Car',offset:0},{listingId:'11',title:'Personalized Three Rex 3rd Birthday Shirt, Dinosaur Party',offset:0}];
+  assert.equal(suggestUniqueTitleMatches(products,listings,[]).length,2);
+  assert.equal(suggestUniqueTitleMatches(products,listings,[{productId:'a',listingId:'10'}]).length,1);
+  assert.equal(suggestUniqueTitleMatches([...products,{id:'c',name:products[0].name}],listings,[]).length,1);
+  assert.equal(suggestUniqueTitleMatches(products,[...listings,{listingId:'12',title:listings[0].title,offset:100}],[]).length,1);
+});

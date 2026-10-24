@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckSquare, ExternalLink, Eye, RefreshCw, UploadCloud } from 'lucide-react';
+import { ExternalLink, Eye, RefreshCw, UploadCloud } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAdminToken } from './adminAuth';
+import { CatalogSelect } from './CatalogSelect';
+import { CatalogActionDialog, type CatalogDialogState } from './CatalogActionDialog';
 
 type Item = {
   source: 'etsy' | 'site'; id: string; title: string; description: string;
@@ -13,6 +15,14 @@ type Category = { id: string; name: string };
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(value);
 const keyFor = (product: Item) => product.source + ':' + product.id;
+
+class CatalogRequestError extends Error {
+  issues: string[];
+  constructor(message: string, issues?: string[]) {
+    super(message);
+    this.issues = Array.isArray(issues) ? issues : [];
+  }
+}
 
 export const AdminSitePreview = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -26,6 +36,8 @@ export const AdminSitePreview = () => {
   const [message, setMessage] = useState('');
   const [preview, setPreview] = useState<Item | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [dialog, setDialog] = useState<CatalogDialogState | null>(null);
+  const [pendingOperation, setPendingOperation] = useState<'publish' | 'unpublish' | 'category' | null>(null);
 
   const api = async (action: string, method = 'GET', body?: object) => {
     const response = await fetch('/api/admin/etsy?action=' + action, {
@@ -35,7 +47,7 @@ export const AdminSitePreview = () => {
       cache: 'no-store',
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'İşlem başarısız.');
+    if (!response.ok) throw new CatalogRequestError(data.error || 'İşlem başarısız.', data.issues);
     return data;
   };
 

@@ -2,7 +2,6 @@ import { prisma } from './prisma.js';
 import { getEtsyShopId } from './etsy.js';
 
 const ROOT = 'https://api.etsy.com/v3/application';
-const TTL_HOURS = 5;
 const validId = (id: string) => /^\d{1,20}$/.test(id);
 const isMissingTable = (error: any) => error?.code === 'P2010' && error?.meta?.code === '42P01' || error?.code === '42P01';
 

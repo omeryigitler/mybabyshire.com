@@ -5,7 +5,7 @@ import { AdminSidebar } from './AdminSidebar';
 import { clearAdminSession, getStoredAdminToken } from './adminAuth';
 import { BrandLogo } from '../components/BrandLogo';
 import { AdminNoticeDialog, type AdminNotice } from './AdminNoticeDialog';
-import { ADMIN_CONFIRM_EVENT, type AdminConfirmEventDetail } from './adminDialogs';
+import { ADMIN_CONFIRM_EVENT, ADMIN_NOTICE_EVENT, type AdminConfirmEventDetail, type AdminNoticePayload } from './adminDialogs';
 
 export const AdminLayout = () => {
   const isAuthenticated = Boolean(getStoredAdminToken());
@@ -14,16 +14,6 @@ export const AdminLayout = () => {
   const confirmResolver = useRef<((confirmed: boolean) => void) | null>(null);
 
   useEffect(() => {
-    const originalAlert = window.alert;
-    window.alert = (message?: any) => {
-      setNotice({
-        kind: 'error',
-        title: 'Action needs attention',
-        message: 'Review the information below and try again.',
-        issues: [String(message || 'Please review this action.')],
-      });
-    };
-
     const handleConfirmRequest = (event: Event) => {
       const detail = (event as CustomEvent<AdminConfirmEventDetail>).detail;
       if (!detail) return;
@@ -32,10 +22,16 @@ export const AdminLayout = () => {
       setNotice({ kind: 'confirm', title: detail.title, message: detail.message });
     };
 
+    const handleNotice = (event: Event) => {
+      const detail = (event as CustomEvent<AdminNoticePayload>).detail;
+      if (!detail) return;
+      setNotice(detail);
+    };
     window.addEventListener(ADMIN_CONFIRM_EVENT, handleConfirmRequest);
+    window.addEventListener(ADMIN_NOTICE_EVENT, handleNotice);
     return () => {
-      window.alert = originalAlert;
       window.removeEventListener(ADMIN_CONFIRM_EVENT, handleConfirmRequest);
+      window.removeEventListener(ADMIN_NOTICE_EVENT, handleNotice);
       confirmResolver.current?.(false);
       confirmResolver.current = null;
     };

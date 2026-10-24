@@ -9,7 +9,7 @@ import React from 'react';
 type IconType = React.ComponentType<{ className?: string }>;
 
 export const PANEL_CLASS =
-  'rounded-2xl border border-boutique-brown/10 bg-white/92 shadow-[0_8px_28px_rgba(58,37,26,0.06)] backdrop-blur-sm';
+  'rounded-2xl border border-[#e4e4e4] bg-white/92 shadow-sm backdrop-blur-sm';
 
 export function PageHeader({
   eyebrow,
@@ -29,14 +29,14 @@ export function PageHeader({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           {eyebrow && (
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-boutique-brown/10 bg-[#fffaf3] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-boutique-brown-light">
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[#e4e4e4] bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#666]">
               {Icon && <Icon className="h-3.5 w-3.5" />}
               {eyebrow}
             </div>
           )}
-          <h1 className="font-serif text-3xl leading-tight text-boutique-brown sm:text-[2.4rem]">{title}</h1>
+          <h1 className="font-sans text-3xl leading-tight text-[#202020] sm:text-[2.4rem]">{title}</h1>
           {description && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-boutique-brown-light">{description}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#666]">{description}</p>
           )}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -63,10 +63,10 @@ export function Panel({
   return (
     <section className={`overflow-hidden ${PANEL_CLASS} ${className}`}>
       {(title || actions) && (
-        <div className="flex flex-col gap-2 border-b border-boutique-brown/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-[#e4e4e4] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            {title && <h2 className="text-[15px] font-bold tracking-tight text-boutique-brown">{title}</h2>}
-            {description && <p className="mt-0.5 text-xs text-boutique-brown-light">{description}</p>}
+            {title && <h2 className="text-[15px] font-bold tracking-tight text-[#202020]">{title}</h2>}
+            {description && <p className="mt-0.5 text-xs text-[#666]">{description}</p>}
           </div>
           {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
         </div>
@@ -77,7 +77,7 @@ export function Panel({
 }
 
 const STAT_TONES: Record<string, string> = {
-  cream: 'bg-[#fff4df] text-boutique-brown',
+  cream: 'bg-[#f6f6f6] text-[#202020]',
   green: 'bg-green-50 text-green-700',
   amber: 'bg-amber-50 text-amber-700',
   blue: 'bg-blue-50 text-blue-700',
@@ -102,12 +102,12 @@ export function StatCard({
   return (
     <div className={`${PANEL_CLASS} p-4 sm:p-5`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-boutique-brown/55">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#888]">{label}</p>
         <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${STAT_TONES[tone]}`}>
           <Icon className="h-4.5 w-4.5" />
         </span>
       </div>
-      <p className="mt-3 font-serif text-3xl leading-none text-boutique-brown">{value}</p>
+      <p className="mt-3 font-sans text-3xl leading-none text-[#202020]">{value}</p>
       <div className="mt-2 flex items-center gap-2">
         {delta && (
           <span
@@ -118,14 +118,14 @@ export function StatCard({
             {delta.value}
           </span>
         )}
-        {hint && <span className="text-xs text-boutique-brown-light">{hint}</span>}
+        {hint && <span className="text-xs text-[#666]">{hint}</span>}
       </div>
     </div>
   );
 }
 
 const BADGE_TONES: Record<string, string> = {
-  neutral: 'bg-[#f3f0ea] text-boutique-brown-light border-boutique-brown/10',
+  neutral: 'bg-[#f5f5f5] text-[#666] border-[#e4e4e4]',
   green: 'bg-green-100 text-green-800 border-green-200',
   amber: 'bg-amber-100 text-amber-800 border-amber-200',
   red: 'bg-rose-100 text-rose-700 border-rose-200',
@@ -147,9 +147,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const BUTTON_VARIANTS: Record<string, string> = {
-  primary: 'bg-boutique-brown text-white hover:bg-boutique-wood shadow-sm',
-  secondary: 'border border-boutique-brown/10 bg-white text-boutique-brown hover:bg-[#fff4df] shadow-sm',
-  ghost: 'text-boutique-brown-light hover:bg-[#fff4df] hover:text-boutique-brown',
+  primary: 'bg-[#202020] text-white hover:bg-[#383838] shadow-sm',
+  secondary: 'border border-[#e4e4e4] bg-white text-[#202020] hover:bg-[#f6f6f6] shadow-sm',
+  ghost: 'text-[#666] hover:bg-[#f6f6f6] hover:text-[#202020]',
   danger: 'border border-rose-200 bg-white text-rose-600 hover:bg-rose-50',
 };
 
@@ -180,12 +180,12 @@ export function SearchInput({
 }) {
   return (
     <div className={`relative ${className}`}>
-      {Icon && <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-boutique-brown/40" />}
+      {Icon && <Icon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999]" />}
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={`w-full rounded-full border border-boutique-brown/12 bg-white px-4 py-2.5 text-sm text-boutique-brown shadow-sm outline-none placeholder:text-boutique-brown/35 focus:ring-2 focus:ring-boutique-wood/25 ${Icon ? 'pl-10' : ''}`}
+        className={`w-full rounded-full border border-[#e4e4e4] bg-white px-4 py-2.5 text-sm text-[#202020] shadow-sm outline-none placeholder:text-[#202020]/35 focus:ring-2 focus:ring-boutique-wood/25 ${Icon ? 'pl-10' : ''}`}
       />
     </div>
   );
@@ -202,26 +202,26 @@ export function Table({ children, className = '' }: { children: React.ReactNode;
 
 export function TH({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
   return (
-    <th className={`whitespace-nowrap border-b border-boutique-brown/10 bg-[#fffaf3]/60 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-boutique-brown/55 ${className}`}>
+    <th className={`whitespace-nowrap border-b border-[#e4e4e4] bg-white/60 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-[#888] ${className}`}>
       {children}
     </th>
   );
 }
 
 export function TD({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
-  return <td className={`border-b border-boutique-brown/8 px-4 py-3 align-middle text-boutique-brown ${className}`}>{children}</td>;
+  return <td className={`border-b border-[#e4e4e4] px-4 py-3 align-middle text-[#202020] ${className}`}>{children}</td>;
 }
 
 export function EmptyState({ icon: Icon, title, description }: { icon?: IconType; title: string; description?: string }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
       {Icon && (
-        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff4df] text-boutique-brown/70">
+        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f6f6f6] text-[#666]">
           <Icon className="h-7 w-7" />
         </span>
       )}
-      <p className="font-serif text-xl text-boutique-brown">{title}</p>
-      {description && <p className="mt-2 max-w-sm text-sm text-boutique-brown-light">{description}</p>}
+      <p className="font-sans text-xl text-[#202020]">{title}</p>
+      {description && <p className="mt-2 max-w-sm text-sm text-[#666]">{description}</p>}
     </div>
   );
 }

@@ -20,3 +20,10 @@ export const requestAdminConfirm = (request: AdminConfirmRequest) => {
     }));
   });
 };
+
+export const ADMIN_NOTICE_EVENT = 'mybabyshire:admin-notice';
+export type AdminNoticePayload = { kind: 'error' | 'success'; title: string; message: string; issues?: string[] };
+export function showAdminNotice(notice: AdminNoticePayload) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(ADMIN_NOTICE_EVENT, { detail: notice }));
+}

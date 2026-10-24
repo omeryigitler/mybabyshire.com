@@ -11,7 +11,7 @@ type Item = {
   imageUrl: string; price: number; currency: string; published: boolean;
   categoryId: string | null; categoryName: string | null; detailUrl?: string | null;
   previewUrl?: string | null; checkoutEtsyUrl?: string | null; available?: boolean; syncedAt?: string;
-  possibleDuplicates?: string[];
+  possibleDuplicates?: string[]; staleData?: boolean;
 };
 type Category = { id: string; name: string };
 const money = (value: number, currency: string) =>
@@ -235,7 +235,9 @@ export const AdminSitePreview = () => {
             <div className="mb-2 flex flex-wrap gap-1"><span className="rounded bg-[#f2f2f2] px-2 py-0.5 text-[10px] font-semibold">{item.source === 'etsy' ? 'ETSY' : 'SİTE'}</span><span className="rounded bg-[#f2f2f2] px-2 py-0.5 text-[10px]">{item.categoryName || 'Kategorisiz'}</span></div>
             <h2 className="line-clamp-3 text-sm font-semibold">{item.title}</h2>
             <p className="mt-2 text-sm font-semibold">{money(item.price, item.currency)}</p>
-            {item.source === 'etsy' && item.available === false && <p className="mt-1 text-xs text-red-600">Etsy'de kullanılabilir değil</p>}
+            {item.source === 'etsy' && item.staleData
+              ? <p className="mt-1 text-xs text-[#777]">Etsy bilgileri yenilenmeli</p>
+              : item.source === 'etsy' && item.available === false && <p className="mt-1 text-xs text-red-600">Etsy'de kullanılabilir değil</p>}
             {item.source === 'etsy' && Boolean(item.possibleDuplicates?.length) && <p className="mt-1 text-xs font-semibold text-[#9c6500]">Benzer site ürünü var · Yayından önce inceleyin</p>}
             {item.source === 'site' && !item.checkoutEtsyUrl && <p className="mt-1 text-[11px] text-[#a46b15]">Etsy linki yok · Site ödemesi geçerli</p>}
           </div>

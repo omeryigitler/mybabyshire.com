@@ -83,6 +83,24 @@ export const AdminSitePreview = () => {
     } finally { setBusy(false); }
   };
 
+  const refreshEtsy = async () => {
+    const ids = items.filter(item => item.source === 'etsy').map(item => item.id);
+    if (!ids.length) return setMessage('Henüz içe aktarılmış Etsy ürünü yok.');
+    setBusy(true); setMessage('');
+    let refreshed = 0;
+    try {
+      for (let offset = 0; offset < ids.length; offset += 100) {
+        const data = await api('catalog-sync', 'POST', { ids: ids.slice(offset, offset + 100) });
+        refreshed += Number(data.refreshed || 0);
+      }
+      await reload();
+      setMessage(refreshed + ' Etsy ürününün fiyat, görsel ve satış durumu güncellendi.');
+    } catch (error) {
+      await reload().catch(() => undefined);
+      setMessage('Etsy güncellemesi kısmen tamamlandı: ' + (error as Error).message);
+    } finally { setBusy(false); }
+  };
+
   const setSelectedVisible = (checked: boolean) => setSelected(current =>
     checked ? Array.from(new Set([...current, ...selectable])) : current.filter(k => !selectable.includes(k)));
 
@@ -107,6 +125,7 @@ export const AdminSitePreview = () => {
       <div className="flex flex-wrap gap-2">
         <Link to="/admin/products?create=1" className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold">+ Siteden ürün ekle</Link>
         <Link to="/admin/etsy" className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold">+ Etsy'den ürün getir</Link>
+        <button disabled={busy} onClick={() => void refreshEtsy()} className="inline-flex items-center gap-1.5 rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40"><RefreshCw className="h-4 w-4" /> Etsy verilerini yenile</button>
         <button onClick={() => void reload().catch(error => setMessage(error.message))} className="rounded-lg border px-3 py-2.5"><RefreshCw className="h-4 w-4" /></button>
       </div>
     </header>

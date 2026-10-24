@@ -73,6 +73,14 @@ export default function Storefront() {
     ].filter((tile) => tile.product);
   }, [products]);
 
+  const customCategoryLinks = useMemo(() => {
+    const unique = new Map<string, string>();
+    products.forEach(product => {
+      if (product.categorySlug && product.categoryName) unique.set(product.categorySlug, product.categoryName);
+    });
+    return [...unique.entries()].map(([slug, title]) => ({ slug, title })).sort((a, b) => a.title.localeCompare(b.title));
+  }, [products]);
+
   const heroProducts = (bestSellers.length ? bestSellers : newArrivals).slice(0, 2);
   const babyPromoProduct = categoryTiles.find((tile) => tile.label === 'Baby')?.product || products[0];
 
@@ -171,6 +179,14 @@ export default function Storefront() {
           {productsLoading ? <div className="py-10 text-center text-sm text-[#777]">Loading catalog...</div> : <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible md:grid-cols-6">{categoryTiles.map((tile) => <Link key={tile.href} to={tile.href} className="commerce-focus group min-w-[42%] snap-start sm:min-w-0"><div className="aspect-square overflow-hidden rounded-full border border-[#e8e8e8] p-3 sm:p-4" style={{ backgroundColor: tile.tint }}><img src={tile.product!.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" /></div><p className="mt-3 text-center text-xs font-semibold sm:text-sm">{tile.label}</p></Link>)}</div>}
         </section>
 
+        {customCategoryLinks.length > 0 && <section className="border-t border-[#eee] bg-white">
+          <div className="mx-auto max-w-[1560px] px-4 py-9 sm:px-6 lg:px-8">
+            <h2 className="mb-4 text-lg font-semibold">Browse our product collections</h2>
+            <div className="flex flex-wrap gap-2">
+              {customCategoryLinks.map(category => <Link key={category.slug} to={'/collections/category-' + encodeURIComponent(category.slug)} className="rounded-full border border-[#dedede] px-4 py-2.5 text-sm font-semibold transition-colors hover:border-[#222] hover:bg-[#fafafa]">{category.title}</Link>)}
+            </div>
+          </div>
+        </section>}
         <section className="border-y border-[#ededed] bg-[#fafafa]"><div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16"><div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Popular now</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Best sellers</h2></div><Link to="/collections/best-sellers" className="text-sm font-semibold text-[#666] hover:text-[#202020]">View all</Link></div>{productsLoading ? <div className="py-16 text-center text-sm text-[#777]">Loading products...</div> : bestSellers.length > 0 ? <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-6">{bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <EmptyProducts />}</div></section>
 
         <section className="mx-auto grid max-w-[1560px] gap-3 px-4 py-10 sm:grid-cols-3 sm:px-6 sm:py-14 lg:px-8 lg:py-16"><Value title="Simple catalog" text="Browse by age group, style and product collection without decorative clutter." /><Value title="Color & size inventory" text="Variant-level SKU and stock support keeps product options clear as the catalog grows." /><Value title="Customization when needed" text="Standard blanks stay simple; products request customer details only when required." /></section>

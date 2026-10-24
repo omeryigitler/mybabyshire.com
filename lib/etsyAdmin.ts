@@ -3,7 +3,7 @@ import { prisma } from './prisma.js';
 import { requireAdmin } from './auth.js';
 import {
   etsyIsConfigured, getEtsyShopId, getEtsyListings, getVerifiedEtsyListing,
-  getEtsyLinks, saveEtsyLink, removeEtsyLink, normalizeEtsyTitle,
+  getEtsyLinks, saveEtsyLink, removeEtsyLink, createEtsyLinksTable, normalizeEtsyTitle,
 } from './etsy.js';
 
 const getAuth = (req: VercelRequest) => Array.isArray(req.headers.authorization) ? req.headers.authorization[0] : req.headers.authorization;
@@ -40,6 +40,7 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
       const product = await prisma.products.findUnique({ where: { id: productId }, select: { id: true } });
       if (!product) return res.status(404).json({ error: 'Site product not found.' });
       const listing = await getVerifiedEtsyListing(listingId);
+      await createEtsyLinksTable();
       const saved = await saveEtsyLink(productId, listing);
       if (!saved) return res.status(409).json({ error: 'Product already linked. Unlink it before changing its Etsy listing.' });
       return res.status(200).json({ linked: true, productId, listing });
@@ -48,6 +49,7 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
     if (req.method === 'DELETE' && action === 'link') {
       const productId = String(req.body?.productId || '').trim();
       if (!productId) return res.status(400).json({ error: 'Product ID is required.' });
+      await createEtsyLinksTable();
       await removeEtsyLink(productId);
       return res.status(200).json({ unlinked: true, productId });
     }
@@ -70,6 +72,7 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
       const productById = new Map(products.map((product) => [product.id, product]));
       const reservedProducts = new Set(existing.map((link) => link.productId));
       const reservedListings = new Set(existing.map((link) => link.listingId));
+      await createEtsyLinksTable();
       let created = 0;
       let skipped = 0;
       for (const pair of pairs as Array<{ productId: string; listingId: string }>) {

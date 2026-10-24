@@ -69,6 +69,7 @@ export default function ProductDetailPage() {
   }, [colors.length, selectedColor, selectedSize, sizes.length, variants]);
 
   const hasPersonalization = Boolean(product?.personalizationRequired || product?.personalizationFields?.length);
+  const etsyOnlyMode = import.meta.env.VITE_ETSY_ONLY_MODE === 'true';
   const selectedPrice = selectedVariant?.price ?? product?.price ?? 0;
   const variantPrices = variants.map((variant) => variant.price ?? product?.price ?? 0);
   const minimumVariantPrice = variantPrices.length ? Math.min(...variantPrices) : product?.price ?? 0;
@@ -209,7 +210,13 @@ export default function ProductDetailPage() {
                 {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" /><div><p className="text-sm font-semibold text-[#553a42]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
 
                 {variantError && <p role="alert" className="mt-4 rounded-[8px] border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">{variantError}</p>}
-                <div className="mt-6 grid gap-2.5"><button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button></div>
+                <div className="mt-6 grid gap-2.5">{product.etsyUrl ? (
+                  <a href={product.etsyUrl} target="_blank" rel="noopener noreferrer" className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">Buy securely on Etsy ↗</a>
+                ) : etsyOnlyMode ? (
+                  <p className="rounded-[9px] border border-[#e1e1e1] bg-[#fafafa] px-4 py-4 text-center text-sm text-[#666]">Etsy checkout is not available for this product yet.</p>
+                ) : (
+                  <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button>
+                )}</div>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
                   <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Server-verified options</span>

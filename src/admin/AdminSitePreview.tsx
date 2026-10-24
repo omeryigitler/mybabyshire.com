@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { getAdminToken } from './adminAuth';
 import { CatalogSelect } from './CatalogSelect';
 import { CatalogActionDialog, type CatalogDialogState } from './CatalogActionDialog';
+import { selectVisibleProductKeys } from '../../lib/catalogSafety';
 
 type Item = {
   source: 'etsy' | 'site'; id: string; title: string; description: string;
@@ -68,7 +69,8 @@ export const AdminSitePreview = () => {
   const staged = items.filter(item => !item.published).length;
   const published = items.filter(item => item.published).length;
   // Only items still visible under the current source/search/status filter can be processed.
-  const chosen = visible.filter(item => selected.includes(keyFor(item)));
+  const chosenKeys = new Set(selectVisibleProductKeys(selected, visible.map(keyFor)));
+  const chosen = visible.filter(item => chosenKeys.has(keyFor(item)));
 
   const prepareAction = (operation: 'publish' | 'unpublish' | 'category') => {
     if (!chosen.length) {

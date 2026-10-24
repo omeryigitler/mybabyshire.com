@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
+import { handleEtsyCatalogAdmin } from './etsyCatalogAdmin.js';
 import { titleMatchType } from './etsyMatching.js';
 import { requireAdmin } from './auth.js';
 import {
@@ -18,6 +19,10 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
   }
 
   try {
+    if (action.startsWith('catalog-')) {
+      const result = await handleEtsyCatalogAdmin(req, res, action);
+      return result || res.status(405).json({ error: 'Unsupported catalog operation.' });
+    }
     if (req.method === 'GET' && action === 'status') {
       if (!etsyIsConfigured()) return res.status(200).json({ configured: false, connected: false });
       const [shopId, links] = await Promise.all([getEtsyShopId(), getEtsyLinks()]);

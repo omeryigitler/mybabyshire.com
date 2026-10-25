@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { BabyCubeMark } from './BrandLogo';
+import { BrandLogo } from './BrandLogo';
 import { openPrivacySettings } from '../utils/privacyConsent';
 
 const footerSections = [
@@ -45,9 +45,8 @@ export function SiteCredits() {
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-10">
         <div className="grid grid-cols-2 gap-x-7 gap-y-11 border-b border-white/15 py-12 sm:gap-x-10 sm:py-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:gap-x-14 lg:py-16">
           <div className="col-span-2 lg:col-span-1">
-            <Link to="/" aria-label="MY BABY SHIRE home" className="inline-flex w-fit max-w-full items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-              <BabyCubeMark decorative className="block h-[52px] w-[52px] shrink-0 object-contain" />
-              <span aria-hidden="true" className="text-[18px] font-extrabold leading-tight tracking-[0.11em] text-white sm:text-[21px]">MY BABY SHIRE</span>
+            <Link to="/" aria-label="MY BABY SHIRE home" className="inline-flex w-fit max-w-full items-center bg-white px-2.5 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+              <BrandLogo variant="nav" className="!h-[43px] sm:!h-[48px] !w-auto !max-w-[min(72vw,305px)] !drop-shadow-none" />
             </Link>
             <p className="mt-6 max-w-[290px] text-[14px] leading-7 text-[#b8b8b8]">
               Everyday apparel and custom-ready essentials for little ones and grown-ups.

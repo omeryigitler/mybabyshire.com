@@ -17,9 +17,9 @@ export function StarRating({ value, size = 16, className = '' }: StarRatingProps
         const fill = Math.max(0, Math.min(1, rounded - index));
         return (
           <span key={index} className="relative inline-block" style={{ width: size, height: size }}>
-            <Star size={size} className="absolute inset-0 text-boutique-brown/25" strokeWidth={1.5} />
+            <Star size={size} className="absolute inset-0 text-[#cccccc]" strokeWidth={1.5} />
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-              <Star size={size} className="text-boutique-wood" fill="currentColor" strokeWidth={1.5} />
+              <Star size={size} className="text-[#202020]" fill="currentColor" strokeWidth={1.5} />
             </span>
           </span>
         );
@@ -57,7 +57,7 @@ export function StarRatingInput({ value, onChange, size = 28, className = '' }: 
           <Star
             size={size}
             strokeWidth={1.5}
-            className={star <= active ? 'text-boutique-wood' : 'text-boutique-brown/25'}
+            className={star <= active ? 'text-[#202020]' : 'text-[#cccccc]'}
             fill={star <= active ? 'currentColor' : 'none'}
           />
         </button>

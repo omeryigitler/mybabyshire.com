@@ -277,7 +277,7 @@ export function GlobalCustomFormControls() {
         transform: position.openUp ? 'translateY(-100%)' : undefined,
         zIndex: 10000,
       }}
-      className="overflow-y-auto overscroll-contain rounded-[1.35rem] border border-boutique-brown/12 bg-[#fffaf3] p-1.5 font-sans shadow-[0_22px_55px_rgba(58,37,26,0.22)]"
+      className="overflow-y-auto overscroll-contain rounded-[1.35rem] border border-[#e3e3e3] bg-white p-1.5 font-sans shadow-[0_22px_55px_rgba(0,0,0,0.15)]"
     >
       {activeControl.kind === 'select' ? (
         <div role="listbox" aria-label={activeControl.element.getAttribute('aria-label') || 'Choose an option'}>
@@ -289,7 +289,7 @@ export function GlobalCustomFormControls() {
             return (
               <React.Fragment key={`${option.value}-${index}`}>
                 {showGroup && (
-                  <div className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-boutique-brown/45 first:pt-1">
+                  <div className="px-4 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#888] first:pt-1">
                     {option.groupLabel}
                   </div>
                 )}
@@ -301,12 +301,12 @@ export function GlobalCustomFormControls() {
                   onClick={() => chooseValue(option.value)}
                   className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     isSelected
-                      ? 'bg-[#f0dcc5] font-bold text-boutique-brown'
-                      : 'font-medium text-boutique-brown-light hover:bg-[#fff0de] hover:text-boutique-brown'
+                      ? 'bg-[#202020] font-bold text-white'
+                      : 'font-medium text-[#666] hover:bg-[#f4f4f4] hover:text-[#202020]'
                   }`}
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
-                  {isSelected && <Check className="h-4 w-4 flex-shrink-0 text-boutique-wood" strokeWidth={2.4} />}
+                  {isSelected && <Check className="h-4 w-4 flex-shrink-0 text-[#202020]" strokeWidth={2.4} />}
                 </button>
               </React.Fragment>
             );
@@ -318,25 +318,25 @@ export function GlobalCustomFormControls() {
             <button
               type="button"
               onClick={() => setViewDate((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-boutique-brown-light transition-colors hover:bg-[#fff0de] hover:text-boutique-brown"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[#666] transition-colors hover:bg-[#f4f4f4] hover:text-[#202020]"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <p className="min-w-0 truncate text-center text-sm font-bold text-boutique-brown">
+            <p className="min-w-0 truncate text-center text-sm font-bold text-[#202020]">
               {viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </p>
             <button
               type="button"
               onClick={() => setViewDate((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-boutique-brown-light transition-colors hover:bg-[#fff0de] hover:text-boutique-brown"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[#666] transition-colors hover:bg-[#f4f4f4] hover:text-[#202020]"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-boutique-brown/45">
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-[#888]">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => <span key={`${day}-${index}`} className="py-1">{day}</span>)}
           </div>
 
@@ -360,10 +360,10 @@ export function GlobalCustomFormControls() {
                   onClick={() => chooseValue(toIsoDate(day))}
                   className={`aspect-square min-w-0 rounded-xl text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-25 ${
                     isSelected
-                      ? 'bg-boutique-brown text-white shadow-sm'
+                      ? 'bg-[#202020] text-white shadow-sm'
                       : isToday
-                        ? 'bg-[#f0dcc5] text-boutique-brown'
-                        : 'text-boutique-brown-light hover:bg-[#fff0de] hover:text-boutique-brown'
+                        ? 'bg-[#202020] text-white'
+                        : 'text-[#666] hover:bg-[#f4f4f4] hover:text-[#202020]'
                   }`}
                 >
                   {day.getDate()}
@@ -372,11 +372,11 @@ export function GlobalCustomFormControls() {
             })}
           </div>
 
-          <div className="mt-3 flex items-center justify-between border-t border-boutique-brown/10 px-1 pt-3">
+          <div className="mt-3 flex items-center justify-between border-t border-[#e3e3e3] px-1 pt-3">
             <button
               type="button"
               onClick={() => chooseValue('')}
-              className="rounded-full px-3 py-2 text-xs font-bold text-boutique-brown-light hover:bg-[#fff0de] hover:text-boutique-brown"
+              className="rounded-full px-3 py-2 text-xs font-bold text-[#666] hover:bg-[#f4f4f4] hover:text-[#202020]"
             >
               Clear
             </button>
@@ -384,7 +384,7 @@ export function GlobalCustomFormControls() {
               type="button"
               disabled={todayIsDisabled}
               onClick={() => chooseValue(toIsoDate(today))}
-              className="inline-flex items-center gap-1.5 rounded-full bg-boutique-brown px-3 py-2 text-xs font-bold text-white hover:bg-boutique-wood disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#202020] px-3 py-2 text-xs font-bold text-white hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <CalendarDays className="h-3.5 w-3.5" /> Today
             </button>

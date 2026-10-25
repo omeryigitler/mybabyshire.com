@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Download, ExternalLink, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { getAdminToken } from './adminAuth';
+import { requestAdminConfirm } from './adminDialogs';
 import { makeEtsyCatalogCsv } from '../utils/etsyCsv';
 import { suggestUniqueTitleMatches, type SuggestedMatch } from '../../lib/etsyMatching';
 
@@ -103,7 +104,7 @@ export const AdminEtsy = () => {
 
   const applyMatches = async () => {
     if (!selectedMatches.length) return;
-    if (!window.confirm(`Link ${selectedMatches.length} reviewed product titles to Etsy? This only adds missing links; it never replaces existing links.`)) return;
+    if (!(await requestAdminConfirm({ title: 'Connect Etsy products', message: `Link ${selectedMatches.length} reviewed products to Etsy? Existing links will not be overwritten.` }))) return;
     setBusy(true);
     setMessage('');
     try {
@@ -148,7 +149,7 @@ export const AdminEtsy = () => {
   };
 
   const unlink = async (productId: string) => {
-    if (!window.confirm('Remove this Etsy product link?')) return;
+    if (!(await requestAdminConfirm({ title: 'Remove Etsy link?', message: 'The site product will no longer link to this Etsy listing.' }))) return;
     setBusy(true);
     try {
       await adminRequest('/api/admin/etsy?action=link', { method: 'DELETE', body: JSON.stringify({ productId }) });

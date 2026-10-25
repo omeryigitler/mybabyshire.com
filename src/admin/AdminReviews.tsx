@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, RefreshCcw, Star, Trash2, Undo2, X } from 'lucide-react';
 import { getAdminToken, handleAdminAuthError } from './adminAuth';
 import { requestAdminConfirm } from './adminDialogs';
+import { REVIEW_MODERATION_PATH, parseReviewApiResponse } from './reviewApi';
 
 type AdminReview = {
   id: string;
@@ -47,9 +48,8 @@ export const AdminReviews = () => {
     setError('');
     try {
       const query = status ? `?status=${encodeURIComponent(status)}` : '';
-      const response = await fetch(`/api/admin/reviews${query}`, { headers: { Authorization: `Bearer ${getAdminToken()}` } });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load reviews.');
+      const response = await fetch(`${REVIEW_MODERATION_PATH}${query}`, { headers: { Authorization: `Bearer ${getAdminToken()}` } });
+      const data = await parseReviewApiResponse(response);
       setReviews(Array.isArray(data) ? data : []);
     } catch (loadError) {
       if (handleAdminAuthError(loadError)) return;
@@ -64,13 +64,12 @@ export const AdminReviews = () => {
   const updateStatus = async (id: string, status: string) => {
     setError('');
     try {
-      const response = await fetch(`/api/admin/reviews/${id}`, {
+      const response = await fetch(REVIEW_MODERATION_PATH, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAdminToken()}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ id, status }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update review.');
+      await parseReviewApiResponse(response);
       setReviews((current) => filter && status !== filter ? current.filter((review) => review.id !== id) : current.map((review) => review.id === id ? { ...review, status } : review));
     } catch (updateError) {
       if (handleAdminAuthError(updateError)) return;
@@ -83,9 +82,8 @@ export const AdminReviews = () => {
     if (!confirmed) return;
     setError('');
     try {
-      const response = await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAdminToken()}` } });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete review.');
+      const response = await fetch(`${REVIEW_MODERATION_PATH}?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAdminToken()}` } });
+      await parseReviewApiResponse(response);
       setReviews((current) => current.filter((review) => review.id !== id));
     } catch (deleteError) {
       if (handleAdminAuthError(deleteError)) return;
@@ -101,7 +99,7 @@ export const AdminReviews = () => {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Content</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em] text-[#202020]">Reviews</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Moderate customer reviews. Only approved reviews are visible on the storefront.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Moderate customer reviews. Only approved reviews are visible on the storefront. Moderate for authenticity and content-policy violations, not merely for low ratings.</p>
         </div>
         <button type="button" onClick={() => void loadReviews()} disabled={loading} className="commerce-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7] disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh</button>
       </div>

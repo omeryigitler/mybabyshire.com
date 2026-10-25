@@ -80,7 +80,7 @@ export const CartDrawer = () => {
                           </div>
 
                           {Object.keys(item.personalizationData).length > 0 && (
-                            <div className="mt-3 space-y-1 rounded-[8px] bg-[#faf6f7] p-2.5 text-[11px] leading-relaxed text-[#666]">
+                            <div className="mt-3 space-y-1 rounded-[8px] bg-[#fafafa] p-2.5 text-[11px] leading-relaxed text-[#666]">
                               {Object.entries(item.personalizationData).map(([key, value]) => (
                                 <div key={key} className="flex gap-1">
                                   <span className="capitalize text-[#888]">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>

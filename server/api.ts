@@ -998,7 +998,7 @@ router.post("/reviews", async (req, res) => {
 });
 
 // Admin: list reviews (optionally filtered by status)
-router.get("/admin/reviews", requireAdmin, async (req, res) => {
+router.get(["/admin/reviews", "/review-moderation"], requireAdmin, async (req, res) => {
   try {
     const status = String(req.query.status || "").trim();
     const reviews = await prisma.product_reviews.findMany({
@@ -1041,8 +1041,7 @@ const updateAdminReview = async (req: Request, res: Response) => {
   }
 };
 
-router.put("/admin/reviews", requireAdmin, updateAdminReview);
-router.put("/admin/reviews/:id", requireAdmin, updateAdminReview);
+router.put(["/admin/reviews", "/admin/reviews/:id", "/review-moderation"], requireAdmin, updateAdminReview);
 
 // Admin: delete a review
 const deleteAdminReview = async (req: Request, res: Response) => {
@@ -1060,8 +1059,7 @@ const deleteAdminReview = async (req: Request, res: Response) => {
   }
 };
 
-router.delete("/admin/reviews", requireAdmin, deleteAdminReview);
-router.delete("/admin/reviews/:id", requireAdmin, deleteAdminReview);
+router.delete(["/admin/reviews", "/admin/reviews/:id", "/review-moderation"], requireAdmin, deleteAdminReview);
 
 // ---------------------------------------------------------
 // Coupons

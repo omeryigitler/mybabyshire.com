@@ -8,7 +8,7 @@ on:
       - 'api/**'
       - 'src/**'
       - 'server.ts'
-      - 'tests/etsy-links.test.ts'
+      - 'tests/**/*.test.ts'
       - 'package*.json'
       - '.github/workflows/etsy-integrity.yml'
   workflow_dispatch:
@@ -29,5 +29,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npx tsx --test tests/etsy-links.test.ts
+      - run: npx tsx --test tests/*.test.ts
       - run: npm run build

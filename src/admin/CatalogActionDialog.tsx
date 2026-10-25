@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export type CatalogDialogState = {
@@ -7,6 +7,7 @@ export type CatalogDialogState = {
   message: string;
   details?: string[];
   confirmLabel?: string;
+  requiresDuplicateAcknowledgment?: boolean;
 };
 
 export const CatalogActionDialog = ({
@@ -19,6 +20,8 @@ export const CatalogActionDialog = ({
 }) => {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [duplicatesReviewed, setDuplicatesReviewed] = useState(false);
+  useEffect(() => setDuplicatesReviewed(false), [dialog]);
   useEffect(() => {
     closeRef.current?.focus();
     const onEscape = (event: KeyboardEvent) => {
@@ -47,10 +50,16 @@ export const CatalogActionDialog = ({
       {dialog.details && dialog.details.length > 0 && <div className="mt-4 max-h-48 overflow-y-auto rounded-[9px] border border-[#e8e8e8] bg-[#fafafa] p-3">
         <ul className="space-y-2 text-xs leading-5 text-[#444]">{dialog.details.map((detail, index) => <li key={index}>• {detail}</li>)}</ul>
       </div>}
+      {dialog.requiresDuplicateAcknowledgment && dialog.kind === 'confirm' &&
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[9px] border border-[#dedede] p-3 text-sm text-[#333]">
+          <input type="checkbox" className="mt-1" checked={duplicatesReviewed}
+            onChange={event => setDuplicatesReviewed(event.target.checked)} />
+          <span>Benzer mevcut ürünleri kontrol ettim; bu Etsy ürünlerini ayrıca yayımlamak istiyorum.</span>
+        </label>}
       <div className="mt-6 flex flex-wrap justify-end gap-2">
         {dialog.kind === 'confirm' && <button type="button" disabled={busy} onClick={onClose}
           className="commerce-focus min-h-11 rounded-[9px] border border-[#dedede] bg-white px-5 text-sm font-semibold hover:bg-[#f7f7f7] disabled:opacity-40">Vazgeç</button>}
-        <button type="button" disabled={busy} onClick={dialog.kind === 'confirm' ? onConfirm : onClose}
+        <button type="button" disabled={busy || (dialog.kind === 'confirm' && dialog.requiresDuplicateAcknowledgment && !duplicatesReviewed)} onClick={dialog.kind === 'confirm' ? onConfirm : onClose}
           className="commerce-focus min-h-11 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-40">
           {busy ? 'İşleniyor…' : dialog.kind === 'confirm' ? (dialog.confirmLabel || 'Onayla') : 'Kapat'}
         </button>

@@ -126,12 +126,12 @@ export default function ProductDetailPage() {
       name: product.name,
       description: product.description,
       image: product.imageUrl || undefined,
-      offers: {
+      ...(!product.priceStale ? { offers: {
         '@type': 'Offer',
         price: minimumVariantPrice || product.price,
-        priceCurrency: 'USD',
+        priceCurrency: product.priceCurrency || 'USD',
         availability,
-      },
+      } } : {}),
       ...((product.ratingCount ?? 0) > 0
         ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.ratingAverage, reviewCount: product.ratingCount } }
         : {}),
@@ -146,7 +146,9 @@ export default function ProductDetailPage() {
     jsonLd: productJsonLd,
   });
 
-  const baseAvailability = Number(product?.stockQuantity || 0) > 0
+  const baseAvailability = product?.source === 'etsy' && product.priceStale
+    ? 'Güncel stok bilgisi Etsy’de'
+    : Number(product?.stockQuantity || 0) > 0
     ? `${product?.stockQuantity} in stock`
     : hasPersonalization
       ? 'Made to order'
@@ -197,7 +199,7 @@ export default function ProductDetailPage() {
 
                 {(product.ratingCount ?? 0) > 0 && <div className="mt-4 flex items-center gap-2"><StarRating value={product.ratingAverage ?? 0} size={16} /><span className="text-xs font-semibold">{(product.ratingAverage ?? 0).toFixed(1)}</span><span className="text-xs text-[#777]">({product.ratingCount} reviews)</span></div>}
 
-                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{hasPriceRange && !selectedVariant ? 'From ' : ''}{formatPrice(displayPrice)}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">{formatPrice(product.salePrice)}</p>}</div>
+                <div className="mt-5 flex items-center gap-3"><p className="text-2xl font-semibold">{product.source === 'etsy' && product.priceStale ? 'Güncel fiyat Etsy’de' : <>{hasPriceRange && !selectedVariant ? 'From ' : ''}{formatPrice(displayPrice)}</>}</p>{!variants.length && product.salePrice && product.salePrice > product.price && <p className="text-base text-[#999] line-through">{formatPrice(product.salePrice)}</p>}</div>
                 <p className="mt-5 text-[15px] leading-7 text-[#666]">{product.description}</p>
 
                 {variants.length > 0 && (
@@ -208,7 +210,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#eadde1] bg-[#fbf4f6] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#855764]" /><div><p className="text-sm font-semibold text-[#553a42]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#765d64]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
+                {hasPersonalization && <div className="mt-6 flex items-start gap-3 rounded-[10px] border border-[#e6e6e6] bg-[#fafafa] p-4"><Heart className="mt-0.5 h-4 w-4 shrink-0 text-[#202020]" /><div><p className="text-sm font-semibold text-[#333]">Customization required</p><p className="mt-1 text-xs leading-relaxed text-[#666]">Complete the required customer-input fields before adding this product to the cart.</p></div></div>}
 
                 {variantError && <p role="alert" className="mt-4 rounded-[8px] border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">{variantError}</p>}
                 <div className="mt-6 grid gap-2.5">{product.etsyUrl ? (
@@ -218,7 +220,11 @@ export default function ProductDetailPage() {
                 ) : (
                   <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button>
                 )}</div>
-                {product.etsyUrl && <p className="mt-2 text-xs text-[#777]">Final pricing, availability, customization and shipping are confirmed on Etsy.</p>}
+                {product.etsyUrl && <p className="mt-2 text-xs leading-5 text-[#777]"><strong>Checkout on Etsy:</strong> Etsy confirms final price, applicable tax, shipping, options and payment. The seller's Etsy listing shows its own returns and cancellation rules. All Etsy order help, refund requests and Purchase Protection cases are handled through Etsy.</p>}
+                <p className="mt-3 text-xs leading-5 text-[#666]">
+                  Please review the <Link to="/policies/returns" className="font-semibold underline underline-offset-2">Returns &amp; Refunds Policy</Link> before ordering.
+                  {product.etsyUrl ? ' The 30-day direct-site standard-item policy does not apply to Etsy orders. Review the seller-specific returns and cancellations on Etsy before paying.' : ' Direct website orders follow our posted direct-order policy.'}
+                </p>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-y border-[#ededed] py-5 text-center text-[11px] font-medium text-[#666]">
                   <span className="flex flex-col items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#202020]" /> Server-verified options</span>

@@ -1,5 +1,5 @@
 import { prisma } from './prisma.js';
-import { getEtsyShopId } from './etsy.js';
+import { getEtsyShopId, getVerifiedEtsyListing } from './etsy.js';
 
 const ROOT = 'https://api.etsy.com/v3/application';
 const validId = (id: string) => /^\d{1,20}$/.test(id);
@@ -150,18 +150,35 @@ export async function importCatalogIds(ids: string[]) {
 }
 
 // One verified sync page of at most 100 previously imported listings.
-// Missing/inactive listings are disabled without deleting their local configuration.
+// A missing batch result alone never marks an Etsy product inactive.
+export const isConfirmedUnavailableListingError = (error: unknown) =>
+  /HTTP 404|not an active listing/i.test(String((error as Error)?.message || ''));
+
 export async function syncCatalogBatch(ids: string[]) {
   if (!ids.length || ids.length > 100 || ids.some(id => !validId(id))) throw new Error('Invalid sync batch.');
   const items = await fetchEtsyDetails(ids);
-  const active = new Set(items.map(item => item.listingId));
+  const found = new Set(items.map(item => item.listingId));
   for (const item of items) await updateRecord(item);
+  let unavailable = 0;
+  let unverified = 0;
   for (const id of ids) {
-    if (!active.has(id)) {
-      await prisma.$executeRaw`UPDATE etsy_catalog_items SET active = FALSE, synced_at = NOW() WHERE listing_id = ${id}`;
+    if (found.has(id)) continue;
+    // An incomplete batch response is not proof of an inactive listing.
+    // Only deactivate when Etsy explicitly confirms a listing cannot be accessed
+    // or is no longer active. All other failures leave the current state intact.
+    try {
+      await getVerifiedEtsyListing(id);
+      unverified++;
+    } catch (error) {
+      if (isConfirmedUnavailableListingError(error)) {
+        await prisma.$executeRaw`UPDATE etsy_catalog_items SET active = FALSE, synced_at = NOW() WHERE listing_id = ${id}`;
+        unavailable++;
+      } else {
+        throw error;
+      }
     }
   }
-  return { refreshed: items.length, unavailable: ids.length - items.length };
+  return { refreshed: items.length, unavailable, unverified };
 }
 
 // Uses a short-lived server instance lock to avoid overlapping Etsy API reads.
@@ -198,25 +215,34 @@ const listImages = (value: any): string[] => {
   try { const parsed = JSON.parse(String(value)); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
 };
 
+export const isEtsyPriceStale = (syncedAt: Date | string, now = Date.now()) => {
+  const verified = new Date(syncedAt).getTime();
+  return !Number.isFinite(verified) || now - verified >= 4 * 60 * 60 * 1000;
+};
+
 export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
   const images = listImages(item.image_urls);
   const name = item.custom_title || item.etsy_title;
+  const priceStale = isEtsyPriceStale(item.synced_at);
   return {
     id: `etsy-${item.listing_id}`,
     slug: `etsy-${item.listing_id}`,
-    name,
-    description: item.description,
-    price: Number(item.price),
+    // Etsy terms restrict ALL listing content (not just price) to six hours.
+    // Retain the approved catalog slot but suppress stale Etsy text and imagery.
+    name: priceStale ? 'View this item on Etsy' : name,
+    description: priceStale ? 'Current product photos, details and prices are available on Etsy.' : item.description,
+    price: priceStale ? 0 : Number(item.price),
+    priceStale,
     salePrice: null,
     priceCurrency: item.currency_code,
     source: 'etsy',
     etsyUrl: `https://www.etsy.com/listing/${item.listing_id}`,
-    imageUrl: images[0] || '',
-    hoverImageUrl: images[1] || '',
+    imageUrl: priceStale ? '/brand/mybabyshire-favicon.png' : images[0] || '',
+    hoverImageUrl: priceStale ? '' : images[1] || '',
     categoryId: item.category_id,
     categoryName: item.category_name || null,
     categorySlug: item.category_slug || null,
-    stockQuantity: item.quantity,
+    stockQuantity: priceStale ? 0 : item.quantity,
     variants: [],
     personalizationRequired: false,
     personalizationFields: [],
@@ -226,8 +252,8 @@ export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
 };
 
 export async function getPublishedEtsyProducts() {
-  // Etsy listing data is not shown if the last verified sync is over five hours old.
-  // Product visibility is intentionally fail-closed when Etsy is unreachable.
+  // Keep approved slots in the catalog without displaying stale Etsy text/images/prices.
+  // Etsy's API prohibits showing listing content more than six hours old.
   try {
     const rows = await prisma.$queryRaw<EtsyCatalogRecord[]>`
       SELECT e.listing_id, e.etsy_title, e.description, e.price, e.currency_code,
@@ -236,7 +262,6 @@ export async function getPublishedEtsyProducts() {
       FROM etsy_catalog_items e
       LEFT JOIN categories c ON c.id = e.category_id
       WHERE e.active = TRUE AND e.published = TRUE AND e.quantity > 0
-        AND e.synced_at > NOW() - INTERVAL '5 hours'
       ORDER BY e.imported_at DESC
     `;
     return rows.filter(item => listImages(item.image_urls).length > 0).map(toStoreEtsyProduct);

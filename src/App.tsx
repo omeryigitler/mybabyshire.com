@@ -1,6 +1,8 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { initAnalytics, trackPageView } from './utils/analytics';
+import { CookieConsent } from './components/CookieConsent';
+import { SiteCredits } from './components/SiteCredits';
 import Storefront from './Storefront';
 import { GlobalCustomFormControls } from './components/GlobalCustomFormControls';
 
@@ -17,6 +19,7 @@ const ShippingPolicyPage = lazy(() => import('./legal/LegalPages').then((module)
 const RefundPolicyPage = lazy(() => import('./legal/LegalPages').then((module) => ({ default: module.RefundPolicyPage })));
 const PrivacyPolicyPage = lazy(() => import('./legal/LegalPages').then((module) => ({ default: module.PrivacyPolicyPage })));
 const TermsPage = lazy(() => import('./legal/LegalPages').then((module) => ({ default: module.TermsPage })));
+const CookiesPolicyPage = lazy(() => import('./legal/LegalPages').then((module) => ({ default: module.CookiesPolicyPage })));
 
 const AdminLayout = lazy(() => import('./admin/AdminLayout').then((module) => ({ default: module.AdminLayout })));
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
@@ -56,6 +59,7 @@ export default function App() {
     <BrowserRouter>
       <GlobalCustomFormControls />
       <RouteAnalytics />
+      <CookieConsent />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Storefront />} />
@@ -73,6 +77,7 @@ export default function App() {
           <Route path="/policies/returns" element={<RefundPolicyPage />} />
           <Route path="/policies/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/policies/terms" element={<TermsPage />} />
+          <Route path="/policies/cookies" element={<CookiesPolicyPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
@@ -93,6 +98,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      <SiteCredits />
       </Suspense>
     </BrowserRouter>
   );

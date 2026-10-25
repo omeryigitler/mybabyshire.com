@@ -1,3 +1,4 @@
+import { waitUntil } from '@vercel/functions';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
 import { mapProductForStorefront } from '../../lib/products.js';
@@ -43,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Failed to load catalog review summaries', error);
     }
 
-    try { await refreshPublishedEtsyWhenDue(); } catch (error) { console.error('Etsy refresh failed', error); }
+    waitUntil(refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error)));
     const [links, managed] = await Promise.all([getEtsyLinks(), getPublishedEtsyProducts()]);
     const etsyLinks = new Map(links.map(link => [link.productId, link.url]));
     const nativeProducts = products.map((product) => {

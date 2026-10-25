@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { handleSitePreview } from './sitePreview.js';
 import { prisma } from './prisma.js';
 import { getEtsyListings, getEtsyLinks } from './etsy.js';
 import {
@@ -42,49 +43,34 @@ export async function handleEtsyCatalogAdmin(req: VercelRequest, res: VercelResp
   if (req.method === 'POST' && action === 'catalog-manage') {
     const ids = req.body?.ids;
     if (!ownIdList(ids)) return res.status(400).json({ error: 'Choose 1–25 imported listings.' });
-    const categoryId = req.body?.categoryId;
-    const hasCategory = Object.prototype.hasOwnProperty.call(req.body || {}, 'categoryId');
-    const hasPublish = typeof req.body?.published === 'boolean';
-    const hasTitle = Object.prototype.hasOwnProperty.call(req.body || {}, 'customTitle');
-    if (!hasCategory && !hasPublish && !hasTitle) return res.status(400).json({ error: 'No changes requested.' });
-    if (hasCategory && categoryId !== null && (typeof categoryId !== 'string' || categoryId.length > 80)) return res.status(400).json({ error: 'Invalid category ID.' });
-    if (hasTitle && ids.length !== 1) return res.status(400).json({ error: 'Custom title can be edited one product at a time.' });
-    if (hasTitle && req.body.customTitle !== null && (typeof req.body.customTitle !== 'string' || req.body.customTitle.length > 160)) {
-      return res.status(400).json({ error: 'Title exceeds maximum length.' });
+    // Publishing and category changes must use the same validated, atomic path.
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'published') ||
+        Object.prototype.hasOwnProperty.call(req.body || {}, 'categoryId')) {
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'customTitle')) {
+        return res.status(400).json({ error: 'Save the title separately from publishing or category changes.' });
+      }
+      if ('published' in req.body && typeof req.body.published !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid publishing state.' });
+      }
+      req.body = { ...req.body, source: 'etsy', operation:
+        typeof req.body.published === 'boolean' ? (req.body.published ? 'publish' : 'unpublish') : 'category' };
+      return handleSitePreview(req, res);
+    }
+    if (!Object.prototype.hasOwnProperty.call(req.body || {}, 'customTitle') || ids.length !== 1 ||
+        (req.body.customTitle !== null && (typeof req.body.customTitle !== 'string' || req.body.customTitle.length > 160))) {
+      return res.status(400).json({ error: 'Provide one listing and a title of at most 160 characters.' });
     }
     await ensureEtsyCatalogTable();
-    if (hasCategory && categoryId !== null) {
-      const category = await prisma.categories.findUnique({ where: { id: categoryId }, select: { id: true } });
-      if (!category) return res.status(400).json({ error: 'Category not found.' });
-    }
     const rows = await readManagedEtsyCatalog();
-    const existing = new Map(rows.map(item => [item.listing_id, item]));
-    if (ids.some(id => !existing.has(id))) return res.status(404).json({ error: 'One or more listings have not been imported.' });
-    if (req.body.published === true && ids.some(id => {
-      const item = existing.get(id)!;
-      const images = Array.isArray(item.image_urls) ? item.image_urls : [];
-      return !item.active || item.quantity <= 0 || images.length === 0 || !Number.isFinite(Number(item.price));
-    })) {
-      return res.status(409).json({ error: 'An unavailable, unpriced or image-less listing cannot be published.' });
-    }
-    for (const id of ids) {
-      if (hasCategory) {
-        await prisma.$executeRaw`UPDATE etsy_catalog_items SET category_id = ${categoryId} WHERE listing_id = ${id}`;
-      }
-      if (hasPublish) {
-        await prisma.$executeRaw`UPDATE etsy_catalog_items SET published = ${req.body.published as boolean} WHERE listing_id = ${id}`;
-      }
-      if (hasTitle) {
-        const title = String(req.body.customTitle || '').trim() || null;
-        await prisma.$executeRaw`UPDATE etsy_catalog_items SET custom_title = ${title} WHERE listing_id = ${id}`;
-      }
-    }
+    if (!rows.some(item => item.listing_id === ids[0])) return res.status(404).json({ error: 'Listing has not been imported.' });
+    const title = String(req.body.customTitle || '').trim() || null;
+    await prisma.$executeRaw`UPDATE etsy_catalog_items SET custom_title = ${title} WHERE listing_id = ${ids[0]}`;
     return res.status(200).json({ updated: ids.length });
   }
 
   if (req.method === 'POST' && action === 'catalog-sync') {
     const ids = req.body?.ids;
-    if (!ownIdList(ids, 100)) return res.status(400).json({ error: 'Choose 1–100 already imported listings to refresh.' });
+    if (!ownIdList(ids, 25)) return res.status(400).json({ error: 'Choose 1–25 already imported listings to refresh.' });
     const saved = await readManagedEtsyCatalog();
     const known = new Set(saved.map(item => item.listing_id));
     if (ids.some(id => !known.has(id))) return res.status(400).json({ error: 'Some listings are not yet imported.' });

@@ -97,7 +97,7 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       const issues = current.flatMap(item => {
         const problems: string[] = [];
         if (!item.name.trim()) problems.push('ürün adı');
-        if (Number(item.price) <= 0) problems.push('geçerli fiyat');
+        if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) problems.push('geçerli fiyat');
         if (!item.images.length) problems.push('görsel');
         if (!(hasCategory ? categoryId : item.category_id)) problems.push('kategori');
         return problems.length ? [item.name.slice(0, 90) + ': ' + problems.join(', ')] : [];
@@ -123,7 +123,7 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
 
   if (operation === 'publish') {
     const stale = selectedIds.filter(id =>
-      Date.now() - new Date(byId.get(id)!.synced_at).getTime() > 4 * 60 * 60 * 1000,
+      isEtsyPriceStale(byId.get(id)!.synced_at),
     );
     if (stale.length) {
       // Verify against Etsy again when the cached listing is older than the publishing freshness window.
@@ -144,10 +144,10 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       const problems: string[] = [];
       if (!item.active) problems.push('Etsy ilanı aktif değil');
       if (item.quantity <= 0) problems.push('stok sıfır');
-      if (Number(item.price) <= 0) problems.push('fiyat geçersiz');
+      if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) problems.push('fiyat geçersiz');
       if (!extractImages(item.image_urls).length) problems.push('görsel eksik');
       if (!(hasCategory ? categoryId : item.category_id)) problems.push('kategori eksik');
-      if (Date.now() - new Date(item.synced_at).getTime() > 4 * 60 * 60 * 1000) problems.push('Etsy bilgileri güncel değil');
+      if (isEtsyPriceStale(item.synced_at)) problems.push('Etsy bilgileri güncel değil');
       return problems.length ? [item.etsy_title.slice(0, 90) + ': ' + problems.join(', ')] : [];
     });
     if (issues.length) {

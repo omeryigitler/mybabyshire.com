@@ -35,6 +35,7 @@ export type Product = {
   price: number;
   salePrice?: number | null;
   imageUrl: string;
+  imageUrls?: string[];
   etsyUrl?: string | null;
   priceCurrency?: string;
   priceStale?: boolean;

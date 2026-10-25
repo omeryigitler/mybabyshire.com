@@ -2,15 +2,18 @@ name: Etsy integration integrity
 on:
   pull_request:
     paths:
-      - 'lib/etsy.ts'
-      - 'lib/etsyAdmin.ts'
-      - 'src/admin/AdminEtsy.tsx'
+      - 'lib/**'
       - 'api/**'
       - 'src/**'
+      - 'server/**'
       - 'server.ts'
-      - 'tests/**/*.test.ts'
+      - 'prisma/**'
+      - 'tests/**'
       - 'package*.json'
+      - 'vercel.json'
       - '.github/workflows/etsy-integrity.yml'
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

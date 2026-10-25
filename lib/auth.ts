@@ -139,5 +139,10 @@ export const requireAdmin = (authorization?: string) => {
   }
 
   const token = authorization.split(' ')[1];
-  return jwt.verify(token, getJwtSecret());
+  const claims = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] });
+  if (typeof claims === 'string' || claims.role !== 'admin' || claims.type === 'member' ||
+      typeof claims.id !== 'string' || typeof claims.email !== 'string') {
+    throw new Error('Unauthorized: Admin role required');
+  }
+  return claims;
 };

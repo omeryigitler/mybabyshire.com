@@ -1,7 +1,7 @@
+import { etsyRequest as etsyGet } from './etsyHttp.js';
 import { prisma } from './prisma.js';
 
 // Server-only Etsy integration. No Etsy credentials or OAuth tokens are returned to clients.
-const API_ROOT = 'https://api.etsy.com/v3/application';
 const SHOP_NAME = 'babyshirekids';
 const PAGE_SIZE = 100;
 const MAX_OFFSET = 12000;
@@ -15,23 +15,6 @@ export const normalizeEtsyTitle = (name: string) =>
   name.normalize('NFKD').toLowerCase().replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 
 const validListingId = (value: unknown) => /^\d{1,20}$/.test(String(value ?? ''));
-const externalError = (status: number) => {
-  if (status === 401 || status === 403) return new Error('Etsy rejected API access. Check your approved app credentials and access permissions.');
-  if (status === 429) return new Error('Etsy API rate limit reached. Try again shortly.');
-  return new Error(`Etsy API request failed (HTTP ${status}).`);
-};
-
-async function etsyGet(path: string): Promise<any> {
-  if (!etsyIsConfigured()) throw new Error('ETSY_API_KEY and ETSY_SHARED_SECRET must be set in Vercel.');
-  const response = await fetch(`${API_ROOT}${path}`, {
-    headers: { 'x-api-key': `${process.env.ETSY_API_KEY}:${process.env.ETSY_SHARED_SECRET}`, Accept: 'application/json' },
-    signal: AbortSignal.timeout(12000),
-    cache: 'no-store',
-  });
-  if (!response.ok) throw externalError(response.status);
-  return response.json();
-}
-
 export async function getEtsyShopId(): Promise<number> {
   if (cachedShop && Date.now() < cachedShop.expiresAt) return cachedShop.shopId;
   const data = await etsyGet(`/shops?shop_name=${encodeURIComponent(SHOP_NAME)}&limit=100`);
@@ -77,8 +60,9 @@ export async function getVerifiedEtsyListing(listingId: unknown): Promise<EtsyLi
   return { listingId: id, title: String(listing.title || '').trim(), state: 'active', url: getCanonicalEtsyUrl(id)! };
 }
 
+let linksTableReady: Promise<unknown> | null = null;
 export async function createEtsyLinksTable(): Promise<void> {
-  await prisma.$executeRawUnsafe(`
+  if (!linksTableReady) linksTableReady = prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS etsy_product_links (
       product_id TEXT PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
       etsy_listing_id TEXT NOT NULL UNIQUE,
@@ -86,7 +70,8 @@ export async function createEtsyLinksTable(): Promise<void> {
       etsy_title TEXT NOT NULL DEFAULT '',
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `);
+  `).catch(error => { linksTableReady = null; throw error; });
+  await linksTableReady;
 }
 
 type StoredLink = { product_id: string; etsy_listing_id: string; etsy_url: string; etsy_title: string };
@@ -99,6 +84,7 @@ const isMissingTable = (error: unknown) => {
 };
 
 export async function getEtsyLinks(): Promise<EtsyLink[]> {
+  await createEtsyLinksTable();
   try {
     const rows = await prisma.$queryRaw<StoredLink[]>`SELECT product_id, etsy_listing_id, etsy_url, etsy_title FROM etsy_product_links`;
     return rows.map(toLink);
@@ -109,6 +95,7 @@ export async function getEtsyLinks(): Promise<EtsyLink[]> {
 }
 
 export async function getProductEtsyUrl(productId: string): Promise<string | null> {
+  await createEtsyLinksTable();
   try {
     const rows = await prisma.$queryRaw<{ etsy_url: string }[]>`
       SELECT etsy_url FROM etsy_product_links WHERE product_id = ${productId} LIMIT 1

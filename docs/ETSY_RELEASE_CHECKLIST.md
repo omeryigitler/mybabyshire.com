@@ -1,3 +1,5 @@
+> Historical checklist for PR #19. For current architecture and release validation, see [ETSY_INTEGRATION.md](ETSY_INTEGRATION.md). References below to an unmerged release describe that earlier review.
+
 # One-deployment release checklist — mybabyshire.com / Etsy
 
 Release branch: `fix/etsy-catalog-release-audit` (PR #19)

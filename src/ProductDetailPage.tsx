@@ -17,6 +17,8 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [variantError, setVariantError] = useState('');
+  const [selectedImage, setSelectedImage] = useState('');
+  useEffect(() => { setSelectedImage(''); }, [slug]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -188,9 +190,17 @@ export default function ProductDetailPage() {
               <div>
                 <div className="relative aspect-square overflow-hidden rounded-[12px] border border-[#e8e8e8] bg-[#f7f7f7]">
                   <div className="absolute inset-0 bg-[linear-gradient(145deg,#fff_0%,#f7f7f7_72%,#f6e9ed_100%)]" />
-                  <img src={product.imageUrl} alt={product.name} decoding="async" className="relative z-10 h-full w-full object-contain p-7 sm:p-10 lg:p-14" />
+                  <img src={selectedImage && product.imageUrls?.includes(selectedImage) ? selectedImage : product.imageUrl} alt={product.name} decoding="async" className="relative z-10 h-full w-full object-contain p-7 sm:p-10 lg:p-14" />
                   {product.badge && <span className="absolute left-4 top-4 z-20 rounded-[7px] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] shadow-sm ring-1 ring-black/5">{product.badge}</span>}
                 </div>
+                {(product.imageUrls?.length || 0) > 1 && <div className="mt-3 flex gap-2 overflow-x-auto pb-2" aria-label="Product photos">
+                  {product.imageUrls!.map((url, index) => <button key={url} type="button"
+                    aria-label={`Show photo ${index + 1}`} aria-pressed={(selectedImage || product.imageUrl) === url}
+                    onClick={() => setSelectedImage(url)}
+                    className={`commerce-focus h-20 w-20 shrink-0 overflow-hidden rounded-lg border ${(selectedImage || product.imageUrl) === url ? 'border-black' : 'border-[#e5e5e5]'}`}>
+                    <img src={url} alt={`${product.name}, photo ${index + 1}`} loading="lazy" className="h-full w-full object-contain" />
+                  </button>)}
+                </div>}
               </div>
 
               <section className="md:sticky md:top-[104px] md:self-start">

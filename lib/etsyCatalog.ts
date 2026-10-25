@@ -1,7 +1,7 @@
+import { etsyRequest } from './etsyHttp.js';
 import { prisma } from './prisma.js';
 import { getEtsyShopId, getVerifiedEtsyListing } from './etsy.js';
 
-const ROOT = 'https://api.etsy.com/v3/application';
 const validId = (id: string) => /^\d{1,20}$/.test(id);
 const isMissingTable = (error: any) => error?.code === 'P2010' && error?.meta?.code === '42P01' || error?.code === '42P01';
 
@@ -63,19 +63,6 @@ export const mapEtsyApiItem = (item: any, shopId: number) => {
     images: etsyImageUrls(item),
     url: `https://www.etsy.com/listing/${id}`,
   };
-};
-
-const etsyRequest = async (path: string) => {
-  const key = process.env.ETSY_API_KEY;
-  const secret = process.env.ETSY_SHARED_SECRET;
-  if (!key || !secret) throw new Error('Etsy credentials are missing.');
-  const response = await fetch(ROOT + path, {
-    headers: { 'x-api-key': `${key}:${secret}`, Accept: 'application/json' },
-    signal: AbortSignal.timeout(15000),
-    cache: 'no-store',
-  });
-  if (!response.ok) throw new Error(`Etsy catalog API HTTP ${response.status}`);
-  return response.json();
 };
 
 export async function fetchEtsyDetails(ids: string[]) {
@@ -161,51 +148,64 @@ export async function syncCatalogBatch(ids: string[]) {
   for (const item of items) await updateRecord(item);
   let unavailable = 0;
   let unverified = 0;
-  for (const id of ids) {
-    if (found.has(id)) continue;
-    // An incomplete batch response is not proof of an inactive listing.
-    // Only deactivate when Etsy explicitly confirms a listing cannot be accessed
-    // or is no longer active. All other failures leave the current state intact.
-    try {
-      await getVerifiedEtsyListing(id);
-      unverified++;
-    } catch (error) {
-      if (isConfirmedUnavailableListingError(error)) {
-        await prisma.$executeRaw`UPDATE etsy_catalog_items SET active = FALSE, synced_at = NOW() WHERE listing_id = ${id}`;
-        unavailable++;
-      } else {
-        throw error;
+  const missing = ids.filter(id => !found.has(id));
+  // Four workers bound concurrency; every missing listing is eventually checked.
+  for (let offset = 0; offset < missing.length; offset += 4) {
+    await Promise.all(missing.slice(offset, offset + 4).map(async id => {
+      try {
+        await getVerifiedEtsyListing(id);
+        unverified++;
+      } catch (error) {
+        if (isConfirmedUnavailableListingError(error)) {
+          await prisma.$executeRaw`UPDATE etsy_catalog_items SET active = FALSE, synced_at = NOW() WHERE listing_id = ${id}`;
+          unavailable++;
+        } else {
+          throw error;
+        }
       }
-    }
+    }));
   }
   return { refreshed: items.length, unavailable, unverified };
 }
 
-// Uses a short-lived server instance lock to avoid overlapping Etsy API reads.
+// Database leases coordinate independent serverless instances. Failed batches remain
+// eligible after a short cooldown; their content timestamp is never made fresh.
 let refreshInFlight: Promise<void> | null = null;
 let lastAttempt = 0;
-export async function refreshPublishedEtsyWhenDue(): Promise<void> {
-  const now = Date.now();
+let leaseTableReady: Promise<unknown> | null = null;
+export function refreshPublishedEtsyWhenDue(): Promise<void> {
   if (refreshInFlight) return refreshInFlight;
-  if (now - lastAttempt < 60_000) return;
-  let due: { listing_id: string }[];
-  try {
-    due = await prisma.$queryRaw<{ listing_id: string }[]>`
-      SELECT listing_id FROM etsy_catalog_items
-      WHERE published = TRUE AND synced_at < NOW() - INTERVAL '4 hours'
-      ORDER BY listing_id
-      LIMIT 20
-    `;
-  } catch (err: any) {
-    if (isMissingTable(err)) return;
-    throw err;
-  }
-  if (!due.length) return;
-  lastAttempt = now;
+  if (Date.now() - lastAttempt < 60_000) return Promise.resolve();
+  lastAttempt = Date.now();
   refreshInFlight = (async () => {
-    for (let offset = 0; offset < due.length; offset += 100) {
-      await syncCatalogBatch(due.slice(offset, offset + 100).map(item => item.listing_id));
+    if (!leaseTableReady) leaseTableReady = prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS etsy_refresh_leases (
+        listing_id TEXT PRIMARY KEY,
+        retry_after TIMESTAMPTZ NOT NULL
+      )
+    `).catch(error => { leaseTableReady = null; throw error; });
+    await leaseTableReady;
+    let due: { listing_id: string }[];
+    try {
+      due = await prisma.$queryRaw<{ listing_id: string }[]>`
+        INSERT INTO etsy_refresh_leases (listing_id, retry_after)
+        SELECT e.listing_id, NOW() + INTERVAL '5 minutes'
+        FROM etsy_catalog_items e
+        LEFT JOIN etsy_refresh_leases l ON l.listing_id = e.listing_id
+        WHERE e.published = TRUE AND e.synced_at < NOW() - INTERVAL '3 hours'
+          AND (l.retry_after IS NULL OR l.retry_after <= NOW())
+        ORDER BY l.retry_after ASC NULLS FIRST, e.synced_at, e.listing_id
+        LIMIT 20
+        ON CONFLICT (listing_id) DO UPDATE SET retry_after = EXCLUDED.retry_after
+          WHERE etsy_refresh_leases.retry_after <= NOW()
+        RETURNING listing_id
+      `;
+    } catch (error) {
+      if (isMissingTable(error)) return;
+      throw error;
     }
+    // Small batches and bounded verification concurrency fit the function lifetime.
+    if (due.length) await syncCatalogBatch(due.map(item => item.listing_id));
   })().finally(() => { refreshInFlight = null; });
   return refreshInFlight;
 }
@@ -239,6 +239,7 @@ export const toStoreEtsyProduct = (item: EtsyCatalogRecord) => {
     etsyUrl: `https://www.etsy.com/listing/${item.listing_id}`,
     imageUrl: priceStale ? '/brand/mybabyshire-favicon.png' : images[0] || '',
     hoverImageUrl: priceStale ? '' : images[1] || '',
+    imageUrls: priceStale ? [] : images,
     categoryId: item.category_id,
     categoryName: item.category_name || null,
     categorySlug: item.category_slug || null,

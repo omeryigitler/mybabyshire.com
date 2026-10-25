@@ -1,14 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
 import { prisma } from '../../../lib/prisma.js';
-import { getJwtSecret } from '../../../lib/auth.js';
+import { requireAdmin as verifyAdminToken } from '../../../lib/auth.js';
 import {
   mapProductPersonalizationFields,
   normalizePersonalizationFieldCreateData,
   parseProductImageFocus,
 } from '../../../lib/products.js';
 
-const JWT_SECRET = getJwtSecret();
 
 const getProductId = (req: VercelRequest) => {
   const value = req.query.id;
@@ -24,7 +22,7 @@ const requireAdmin = (req: VercelRequest, res: VercelResponse) => {
   }
 
   try {
-    jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+    verifyAdminToken(authHeader);
     return true;
   } catch {
     res.status(401).json({ error: 'Unauthorized: Invalid token' });

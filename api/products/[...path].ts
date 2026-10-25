@@ -1,3 +1,4 @@
+import { waitUntil } from '@vercel/functions';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import apiRoutes from '../../server/api.js';
@@ -58,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const slug = parts[0];
     if (/^etsy-[0-9]{1,20}$/.test(slug)) {
       try {
-        await refreshPublishedEtsyWhenDue();
+        waitUntil(refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error)));
         const item = (await getPublishedEtsyProducts()).find(product => product.slug === slug);
         return item ? res.status(200).json(item) : res.status(404).json({ error: 'Product unavailable' });
       } catch (error) {

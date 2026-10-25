@@ -9,6 +9,7 @@ import {
   clearAdminLoginAttempts,
   createAdminToken,
   getJwtSecret,
+  requireAdmin as verifyAdminToken,
   getLoginRateLimitKey,
   hasConfiguredAdminCredentials,
   isConfiguredAdminLogin,
@@ -433,7 +434,7 @@ const requireAdmin = (req: AdminRequest, res: Response, next: NextFunction) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyAdminToken(authHeader);
     req.user = decoded;
     next();
   } catch (error) {

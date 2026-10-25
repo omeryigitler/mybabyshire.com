@@ -66,12 +66,13 @@ export const AdminEtsy = () => {
   const visible = useMemo(() => listings.filter(item => item.title.toLowerCase().includes(search.toLowerCase()) || item.listingId.includes(search)), [listings, search]);
   const available = visible.filter(item => !already.has(item.listingId) && item.images.length > 0);
   const importSelected = async () => {
-    if (!selected.length) return;
+    const selectedIds = selected.filter(id => available.some(item => item.listingId === id));
+    if (!selectedIds.length) return;
     setImporting(true); setMessage('');
     let done = 0; let skipped = 0;
     try {
-      for (let i = 0; i < selected.length; i += 25) {
-        const result = await request('catalog-import', 'POST', { ids: selected.slice(i, i + 25) });
+      for (let i = 0; i < selectedIds.length; i += 25) {
+        const result = await request('catalog-import', 'POST', { ids: selectedIds.slice(i, i + 25) });
         done += Number(result.imported || 0);
         skipped += Number(result.skipped || 0);
         setMessage(done + ' ürün önizleme kuyruğuna alındı...');
@@ -112,7 +113,7 @@ export const AdminEtsy = () => {
       </div>}
     </div>
     <section className="overflow-hidden rounded-xl border border-[#e2e2e2] bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><h2 className="font-semibold">Etsy ürünleri ({visible.length})</h2><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adına göre ara" className="h-10 rounded-lg border px-3 text-sm" /></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><h2 className="font-semibold">Etsy ürünleri ({visible.length})</h2><input type="search" value={search} onChange={e => { setSearch(e.target.value); setSelected([]); }} placeholder="Ürün adına göre ara" className="h-10 rounded-lg border px-3 text-sm" /></div>
       <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map(item => <article key={item.listingId} className="overflow-hidden rounded-xl border border-[#e5e5e5]">
           <div className="flex gap-3 p-3">

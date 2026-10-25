@@ -4,6 +4,8 @@ import express from 'express';
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import apiRoutes from '../server/api.js';
+import { getPublishedEtsyProducts } from '../lib/etsyCatalog.js';
+import { getEtsyLinks } from '../lib/etsy.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAdmin } from '../lib/auth.js';
 import {
@@ -255,7 +257,11 @@ const sitemapHandler = async (_req: express.Request, res: express.Response) => {
 
     const staticUrls = STATIC_SITEMAP_ROUTES.map((path) => `<url><loc>${escapeXml(`${SITE_URL}${path}`)}</loc></url>`).join('');
     const productUrls = products.map((product) => `<url><loc>${escapeXml(`${SITE_URL}/products/${product.slug}`)}</loc><lastmod>${product.updated_at.toISOString()}</lastmod></url>`).join('');
-    const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${productUrls}</urlset>`;
+    const [etsyProducts, links] = await Promise.all([getPublishedEtsyProducts(), getEtsyLinks()]);
+    const mapped = new Set(links.map(link => link.listingId));
+    const etsyUrls = etsyProducts.filter(product => !mapped.has(product.id.slice(5)))
+      .map(product => `<url><loc>${escapeXml(`${SITE_URL}/products/${product.slug}`)}</loc></url>`).join('');
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${productUrls}${etsyUrls}</urlset>`;
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400');

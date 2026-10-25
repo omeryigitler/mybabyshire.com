@@ -14,7 +14,7 @@ const productText = (product: Product) => `${product.name} ${product.description
 
 const COLLECTIONS: Record<string, CollectionConfig> = {
   all: { title: 'All Products', eyebrow: 'Catalog', description: 'Browse the full MY BABY SHIRE catalog.', matches: () => true },
-  'new-arrivals': { title: 'New Arrivals', eyebrow: 'Just added', description: 'The newest products added to the catalog.', matches: (product) => Boolean(product.newArrival) },
+  'new-arrivals': { title: 'New Arrivals', eyebrow: 'Just added', description: 'Recently published Etsy products and highlighted new additions.', matches: (product) => Boolean(product.newArrival || product.source === 'etsy') },
   'best-sellers': { title: 'Best Sellers', eyebrow: 'Popular now', description: 'Popular products highlighted in the catalog.', matches: (product) => Boolean(product.bestseller) },
   baby: { title: 'Baby', eyebrow: 'Shop by size', description: 'Blank and custom-ready essentials for baby sizes.', matches: (product) => /(baby|newborn|infant|bodysuit|onesie|romper|0-3m|3-6m|6m|12m|18m)/.test(productText(product)) },
   toddler: { title: 'Toddler', eyebrow: 'Shop by size', description: 'Everyday pieces for toddler sizes.', matches: (product) => /(toddler|2t|3t|4t|5t)/.test(productText(product)) },
@@ -77,7 +77,9 @@ export default function CollectionPage() {
     if (sortBy === 'price-desc') sorted.sort((a, b) =>
       Number(Boolean(a.priceStale)) - Number(Boolean(b.priceStale)) || b.price - a.price);
     if (sortBy === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'featured') sorted.sort((a, b) => Number(Boolean(b.featured || b.bestseller)) - Number(Boolean(a.featured || a.bestseller)));
+    if (sortBy === 'featured') sorted.sort((a, b) => collection === 'new-arrivals'
+      ? Number(b.source === 'etsy') - Number(a.source === 'etsy')
+      : Number(Boolean(b.featured || b.bestseller)) - Number(Boolean(a.featured || a.bestseller)));
     return sorted;
   }, [config, products, searchTerm, sortBy]);
 

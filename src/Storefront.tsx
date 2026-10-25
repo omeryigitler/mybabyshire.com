@@ -7,6 +7,7 @@ import { PersonalizationModal } from './components/PersonalizationModal';
 import { ProductCard } from './components/ProductCard';
 import { Product, useStore } from './store/useStore';
 import { useSeo } from './utils/seo';
+import { getEtsyHomeProducts, getHomeNewArrivals } from './utils/catalogVisibility';
 
 const NAV_ITEMS = [
   ['New', '/collections/new-arrivals'],
@@ -56,10 +57,8 @@ export default function Storefront() {
     return (flagged.length ? flagged : products).slice(0, 8);
   }, [products]);
 
-  const newArrivals = useMemo(() => {
-    const flagged = products.filter((product) => product.newArrival);
-    return (flagged.length ? flagged : products).slice(0, 8);
-  }, [products]);
+  const newArrivals = useMemo(() => getHomeNewArrivals(products), [products]);
+  const recentEtsy = useMemo(() => getEtsyHomeProducts(products), [products]);
 
   const categoryTiles = useMemo(() => {
     const match = (pattern: RegExp, fallbackIndex: number) => products.find((product) => pattern.test(productText(product))) || products[fallbackIndex] || products[0];
@@ -173,6 +172,20 @@ export default function Storefront() {
             </div>
           </div>
         </section>
+
+        {recentEtsy.length > 0 && <section className="border-b border-[#ededed] bg-white" aria-label="Recently published Etsy products">
+          <div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#777]">Recently published</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Just added from Etsy</h2>
+                <p className="mt-2 text-sm text-[#666]">Discover newly published pieces. Purchases are securely completed on Etsy.</p>
+              </div>
+              <Link to="/collections/new-arrivals" className="text-sm font-semibold text-[#444] underline underline-offset-4 hover:text-[#202020]">Browse new arrivals</Link>
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4">
+              {recentEtsy.map(product => <ProductCard key={product.id} product={product} />)}
+            </div>
+          </div>
+        </section>}
 
         <section className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
           <div className="mb-6 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Browse</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">Shop by category</h2></div><Link to="/collections/all" className="hidden text-sm font-semibold text-[#666] hover:text-[#202020] sm:inline">View all</Link></div>

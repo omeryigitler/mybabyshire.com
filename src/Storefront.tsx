@@ -18,12 +18,6 @@ const NAV_ITEMS = [
   ['Sweatshirts', '/collections/sweatshirts'],
 ] as const;
 
-const FOOTER_GROUPS: { title: string; links: [string, string][] }[] = [
-  { title: 'Shop', links: [['All Products', '/collections/all'], ['New Arrivals', '/collections/new-arrivals'], ['Best Sellers', '/collections/best-sellers'], ['Baby', '/collections/baby'], ['Adult', '/collections/adult']] },
-  { title: 'Customer', links: [['My Account', '/account'], ['Track Order', '/track-order'], ['Returns', '/policies/returns'], ['Shipping', '/policies/shipping']] },
-  { title: 'Information', links: [['Privacy', '/policies/privacy'], ['Terms', '/policies/terms'], ['Cookies', '/policies/cookies']] },
-];
-
 const productText = (product: Product) => `${product.name} ${product.description || ''} ${product.categoryName || ''} ${product.ageRange || ''}`.toLowerCase();
 
 export default function Storefront() {
@@ -205,25 +199,9 @@ export default function Storefront() {
         <section className="border-b border-[#e8e8e8] bg-white"><div className="mx-auto grid max-w-[1200px] gap-6 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:px-8 lg:py-20"><div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Newsletter</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">New products, without the noise.</h2><p className="mt-3 max-w-lg text-sm leading-6 text-[#707070]">Sign up for new product and occasional store updates. Your email is stored as a newsletter subscription and can be removed on request.</p></div><form onSubmit={submitNewsletter} className="grid gap-2 sm:grid-cols-[1fr_auto]"><label className="sr-only" htmlFor="newsletter-email">Email address</label><input id="newsletter-email" type="email" required value={newsletterEmail} onChange={(event) => { setNewsletterEmail(event.target.value); if (newsletterStatus !== 'loading') setNewsletterStatus('idle'); }} placeholder="Email address" className="commerce-focus min-h-12 rounded-[9px] border border-[#d8d8d8] bg-white px-4 text-sm outline-none placeholder:text-[#aaa] focus:border-[#202020]" /><button disabled={newsletterStatus === 'loading'} className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838] disabled:opacity-50">{newsletterStatus === 'loading' ? 'Joining…' : newsletterStatus === 'success' ? <><Check className="h-4 w-4" /> Joined</> : 'Join newsletter'}</button>{newsletterMessage && <p className={`sm:col-span-2 text-xs font-medium ${newsletterStatus === 'error' ? 'text-red-600' : 'text-[#316942]'}`}>{newsletterMessage}</p>}<p className="sm:col-span-2 text-[11px] leading-5 text-[#999]">By subscribing, you agree that MY BABY SHIRE may use this email for newsletter updates. See our <Link to="/policies/privacy" className="underline underline-offset-2">Privacy Policy</Link>.</p></form></div></section>
       </main>
 
-      <footer className="border-t border-[#e8e8e8] bg-[#fafafa]">
-        <div className="mx-auto max-w-[1560px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-          <div className="md:hidden">
-            <BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" />
-            <p className="mt-4 max-w-sm text-sm leading-6 text-[#777]">Blank apparel and custom-ready essentials in a simpler shopping experience.</p>
-            <div className="mt-6 divide-y divide-[#e4e4e4] border-y border-[#e4e4e4]">{FOOTER_GROUPS.map((group) => <details key={group.title} className="group"><summary className="commerce-focus flex cursor-pointer list-none items-center justify-between py-4 text-sm font-semibold"><span>{group.title}</span><span className="text-lg font-light transition-transform group-open:rotate-45">+</span></summary><div className="grid gap-3 pb-5">{group.links.map(([label, href]) => <Link key={href} to={href} className="text-sm text-[#666]">{label}</Link>)}</div></details>)}</div>
-          </div>
-
-          <div className="hidden gap-8 md:grid md:grid-cols-[1.3fr_1fr_1fr_1fr]">
-            <div><BrandLogo variant="nav" className="!h-[42px] !drop-shadow-none" /><p className="mt-4 max-w-xs text-sm leading-6 text-[#777]">Blank apparel and custom-ready essentials in a simpler shopping experience.</p></div>
-            {FOOTER_GROUPS.map((group) => <FooterGroup key={group.title} title={group.title} links={group.links} />)}
-          </div>
-        </div>
-        <div className="border-t border-[#e8e8e8]"><div className="mx-auto flex max-w-[1560px] flex-col gap-2 px-4 py-5 text-xs text-[#888] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"><span>© {new Date().getFullYear()} MY BABY SHIRE</span><span>Shop on MY BABY SHIRE or complete selected purchases on Etsy.</span></div></div>
-      </footer>
     </div>
   );
 }
 
 const Value = ({ title, text }: { title: string; text: string }) => <div className="rounded-[12px] border border-[#e5e5e5] bg-white p-5 sm:p-6"><h3 className="text-sm font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-[#777]">{text}</p></div>;
 const EmptyProducts = () => <div className="rounded-[12px] border border-dashed border-[#d7d7d7] bg-[#fafafa] px-6 py-14 text-center text-sm text-[#777]">Products will appear here after they are added and tagged in Admin.</div>;
-const FooterGroup = ({ title, links }: { key?: React.Key; title: string; links: [string, string][] }) => <div><h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[#999]">{title}</h3><div className="mt-4 grid gap-2.5">{links.map(([label, href]) => <Link key={href} to={href} className="text-sm text-[#666] hover:text-[#202020]">{label}</Link>)}</div></div>;

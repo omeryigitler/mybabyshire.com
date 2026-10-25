@@ -107,7 +107,6 @@ export default function CollectionPage() {
           {!productsLoading && filteredProducts.length === 0 && <div className="rounded-[12px] border border-dashed border-[#d7d7d7] bg-[#fafafa] px-6 py-16 text-center"><p className="text-lg font-semibold">No matching products</p><p className="mt-2 text-sm text-[#777]">Try another search or choose a different collection.</p><Link to="/collections/all" className="commerce-focus mt-5 inline-flex rounded-[9px] bg-[#202020] px-5 py-3 text-sm font-semibold text-white">View all products</Link></div>}
         </section>
       </main>
-      <footer className="border-t border-[#e8e8e8] bg-[#fafafa]"><div className="mx-auto flex max-w-[1560px] flex-col gap-5 px-4 py-8 text-sm text-[#707070] sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8"><span>© {new Date().getFullYear()} MY BABY SHIRE</span><div className="flex flex-wrap gap-x-5 gap-y-2"><Link to="/track-order">Track Order</Link><Link to="/account">My Account</Link><Link to="/policies/returns">Returns</Link><Link to="/policies/privacy">Privacy</Link></div></div></footer>
     </div>
   );
 }

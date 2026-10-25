@@ -34,24 +34,27 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
       published: item.status === 'active', categoryId: item.category_id, categoryName: item.category?.name || null,
       detailUrl: '/products/' + item.slug, previewUrl: null, checkoutEtsyUrl: etsyByNative.get(item.id) || null,
     }));
-    const etsyItems = etsy.map(item => ({
+    const etsyItems = etsy.map(item => {
+      const staleData = isEtsyPriceStale(item.synced_at);
+      return {
       source: 'etsy', id: item.listing_id,
-      // Etsy API listing content has a limited display lifetime, even for admins.
-      title: isEtsyPriceStale(item.synced_at) ? 'Etsy listing — refresh to view details' : item.custom_title || item.etsy_title,
-      description: isEtsyPriceStale(item.synced_at) ? 'Use “Etsy verilerini yenile” for the current product details.' : item.description,
-      price: isEtsyPriceStale(item.synced_at) ? 0 : Number(item.price), currency: item.currency_code,
-      imageUrl: isEtsyPriceStale(item.synced_at) ? '/brand/mybabyshire-favicon.png' : extractImages(item.image_urls)[0] || '',
-      published: item.published, staleData: isEtsyPriceStale(item.synced_at),
-      available: !isEtsyPriceStale(item.synced_at) && item.active && item.quantity > 0,
+      // Never present expired Etsy listing prices or images as current.
+      title: staleData ? 'Etsy ürünü — bilgiler güncelleniyor' : item.custom_title || item.etsy_title,
+      description: staleData ? 'Etsy verileri yenilenince ürün bilgileri burada görüntülenir.' : item.description,
+      price: staleData ? null : Number(item.price), currency: item.currency_code,
+      imageUrl: staleData ? '' : extractImages(item.image_urls)[0] || '',
+      published: item.published, staleData,
+      available: !staleData && item.active && item.quantity > 0,
       categoryId: item.category_id, categoryName: item.category_name || null,
       detailUrl: item.published ? '/products/etsy-' + item.listing_id : null,
       previewUrl: 'https://www.etsy.com/listing/' + item.listing_id,
       syncedAt: item.synced_at,
-      possibleDuplicates: [
+      possibleDuplicates: staleData ? [] : [
         ...(alreadyLinkedListings.has(item.listing_id) ? ['Bu Etsy ilanı zaten bir site ürününe bağlanmış.'] : []),
         ...findLikelyDuplicateProducts(item.etsy_title, native).map(product => product.name),
       ],
-    }));
+    };
+    });
     return res.status(200).json({ items: [...nativeItems, ...etsyItems], categories });
   }
 

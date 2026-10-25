@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { planEtsyPreviewRefresh } from '../../lib/etsyPreviewRefresh';
 import { ExternalLink, Eye, RefreshCw, UploadCloud } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAdminToken } from './adminAuth';
@@ -8,7 +9,7 @@ import { selectVisibleProductKeys } from '../../lib/catalogSafety';
 
 type Item = {
   source: 'etsy' | 'site'; id: string; title: string; description: string;
-  imageUrl: string; price: number; currency: string; published: boolean;
+  imageUrl: string; price: number | null; currency: string; published: boolean;
   categoryId: string | null; categoryName: string | null; detailUrl?: string | null;
   previewUrl?: string | null; checkoutEtsyUrl?: string | null; available?: boolean; syncedAt?: string;
   possibleDuplicates?: string[]; staleData?: boolean;
@@ -48,18 +49,61 @@ export const AdminSitePreview = () => {
       ...(body ? { body: JSON.stringify(body) } : {}),
       cache: 'no-store',
     });
-    const data = await response.json();
-    if (!response.ok) throw new CatalogRequestError(data.error || 'İşlem başarısız.', data.issues);
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new CatalogRequestError('Etsy servisi geçerli JSON yanıtı vermedi (HTTP ' + response.status + ').');
+    }
+    let data: any;
+    try { data = await response.json(); }
+    catch { throw new CatalogRequestError('Etsy sunucusunun yanıtı okunamadı (HTTP ' + response.status + ').'); }
+    if (!response.ok) throw new CatalogRequestError(data.error || 'İşlem başarısız (HTTP ' + response.status + ').', data.issues);
     return data;
   };
 
-  const reload = async () => {
+  const reload = async (clearSelection = true): Promise<Item[]> => {
     const data = await api('site-preview');
-    setItems(Array.isArray(data.items) ? data.items : []);
+    const incoming = Array.isArray(data.items) ? data.items as Item[] : [];
+    setItems(incoming);
     setCategories(Array.isArray(data.categories) ? data.categories : []);
-    setSelected([]);
+    if (clearSelection) setSelected([]);
+    return incoming;
   };
-  useEffect(() => { void reload().catch(error => setMessage(error.message)); }, []);
+
+  // A preview is useful only after Etsy's current details have been checked.
+  // Published products refresh separately from the storefront; staged products
+  // are refreshed here on first load in small, bounded requests.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const snapshot = await api('site-preview');
+        if (cancelled) return;
+        const incoming: Item[] = Array.isArray(snapshot.items) ? snapshot.items : [];
+        setItems(incoming);
+        setCategories(Array.isArray(snapshot.categories) ? snapshot.categories : []);
+        const batches = planEtsyPreviewRefresh(incoming, true);
+        if (!batches.length) return;
+        setBusy(true);
+        let refreshed = 0;
+        for (let i = 0; i < batches.length; i++) {
+          if (cancelled) return;
+          setMessage('Etsy bilgileri otomatik yenileniyor: ' + (i + 1) + '/' + batches.length + ' grup…');
+          const result = await api('catalog-sync', 'POST', { ids: batches[i] });
+          refreshed += Number(result.refreshed || 0);
+          const updated = await api('site-preview');
+          if (cancelled) return;
+          setItems(Array.isArray(updated.items) ? updated.items : []);
+          setCategories(Array.isArray(updated.categories) ? updated.categories : []);
+        }
+        if (!cancelled) setMessage(refreshed + ' Etsy ürününün güncel fiyatı ve görselleri yenilendi.');
+      } catch (error) {
+        if (!cancelled) setMessage('Otomatik Etsy yenileme tamamlanamadı: ' + (error as Error).message + '. “Etsy verilerini yenile” ile yeniden deneyebilirsiniz.');
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const visible = useMemo(() => items.filter(item => {
     if ((source !== 'all' && item.source !== source) || item.published !== (view === 'active')) return false;
@@ -149,20 +193,21 @@ export const AdminSitePreview = () => {
   };
 
   const refreshEtsy = async () => {
-    const ids = items.filter(item => item.source === 'etsy').map(item => item.id);
-    if (!ids.length) return setMessage('Henüz içe aktarılmış Etsy ürünü yok.');
+    if (busy) return;
+    const batches = planEtsyPreviewRefresh(items, false);
+    if (!batches.length) return setMessage('Henüz içe aktarılmış Etsy ürünü yok.');
     setBusy(true); setMessage('');
     let refreshed = 0;
     try {
-      for (let offset = 0; offset < ids.length; offset += 100) {
-        const data = await api('catalog-sync', 'POST', { ids: ids.slice(offset, offset + 100) });
+      for (let i = 0; i < batches.length; i++) {
+        setMessage('Etsy bilgileri yenileniyor: ' + (i + 1) + '/' + batches.length + ' grup…');
+        const data = await api('catalog-sync', 'POST', { ids: batches[i] });
         refreshed += Number(data.refreshed || 0);
+        await reload(false);
       }
-      await reload();
-      setMessage(refreshed + ' Etsy ürününün fiyat, görsel ve satış durumu güncellendi.');
+      setMessage(refreshed + ' Etsy ürününün güncel fiyatı ve görselleri yenilendi.');
     } catch (error) {
-      await reload().catch(() => undefined);
-      setMessage('Etsy güncellemesi kısmen tamamlandı: ' + (error as Error).message);
+      setMessage('Etsy yenilemesi tamamlanamadı (' + refreshed + ' ürün yenilendi): ' + (error as Error).message);
     } finally { setBusy(false); }
   };
 
@@ -191,7 +236,7 @@ export const AdminSitePreview = () => {
         <Link to="/admin/products?create=1" className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold">+ Siteden ürün ekle</Link>
         <Link to="/admin/etsy" className="rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold">+ Etsy'den ürün getir</Link>
         <button disabled={busy} onClick={() => void refreshEtsy()} className="inline-flex items-center gap-1.5 rounded-lg border border-[#dedede] px-3 py-2.5 text-sm font-semibold disabled:opacity-40"><RefreshCw className="h-4 w-4" /> Etsy verilerini yenile</button>
-        <button onClick={() => void reload().catch(error => setMessage(error.message))} className="rounded-lg border px-3 py-2.5"><RefreshCw className="h-4 w-4" /></button>
+        <button disabled={busy} onClick={() => void reload().catch(error => setMessage(error.message))} className="rounded-lg border px-3 py-2.5 disabled:opacity-40"><RefreshCw className="h-4 w-4" /></button>
       </div>
     </header>
 
@@ -230,11 +275,11 @@ export const AdminSitePreview = () => {
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {visible.map(item => <article key={keyFor(item)} className="overflow-hidden rounded-xl border border-[#e2e2e2] bg-white">
         <div className="flex gap-3 p-3">
-          {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" className="h-28 w-24 shrink-0 rounded-lg object-cover" /> : <div className="flex h-28 w-24 shrink-0 items-center justify-center rounded-lg bg-[#f5f5f5] text-xs text-[#999]">Görsel yok</div>}
+          {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" className="h-28 w-24 shrink-0 rounded-lg object-cover" /> : <div className="flex h-28 w-24 shrink-0 items-center justify-center rounded-lg bg-[#f5f5f5] text-center text-xs text-[#777]">{item.staleData ? 'Etsy görseli yenileniyor' : 'Görsel yok'}</div>}
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap gap-1"><span className="rounded bg-[#f2f2f2] px-2 py-0.5 text-[10px] font-semibold">{item.source === 'etsy' ? 'ETSY' : 'SİTE'}</span><span className="rounded bg-[#f2f2f2] px-2 py-0.5 text-[10px]">{item.categoryName || 'Kategorisiz'}</span></div>
             <h2 className="line-clamp-3 text-sm font-semibold">{item.title}</h2>
-            <p className="mt-2 text-sm font-semibold">{money(item.price, item.currency)}</p>
+            <p className="mt-2 text-sm font-semibold">{item.staleData || item.price === null ? 'Güncel fiyat Etsy’den alınıyor' : money(item.price, item.currency)}</p>
             {item.source === 'etsy' && item.staleData
               ? <p className="mt-1 text-xs text-[#777]">Etsy bilgileri yenilenmeli</p>
               : item.source === 'etsy' && item.available === false && <p className="mt-1 text-xs text-red-600">Etsy'de kullanılabilir değil</p>}
@@ -258,12 +303,13 @@ export const AdminSitePreview = () => {
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between"><h2 className="text-lg font-semibold">Ürün önizleme · {preview.source === 'etsy' ? 'Etsy' : 'Sitemiz'}</h2><button onClick={() => setPreview(null)} className="text-sm underline">Kapat</button></div>
         {preview.imageUrl && <img src={preview.imageUrl} alt="" className="mt-4 max-h-64 w-full rounded-xl bg-[#f8f8f8] object-contain" />}
-        <p className="mt-4 text-lg font-semibold">{preview.title}</p><p className="mt-2 text-base">{money(preview.price, preview.currency)}</p>
+        <p className="mt-4 text-lg font-semibold">{preview.title}</p><p className="mt-2 text-base">{preview.staleData || preview.price === null ? 'Güncel fiyat Etsy’den alınıyor' : money(preview.price, preview.currency)}</p>
         <p className="mt-3 whitespace-pre-wrap text-sm text-[#666]">{preview.description}</p>
         {preview.source === 'etsy' ? <div className="mt-4">
+          {preview.staleData && <p className="mb-3 text-sm text-[#666]">Ürün bilgileri yenilenmeden başlık değiştirilemez. Etsy verilerini yenile butonunu kullanın.</p>}
           <label className="mb-1 block text-xs font-semibold">Sitede gösterilecek başlık</label>
-          <input value={editTitle} onChange={e => setEditTitle(e.target.value)} maxLength={160} className="w-full rounded-lg border px-3 py-2" />
-          <button disabled={busy} onClick={() => void saveTitle()} className="mt-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50">Başlığı kaydet</button>
+          <input disabled={preview.staleData} value={editTitle} onChange={e => setEditTitle(e.target.value)} maxLength={160} className="w-full rounded-lg border px-3 py-2 disabled:opacity-40" />
+          <button disabled={busy || preview.staleData} onClick={() => void saveTitle()} className="mt-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50">Başlığı kaydet</button>
           {preview.previewUrl && <a href={preview.previewUrl} target="_blank" rel="noopener noreferrer" className="ml-3 inline-flex gap-1 text-sm underline">Etsy ilanını aç <ExternalLink className="h-4 w-4" /></a>}
         </div> : <Link to={'/admin/products?edit=' + encodeURIComponent(preview.id)} className="mt-4 inline-block text-sm font-semibold underline">Ürün düzenleyicisini aç ↗</Link>}
       </div>

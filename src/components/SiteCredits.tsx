@@ -45,8 +45,13 @@ export function SiteCredits() {
       <div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-10">
         <div className="grid grid-cols-2 gap-x-7 gap-y-11 border-b border-white/15 py-12 sm:gap-x-10 sm:py-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:gap-x-14 lg:py-16">
           <div className="col-span-2 lg:col-span-1">
-            <Link to="/" aria-label="MY BABY SHIRE home" className="inline-flex w-fit max-w-full items-center bg-white px-2.5 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-              <BrandLogo variant="nav" className="!h-[43px] sm:!h-[48px] !w-auto !max-w-[min(72vw,305px)] !drop-shadow-none" />
+            <Link to="/" aria-label="MY BABY SHIRE home" className="inline-flex w-fit max-w-full items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+              <span className="relative block max-w-full">
+                <BrandLogo variant="nav" className="!h-[43px] sm:!h-[48px] !w-auto !max-w-[min(72vw,305px)] !drop-shadow-none" />
+                <span aria-hidden="true" className="pointer-events-none absolute inset-0 block overflow-hidden [clip-path:inset(0_0_0_20%)]">
+                  <BrandLogo variant="nav" className="!h-[43px] sm:!h-[48px] !w-auto !max-w-[min(72vw,305px)] !drop-shadow-none brightness-0 invert" />
+                </span>
+              </span>
             </Link>
             <p className="mt-6 max-w-[290px] text-[14px] leading-7 text-[#b8b8b8]">
               Everyday apparel and custom-ready essentials for little ones and grown-ups.

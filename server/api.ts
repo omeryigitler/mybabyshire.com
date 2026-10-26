@@ -1,3 +1,5 @@
+import { ensureCommerceCleanup, archivedIds, restoreArchivedRecord } from '../lib/commerceCleanup.js';
+import { getPublishedEtsyProducts, refreshPublishedEtsyWhenDue } from '../lib/etsyCatalog.js';
 import { ETSY_ONLY_MODE, DIRECT_CHECKOUT_MESSAGE, ETSY_SHOP_URL } from '../src/config/commerce.js';
 import { Router, Request, Response, NextFunction } from "express";
 import { getEtsyLinks, getProductEtsyUrl } from '../lib/etsy.js';
@@ -800,6 +802,11 @@ router.post("/admin/remove-bg-upload", requireAdmin, async (req, res) => {
 // ---------------------------------------------------------
 router.get("/products", async (req, res) => {
   try {
+    await ensureCommerceCleanup();
+    if (ETSY_ONLY_MODE) {
+      void refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error));
+      return res.json(await getPublishedEtsyProducts());
+    }
     const products = await prisma.products.findMany({
       where: { status: "active" },
       include: {
@@ -836,8 +843,13 @@ router.get("/products", async (req, res) => {
 
 router.get("/products/:slug", async (req, res) => {
   try {
+    if (/^etsy-[0-9]{1,20}$/.test(req.params.slug)) {
+      const item = (await getPublishedEtsyProducts()).find(p => p.slug === req.params.slug);
+      return item ? res.json(item) : res.status(404).json({ error: 'Product unavailable' });
+    }
+    if (ETSY_ONLY_MODE) return res.status(404).json({ error: 'Product unavailable' });
     const product = await prisma.products.findUnique({
-      where: { slug: req.params.slug },
+      where: { slug: req.params.slug, status: "active" },
       include: {
         images: true,
         category: true,
@@ -923,7 +935,7 @@ const mapReviewAdmin = (review: any) => ({
 router.get("/products/:slug/reviews", async (req, res) => {
   try {
     const product = await prisma.products.findUnique({
-      where: { slug: req.params.slug },
+      where: { slug: req.params.slug, status: "active" },
       select: { id: true },
     });
 
@@ -1179,7 +1191,9 @@ router.delete("/admin/coupons/:id", requireAdmin, deleteAdminCoupon);
 
 router.get("/admin/products", requireAdmin, async (req, res) => {
   try {
+    await ensureCommerceCleanup();
     const products = await prisma.products.findMany({
+      where: { status: req.query.archive === 'true' ? 'archived' : { not: 'archived' } },
       include: {
         images: true,
         category: true,
@@ -1259,7 +1273,7 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
           card_bg_image: variant.image || bgImage || "/product-card-cloud-blue.png",
           category_id: categoryId || null,
           stock_quantity: Number(stockQuantity) || 0,
-          status,
+          status: ETSY_ONLY_MODE && status === "active" ? "draft" : status,
           featured: Boolean(featured),
           new_arrival: Boolean(newArrival),
           bestseller: Boolean(bestseller),
@@ -1361,7 +1375,7 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
         card_bg_image: bgImage || "/product-card-cloud-blue.png",
         category_id: categoryId || null,
         stock_quantity: Number(stockQuantity) || 0,
-        status,
+        status: ETSY_ONLY_MODE && status === "active" ? "draft" : status,
         featured: Boolean(featured),
         new_arrival: Boolean(newArrival),
         bestseller: Boolean(bestseller),
@@ -1443,7 +1457,9 @@ router.delete("/admin/products/:id", requireAdmin, async (req, res) => {
 // ---------------------------------------------------------
 router.get("/admin/orders", requireAdmin, async (req, res) => {
   try {
+    const archived = await archivedIds('order');
     const orders = await prisma.orders.findMany({
+      where: { id: req.query.archive === 'true' ? { in: archived } : { notIn: archived } },
       include: { items: true },
       orderBy: { created_at: "desc" },
     });
@@ -1455,6 +1471,15 @@ router.get("/admin/orders", requireAdmin, async (req, res) => {
       details: (error as Error).message,
     });
   }
+});
+
+router.post('/admin/archive/restore', requireAdmin, async (req, res) => {
+  const { kind, id } = req.body || {};
+  if (!['product', 'order'].includes(kind) || typeof id !== 'string' || !id || id.length > 80) return res.status(400).json({ error: 'Invalid archive selection' });
+  try {
+    const restored = await restoreArchivedRecord(kind, id);
+    return res.status(restored ? 200 : 404).json({ restored });
+  } catch { return res.status(500).json({ error: 'Could not restore record' }); }
 });
 
 const updateAdminOrder = async (req: Request, res: Response) => {

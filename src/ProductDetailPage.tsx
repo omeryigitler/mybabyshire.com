@@ -1,7 +1,7 @@
-import { ETSY_ONLY_MODE, ETSY_SHOP_URL } from './config/commerce';
+import { ETSY_ONLY_MODE, ETSY_SHOP_URL, canBuyDirect } from './config/commerce';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Boxes, Heart, ShieldCheck, ShoppingBag, SlidersHorizontal } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { BrandLogo } from './components/BrandLogo';
 import { CartDrawer } from './components/CartDrawer';
 import { PersonalizationModal } from './components/PersonalizationModal';
@@ -158,6 +158,8 @@ export default function ProductDetailPage() {
       ? 'Made to order'
       : 'Out of stock';
 
+  if (ETSY_ONLY_MODE && slug && !/^etsy-[0-9]{1,20}$/.test(slug)) return <Navigate to="/collections/all" replace />;
+
   return (
     <div className="min-h-screen bg-white font-sans text-[#202020]">
       <CartDrawer />
@@ -232,6 +234,7 @@ export default function ProductDetailPage() {
                 ) : (
                   <button type="button" onClick={handlePrimaryAction} className="commerce-focus flex min-h-[52px] w-full items-center justify-center rounded-[9px] bg-[#202020] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#383838]">{hasPersonalization ? 'Customize & add to cart' : 'Add to cart'}</button>
                 )}</div>
+                {product.etsyUrl && canBuyDirect(product) && <button type="button" onClick={handlePrimaryAction} className="commerce-focus mt-3 flex min-h-[52px] w-full items-center justify-center rounded-[9px] border border-[#202020] px-6 text-sm font-semibold">{hasPersonalization ? 'Customize & buy on our site' : 'Buy on our site'}</button>}
                 {product.etsyUrl && <p className="mt-2 text-xs leading-5 text-[#777]"><strong>Checkout on Etsy:</strong> Etsy confirms final price, applicable tax, shipping, options and payment. The seller's Etsy listing shows its own returns and cancellation rules. All Etsy order help, refund requests and Purchase Protection cases are handled through Etsy.</p>}
                 <p className="mt-3 text-xs leading-5 text-[#666]">
                   Please review the <Link to="/policies/returns" className="font-semibold underline underline-offset-2">Returns &amp; Refunds Policy</Link> before ordering.

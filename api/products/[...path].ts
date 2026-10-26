@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE } from '../../src/config/commerce.js';
 import { waitUntil } from '@vercel/functions';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
@@ -68,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    if (ETSY_ONLY_MODE) return res.status(404).json({ error: 'Product unavailable' });
     try {
       await ensureProductVariantsTable();
       const product = await prisma.products.findFirst({

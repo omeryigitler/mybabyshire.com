@@ -1,4 +1,4 @@
-import { ETSY_ONLY_MODE, ETSY_SHOP_URL } from '../config/commerce';
+import { ETSY_ONLY_MODE, ETSY_SHOP_URL, canBuyDirect } from '../config/commerce';
 import React, { useMemo } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -162,6 +162,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
               View product <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
+          {product.etsyUrl && canBuyDirect(product) && <Link to={detailPath} className="commerce-focus mt-2 flex min-h-10 items-center justify-center rounded-lg border text-xs font-semibold">Buy on our site</Link>}
           {ETSY_ONLY_MODE && <p className="mt-2 text-center text-[11px] text-[#888]">{product.etsyUrl ? 'Final price and availability on Etsy' : 'Catalog item · Etsy listing not yet linked'}</p>}
         </div>
       </div>

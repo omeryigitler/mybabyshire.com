@@ -263,11 +263,9 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
     },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
-  // Etsy-linked native catalog items must never be purchased through Stripe/PayPal.
-  // This server-side check prevents stale carts or direct API requests from bypassing the UI.
-  const etsyLinkedIds = new Set((await getEtsyLinks()).map(link => link.productId));
-  if (requestedItems.some(item => etsyLinkedIds.has(item.productId) || item.productId.startsWith('etsy-'))) {
-    throw new CheckoutValidationError('This item must be purchased on Etsy. Open the product listing and use Etsy checkout.');
+  // Imported Etsy listings are never local checkout inventory, even in dual mode.
+  if (requestedItems.some(item => item.productId.startsWith('etsy-'))) {
+    throw new CheckoutValidationError('This item must be purchased on Etsy.');
   }
 
   const items = requestedItems.map((item) => {

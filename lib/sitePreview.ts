@@ -1,3 +1,5 @@
+import { ensureCommerceCleanup } from './commerceCleanup.js';
+import { ETSY_ONLY_MODE } from '../src/config/commerce.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
 import { readManagedEtsyCatalog, ensureEtsyCatalogTable, syncCatalogBatch, isEtsyPriceStale } from './etsyCatalog.js';
@@ -16,6 +18,7 @@ const extractImages = (raw: unknown): string[] => {
 
 export async function handleSitePreview(req: VercelRequest, res: VercelResponse): Promise<VercelResponse> {
   if (req.method === 'GET') {
+    await ensureCommerceCleanup();
     const [native, etsy, categories, links] = await Promise.all([
       prisma.products.findMany({
         select: { id: true, name: true, description: true, price: true, status: true, slug: true,
@@ -86,6 +89,7 @@ export async function handleSitePreview(req: VercelRequest, res: VercelResponse)
 
   const selectedIds = ids as string[];
   if (source === 'site') {
+    if (ETSY_ONLY_MODE && operation === 'publish') return res.status(409).json({ error: 'Şu anda yalnızca Etsy ürünleri yayımlanabilir. Site ürününü taslak olarak hazırlayabilirsiniz.' });
     const current = await prisma.products.findMany({
       where: { id: { in: selectedIds } },
       include: { images: { select: { image_url: true } } },

@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE } from '../../../src/config/commerce.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../../lib/prisma.js';
 import { requireAdmin as verifyAdminToken } from '../../../lib/auth.js';
@@ -171,7 +172,7 @@ const updateProduct = async (req: VercelRequest, res: VercelResponse, id: string
         card_bg_image: bgImage || '/product-card-cloud-blue.png',
         category_id: categoryId || null,
         stock_quantity: Number(stockQuantity) || 0,
-        status,
+        status: ETSY_ONLY_MODE && status === "active" ? "draft" : status,
         featured: Boolean(featured),
         new_arrival: Boolean(newArrival),
         bestseller: Boolean(bestseller),

@@ -62,6 +62,7 @@ const StatusBadge = ({ value, tone }: { value: string; tone?: 'green' | 'amber' 
 };
 
 export const AdminOrders = () => {
+  const [showArchive, setShowArchive] = useState(false);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -72,11 +73,19 @@ export const AdminOrders = () => {
   const [internalNote, setInternalNote] = useState('');
   const [feedback, setFeedback] = useState('');
 
+  const restoreRecord = async (id: string) => {
+    try {
+      const response = await fetch('/api/admin/archive/restore', { method: 'POST', headers: { Authorization: `Bearer ${getAdminToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'order', id }) });
+      if (!response.ok) throw new Error('Archive restore failed.');
+      await loadOrders();
+    } catch (error) { setFeedback((error as Error).message); }
+  };
+
   const loadOrders = async () => {
     setIsLoading(true);
     setFeedback('');
     try {
-      const response = await fetch('/api/admin/orders', { headers: { Authorization: `Bearer ${getAdminToken()}` } });
+      const response = await fetch('/api/admin/orders' + (showArchive ? '?archive=true' : ''), { headers: { Authorization: `Bearer ${getAdminToken()}` } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Could not load orders.');
       setOrders(Array.isArray(data) ? data : []);
@@ -87,7 +96,7 @@ export const AdminOrders = () => {
     }
   };
 
-  useEffect(() => { void loadOrders(); }, []);
+  useEffect(() => { void loadOrders(); }, [showArchive]);
 
   const openOrder = (order: AdminOrder) => {
     setSelectedOrder(order);
@@ -148,6 +157,8 @@ export const AdminOrders = () => {
         <button type="button" onClick={() => void loadOrders()} disabled={isLoading} className="commerce-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-semibold hover:bg-[#f7f7f7] disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh</button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3"><button type="button" onClick={() => setShowArchive(!showArchive)} className="commerce-focus rounded-lg border px-4 py-2 text-sm font-semibold">{showArchive ? 'Back to current records' : 'View archive'}</button><p className="text-sm text-[#777]">{showArchive ? 'Archived records are retained and can be restored.' : 'Previous records are archived. New records appear here.'}</p></div>
+      {showArchive && <div className="flex flex-wrap gap-2">{orders.map(order => <button key={order.id} type="button" onClick={() => void restoreRecord(order.id)} className="rounded-lg border px-3 py-2 text-xs">Restore {order.orderNumber}</button>)}</div>}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Total" value={orders.length} icon={ShoppingCart} />
         <Metric label="Pending" value={pendingCount} icon={PackageCheck} />

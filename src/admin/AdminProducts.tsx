@@ -19,6 +19,7 @@ const FeatureBadge = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const AdminProducts = () => {
+  const [showArchive, setShowArchive] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,11 +35,19 @@ export const AdminProducts = () => {
     setNotice({ kind: 'confirm', title, message });
   };
 
+  const restoreRecord = async (id: string) => {
+    try {
+      const response = await fetch('/api/admin/archive/restore', { method: 'POST', headers: { Authorization: `Bearer ${getAdminToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'product', id }) });
+      if (!response.ok) throw new Error('Archive restore failed.');
+      await loadProducts();
+    } catch (error) { showError('Restore failed', (error as Error).message); }
+  };
+
   const loadProducts = async () => {
     setIsLoading(true);
     try {
       const token = getAdminToken();
-      const response = await fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch('/api/admin/products' + (showArchive ? '?archive=true' : ''), { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.details || data.error || 'Could not load products.');
       setProducts(data);
@@ -78,7 +87,7 @@ export const AdminProducts = () => {
     ));
   }, [products, searchTerm]);
 
-  useEffect(() => { void loadProducts(); }, []);
+  useEffect(() => { void loadProducts(); }, [showArchive]);
 
   useEffect(() => {
     const shouldCreate = searchParams.get('create') === '1';
@@ -145,13 +154,14 @@ export const AdminProducts = () => {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Catalog</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.025em] text-[#202020]">Products</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Manage core product information here. Use Inventory for Color × Size × SKU stock.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#707070]">Prepare your own products here for future website sales. Only Etsy products are currently shown in the storefront; website products are saved as drafts.</p>
         </div>
         <button type="button" onClick={() => setIsCreateOpen(true)} className="commerce-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-4 text-sm font-semibold text-white hover:bg-[#383838]">
           <Plus className="h-4 w-4" /> Add product
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3"><button type="button" onClick={() => setShowArchive(!showArchive)} className="commerce-focus rounded-lg border px-4 py-2 text-sm font-semibold">{showArchive ? 'Back to current records' : 'View archive'}</button><p className="text-sm text-[#777]">{showArchive ? 'Archived records are retained and can be restored.' : 'Previous records are archived. New records appear here.'}</p></div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Total" value={isLoading ? '—' : products.length} />
         <Metric label="Active" value={isLoading ? '—' : activeProducts} />
@@ -183,7 +193,7 @@ export const AdminProducts = () => {
                   <td className="px-5 py-4 text-[#666]">{product.sku || '—'}</td>
                   <td className="px-5 py-4"><span className={(product.stockQuantity ?? 0) <= 5 ? 'font-semibold text-[#a34d4d]' : 'text-[#555]'}>{product.stockQuantity ?? 0}</span></td>
                   <td className="px-5 py-4 font-semibold text-[#202020]">${product.price.toFixed(2)}</td>
-                  <td className="px-5 py-4"><div className="flex items-center justify-end gap-1.5"><button type="button" onClick={() => setEditingProductId(product.id)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dedede] bg-white hover:border-[#aaa] hover:bg-[#f7f7f7]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(product)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#f0dede] bg-white text-[#a24e4e] hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button></div></td>
+                  <td className="px-5 py-4"><div className="flex items-center justify-end gap-1.5">{showArchive && <button type="button" onClick={() => void restoreRecord(product.id)} className="rounded-lg border px-3 py-2 text-xs">Restore as draft</button>}<button type="button" onClick={() => setEditingProductId(product.id)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#dedede] bg-white hover:border-[#aaa] hover:bg-[#f7f7f7]" aria-label={`Edit ${product.name}`}><Edit className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(product)} className="commerce-focus inline-flex h-9 w-9 items-center justify-center rounded-[8px] border border-[#f0dede] bg-white text-[#a24e4e] hover:bg-red-50" aria-label={`Delete ${product.name}`}><Trash className="h-4 w-4" /></button></div></td>
                 </tr>
               ))}
             </tbody>

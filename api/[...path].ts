@@ -260,7 +260,7 @@ const escapeXml = (value: string) => value.replace(/[<>&'\"]/g, (character) => (
 
 const sitemapHandler = async (_req: express.Request, res: express.Response) => {
   try {
-    const products = await prisma.products.findMany({
+    const products = ETSY_ONLY_MODE ? [] : await prisma.products.findMany({
       where: { status: 'active' },
       select: { slug: true, updated_at: true },
       orderBy: { updated_at: 'desc' },
@@ -270,12 +270,12 @@ const sitemapHandler = async (_req: express.Request, res: express.Response) => {
     const productUrls = products.map((product) => `<url><loc>${escapeXml(`${SITE_URL}/products/${product.slug}`)}</loc><lastmod>${product.updated_at.toISOString()}</lastmod></url>`).join('');
     const [etsyProducts, links] = await Promise.all([getPublishedEtsyProducts(), getEtsyLinks()]);
     const mapped = new Set(links.map(link => link.listingId));
-    const etsyUrls = etsyProducts.filter(product => !mapped.has(product.id.slice(5)))
+    const etsyUrls = etsyProducts.filter(product => ETSY_ONLY_MODE || !mapped.has(product.id.slice(5)))
       .map(product => `<url><loc>${escapeXml(`${SITE_URL}/products/${product.slug}`)}</loc></url>`).join('');
     const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticUrls}${productUrls}${etsyUrls}</urlset>`;
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
     return res.status(200).send(xml);
   } catch (error) {
     console.error('Failed to generate sitemap', error);

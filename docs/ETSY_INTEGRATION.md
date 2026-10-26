@@ -102,3 +102,30 @@ a reviewed release after payment, shipping and tax configuration is complete.
 Validation: `npm run lint`, `node --import tsx --test tests/*.test.ts`,
 `npm run build`; inspect live creation endpoints for 409 ETSY_ONLY_CHECKOUT,
 product links and transition log/report after the single production release.
+
+## Etsy-only storefront and clean workspace (26 October 2026)
+
+This supersedes the earlier legacy-catalog transition above. Public list, detail,
+sitemap and standalone server now expose only published Etsy imports while
+`SALES_CHANNEL_MODE` is `etsy`. Legacy product URLs lead to the collection.
+Native creation/editing remains available but active submissions are saved as drafts;
+site-preview publication rejects native products in this mode.
+
+`commerceCleanup.ts` performs one transactional, recoverable archive, with a fixed
+08:59:06 UTC cutoff. Older native products (including drafts) become archived. Old
+orders are excluded from current admin lists via `commerce_archive`; their payment
+status, line items, callbacks and customer history remain unchanged. Archive views
+and authenticated restore actions are available for products/orders. Newer records
+are excluded by the cutoff, and completion prevents re-archiving restored records.
+No Etsy catalog record, draft, publication flag or upstream Etsy listing is deleted.
+
+Admin Site Preview supports unpublish (published=false), re-publish with validation,
+category and title edits. Unpublish works even when Etsy is unavailable, and sync
+never re-publishes an item automatically.
+
+Future dual sales: after payments/shipping/tax are verified, change the shared sales
+mode to `dual`. A locally managed, stocked product linked to an Etsy listing then
+shows both Etsy and direct-site purchase options. Imported Etsy data alone never
+becomes local inventory: create/link a native product first. Direct checkout still
+verifies local prices, variants and stock server-side. No payment credentials or
+shipping rates are activated by this release.

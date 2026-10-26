@@ -1,4 +1,5 @@
-import { runEtsyTransitionOnce } from '../../lib/etsyTransition.js';
+import { ensureCommerceCleanup } from '../../lib/commerceCleanup.js';
+import { ETSY_ONLY_MODE } from '../../src/config/commerce.js';
 import { waitUntil } from '@vercel/functions';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
@@ -13,6 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    await ensureCommerceCleanup();
+    if (ETSY_ONLY_MODE) {
+      waitUntil(refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error)));
+      return res.status(200).json(await getPublishedEtsyProducts());
+    }
     await ensureProductVariantsTable();
     const products = await prisma.products.findMany({
       where: { status: 'active' },
@@ -45,7 +51,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Failed to load catalog review summaries', error);
     }
 
-    waitUntil(runEtsyTransitionOnce().catch(error => console.error('Etsy transition failed', error.message)));
     waitUntil(refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error)));
     const [links, managed] = await Promise.all([getEtsyLinks(), getPublishedEtsyProducts()]);
     const etsyLinks = new Map(links.map(link => [link.productId, link.url]));

@@ -7,7 +7,7 @@ import { useSeo } from './utils/seo';
 export default function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
   const orderReference = searchParams.get('order') || '';
-  useSeo({ title: 'Payment Not Completed', description: 'Return to checkout or continue shopping after an incomplete MY BABY SHIRE payment.' });
+  useSeo({ title: 'Payment Not Completed', description: 'Get help with an incomplete website payment. New purchases are completed on Etsy.' });
 
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans text-[#202020]">
@@ -17,9 +17,9 @@ export default function PaymentCancelPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff3d9] text-[#8a641e]"><XCircle className="h-8 w-8" /></div>
           <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#999]">Checkout status</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Payment not completed</h1>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#666]">The checkout did not complete successfully. You can return to checkout or continue browsing.</p>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#666]">The checkout did not complete successfully. Website checkout is currently closed. Contact us about an existing payment before placing a replacement order.</p>
           {orderReference && <div className="mx-auto mt-5 max-w-md rounded-[9px] bg-[#fafafa] px-4 py-3 text-xs text-[#666]"><span className="font-semibold text-[#202020]">Order reference:</span> {orderReference}</div>}
-          <div className="mt-7 grid gap-2.5 sm:grid-cols-2"><Link to="/checkout" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]"><ShoppingBag className="h-4 w-4" /> Return to checkout</Link><Link to="/collections/all" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-5 text-sm font-semibold hover:bg-[#f7f7f7]"><ArrowLeft className="h-4 w-4" /> Continue shopping</Link></div>
+          <div className="mt-7 grid gap-2.5 sm:grid-cols-2"><a href="mailto:hello@mybabyshire.com" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]"><ShoppingBag className="h-4 w-4" /> Contact order support</a><Link to="/collections/all" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] border border-[#dedede] bg-white px-5 text-sm font-semibold hover:bg-[#f7f7f7]"><ArrowLeft className="h-4 w-4" /> Continue shopping</Link></div>
         </section>
       </main>
     </div>

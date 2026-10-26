@@ -1,3 +1,4 @@
+import { runEtsyTransitionOnce } from '../../lib/etsyTransition.js';
 import { waitUntil } from '@vercel/functions';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../../lib/prisma.js';
@@ -44,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('Failed to load catalog review summaries', error);
     }
 
+    waitUntil(runEtsyTransitionOnce().catch(error => console.error('Etsy transition failed', error.message)));
     waitUntil(refreshPublishedEtsyWhenDue().catch(error => console.error('Etsy refresh failed', error)));
     const [links, managed] = await Promise.all([getEtsyLinks(), getPublishedEtsyProducts()]);
     const etsyLinks = new Map(links.map(link => [link.productId, link.url]));

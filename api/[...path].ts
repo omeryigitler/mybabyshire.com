@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, DIRECT_CHECKOUT_MESSAGE, ETSY_SHOP_URL } from '../src/config/commerce.js';
 // api/[...path].ts
 
 import express from 'express';
@@ -20,6 +21,16 @@ import { sendPaymentConfirmedEmail } from '../lib/email.js';
 const app = express();
 
 app.use(express.json({ limit: '25mb' }));
+app.use((req, res, next) => {
+  const path = req.path.replace(/\/+$/, '');
+  if (ETSY_ONLY_MODE && ['/api/checkout/create-payment', '/api/paypal/create-order', '/api/paypal-create-order', '/api/cart/sync'].includes(path)) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(409).json({ error: DIRECT_CHECKOUT_MESSAGE, code: 'ETSY_ONLY_CHECKOUT', shopUrl: ETSY_SHOP_URL });
+    return;
+  }
+  next();
+});
+
 
 const getAuthorization = (req: express.Request) => {
   const value = req.headers.authorization;

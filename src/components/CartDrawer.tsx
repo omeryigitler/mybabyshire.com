@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE } from '../config/commerce';
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
@@ -8,6 +9,8 @@ export const CartDrawer = () => {
   const { cartItems, isCartOpen, closeCart, removeFromCart, updateCartItemQuantity } = useStore();
   const unitPrice = (item: (typeof cartItems)[number]) => item.variant?.price ?? item.product.price;
   const total = cartItems.reduce((sum, item) => sum + unitPrice(item) * item.quantity, 0);
+
+  if (ETSY_ONLY_MODE) return null;
 
   return (
     <AnimatePresence>

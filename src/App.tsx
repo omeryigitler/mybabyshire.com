@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, ETSY_SHOP_URL } from './config/commerce';
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { initAnalytics, trackPageView } from './utils/analytics';
@@ -65,7 +66,7 @@ export default function App() {
           <Route path="/" element={<Storefront />} />
           <Route path="/collections/:collection" element={<CollectionPage />} />
           <Route path="/products/:slug" element={<ProductDetailPage />} />
-          <Route path="/checkout" element={import.meta.env.VITE_ETSY_ONLY_MODE === 'true' ? <Navigate to="/collections/all" replace /> : <CheckoutPage />} />
+          <Route path="/checkout" element={ETSY_ONLY_MODE ? <Navigate to="/collections/all" replace /> : <CheckoutPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancel" element={<PaymentCancelPage />} />

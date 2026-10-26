@@ -30,6 +30,12 @@ export const AdminEtsy = () => {
   const [complete, setComplete] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [count, setCount] = useState(0);
+  const [transition, setTransition] = useState<any>(null);
+  const loadTransition = async () => {
+    const result = await request('transition-status');
+    setTransition(result.runs?.[0]?.report || null);
+  };
+  useEffect(() => { void loadTransition().catch(error => setMessage(error.message)); }, []);
 
   const loadImported = async () => {
     const result = await request('catalog-managed');
@@ -112,6 +118,13 @@ export const AdminEtsy = () => {
         </button>
       </div>}
     </div>
+    <section className="rounded-xl border border-[#e2e2e2] bg-white p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Etsy satışına geçiş</h2><button type="button" onClick={() => void loadTransition().catch(error => setMessage(error.message))} className="rounded-lg border px-3 py-2 text-sm">Durumu yenile</button></div>
+      <p className="mt-2 text-sm text-[#666]">Yeni site içi ödeme kapalıdır. Eski siparişler ve ödeme bildirimleri korunur. Sadece tüm Etsy kataloğunda tekil ve tam başlık eşleşmeleri otomatik bağlanır.</p>
+      {transition ? <><p className="mt-3 text-sm">Eski aktif ürün: {transition.activeLegacyProducts} · Aktif Etsy ilanı: {transition.activeEtsyListings} · Bağlı ürün: {transition.linkedProducts} · İnceleme bekleyen: {transition.unmatchedProducts.length}</p>
+      <p className="mt-2 text-sm">Mevcut site siparişleri: {transition.existingOrdersByPaymentStatus.length ? transition.existingOrdersByPaymentStatus.map((item: any) => `${item.status}: ${item.count}`).join(' · ') : 'Kayıt yok'}</p>
+      <details className="mt-3"><summary className="cursor-pointer text-sm font-semibold">Eşleşmeyen eski ürünler</summary><ul className="mt-2 max-h-64 space-y-2 overflow-auto text-sm">{transition.unmatchedProducts.map((item: any) => <li key={item.id}><Link className="underline" to={`/admin/products?edit=${encodeURIComponent(item.id)}`}>{item.name}</Link></li>)}</ul></details></> : <p className="mt-3 text-sm text-[#777]">Geçiş kontrolü ilk katalog ziyaretinde çalışır. Henüz tamamlanmış rapor yok.</p>}
+    </section>
     <section className="overflow-hidden rounded-xl border border-[#e2e2e2] bg-white">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><h2 className="font-semibold">Etsy ürünleri ({visible.length})</h2><input type="search" value={search} onChange={e => { setSearch(e.target.value); setSelected([]); }} placeholder="Ürün adına göre ara" className="h-10 rounded-lg border px-3 text-sm" /></div>
       <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">

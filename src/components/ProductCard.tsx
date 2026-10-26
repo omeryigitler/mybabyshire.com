@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, ETSY_SHOP_URL } from '../config/commerce';
 import React, { useMemo } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -67,7 +68,7 @@ const CardImage = ({ src, alt, crop, focusX, focusY, zoom, eager = false }: { sr
 export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
   const { openPersonalizationModal } = useStore();
   const hasPersonalization = Boolean(product.personalizationRequired || product.personalizationFields?.length);
-  const etsyOnlyMode = import.meta.env.VITE_ETSY_ONLY_MODE === 'true';
+  const etsyOnlyMode = ETSY_ONLY_MODE;
   const detailPath = `/products/${product.slug || product.id}`;
   const hasComparePrice = Boolean(product.salePrice && product.salePrice > product.price);
   const currency = product.priceCurrency || 'USD';
@@ -135,7 +136,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
           {product.name}
         </Link>
 
-        {colorOptions.length > 0 && (
+        {!ETSY_ONLY_MODE && colorOptions.length > 0 && (
           <div className="mt-2 flex min-h-5 items-center gap-1.5" aria-label={`${colorOptions.length} color options`}>
             {colorOptions.slice(0, 6).map((color) => <span key={color} title={color} className="h-4.5 w-4.5 rounded-full border border-black/15 ring-1 ring-white" style={{ backgroundColor: swatchColor(color) }} />)}
             {colorOptions.length > 6 && <span className="ml-0.5 text-[10px] font-medium text-[#777]">+{colorOptions.length - 6}</span>}
@@ -143,8 +144,8 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
         )}
 
         <div className="mt-2 flex items-center gap-2 text-sm sm:text-[15px]">
-          {product.source === 'etsy' && product.priceStale
-            ? <span className="font-semibold text-[#202020]">Güncel fiyat Etsy'de</span>
+          {ETSY_ONLY_MODE && (product.source !== 'etsy' || product.priceStale)
+            ? <span className="font-semibold text-[#202020]">{product.etsyUrl ? 'See current price on Etsy' : 'Catalog preview'}</span>
             : <><span className="font-semibold text-[#202020]">{hasVariantPriceRange ? 'From ' : ''}{formatPrice(lowestPrice)}</span>
               {!activeVariants.length && hasComparePrice && <span className="text-[#9a9a9a] line-through">{formatPrice(product.salePrice!)}</span>}</>}
         </div>
@@ -161,7 +162,7 @@ export const ProductCard = ({ product, preview = false }: ProductCardProps) => {
               View product <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
-          {product.etsyUrl && <p className="mt-2 text-center text-[11px] text-[#888]">Final price and availability on Etsy</p>}
+          {ETSY_ONLY_MODE && <p className="mt-2 text-center text-[11px] text-[#888]">{product.etsyUrl ? 'Final price and availability on Etsy' : 'Catalog item · Etsy listing not yet linked'}</p>}
         </div>
       </div>
     </article>

@@ -19,7 +19,7 @@ const footerSections = [
     title: 'Customer Care',
     links: [
       { label: 'My Account', to: '/account' },
-      { label: 'Track Order', to: '/track-order' },
+      { label: 'Order Help & Tracking', to: '/track-order' },
       { label: 'Shipping', to: '/policies/shipping' },
       { label: 'Returns & Refunds', to: '/policies/returns' },
     ],
@@ -81,7 +81,7 @@ export function SiteCredits() {
 
         <div className="flex flex-col gap-4 border-b border-white/15 py-6 text-[11px] leading-[1.8] text-[#969696] sm:flex-row sm:items-start sm:justify-between sm:gap-8">
           <div className="max-w-[900px]">
-            <p>Selected items link to Etsy. Orders placed there are completed on Etsy, under the seller's listing and checkout policies.</p>
+            <p>All new purchases are completed on Etsy. Payment, shipping options and delivery estimates are shown there. Catalog items without a linked listing are not available to buy on this website.</p>
             <p className="mt-1">Etsy is a trademark of Etsy, Inc. This application uses Etsy's API but is not endorsed or certified by Etsy.</p>
           </div>
           <a href="https://babyshirekids.etsy.com/" target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 self-start whitespace-nowrap text-[12px] font-medium text-[#ededed] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">

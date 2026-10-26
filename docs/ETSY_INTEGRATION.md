@@ -14,7 +14,7 @@ this same handler; title updates are separate. Category + publication writes are
 
 ## Three product types
 
-- Native products live in `products` and use direct Stripe/PayPal checkout.
+- Native products remain in `products` as catalog references. New direct checkout is disabled.
 - Linked native products retain native content but redirect to their Etsy listing;
   `etsy_product_links` enforces one-to-one mapping. The historical matching APIs
   remain available to authenticated administrators.
@@ -23,7 +23,7 @@ this same handler; title updates are separate. Category + publication writes are
   Up to eight current Etsy images are available in the product gallery.
 
 The combined public catalog and sitemap exclude imported duplicates of linked
-native products. Server-side checkout rejects imported and linked Etsy products.
+native products. Server-side checkout rejects all new direct payments in Etsy-only mode.
 Orders, variants, personalization, shipping, taxes and refunds on Etsy remain on
 Etsy; this integration does not synchronize Etsy orders or write to Etsy.
 
@@ -72,3 +72,33 @@ before one reviewed production push. The integrity workflow checks all lib/API/
 server/frontend changes and also runs on main. Do not create repeated preview
 builds to test changes. Inspect the exact production SHA and perform read-only
 catalog/detail/sitemap/authentication smoke checks after deployment.
+
+## Etsy-only transition (October 2026)
+
+`src/config/commerce.ts` is shared by client and server; `ETSY_ONLY_MODE = true`
+is independent of environment variables. Re-enabling direct commerce requires
+a reviewed release after payment, shipping and tax configuration is complete.
+
+- No new cart synchronization or Stripe/PayPal order creation. Both route adapters
+  and checkout/order helpers enforce the block before database/provider calls.
+- Existing Stripe webhooks, verification, PayPal capture, account orders and tracking
+  remain intact. No provider sessions, credentials or order records are deleted.
+- Legacy prices, stock, variant selectors and structured Offer data are hidden;
+  current imported Etsy prices can still display with Etsy checkout disclosures.
+- Legacy product URLs/content remain. Unlinked items clearly say they cannot be
+  purchased here and offer a separate shop-browsing link. No guessed listing URLs.
+- The first production catalog request starts a bounded, one-time transition via
+  waitUntil. A PostgreSQL lease prevents duplicate execution. At most five Etsy
+  pages are fetched; incomplete/changing snapshots abort without linking. Only
+  globally unique normalized whole titles match, with no fuzzy/prefix matching.
+  Existing links are never overwritten. A transaction persists links and audit.
+- `etsy_transition_runs` retains the result, including unmatched product IDs/names
+  and aggregate order counts by payment status (no customer data). Admin Etsy
+  shows it through the authenticated `transition-status` action. Unmatched items
+  need manual verification before a product-specific Etsy link can be assigned.
+- Linked native products continue to suppress their imported duplicate in the
+  public catalog and sitemap. No products are deleted or unpublished by migration.
+
+Validation: `npm run lint`, `node --import tsx --test tests/*.test.ts`,
+`npm run build`; inspect live creation endpoints for 409 ETSY_ONLY_CHECKOUT,
+product links and transition log/report after the single production release.

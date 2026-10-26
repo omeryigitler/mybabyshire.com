@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, DIRECT_CHECKOUT_MESSAGE } from '../src/config/commerce.js';
 import { prisma } from './prisma.js';
 import { getEtsyLinks } from './etsy.js';
 import { calculateTax, type TaxBreakdown } from '../src/utils/tax.js';
@@ -228,6 +229,7 @@ const parseOrderItemSnapshot = (value?: string | null): Record<string, any> => {
 };
 
 export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout> => {
+  if (ETSY_ONLY_MODE) throw new CheckoutValidationError(DIRECT_CHECKOUT_MESSAGE, 409);
   const customer = sanitizeCustomer(body?.customer || {});
   const rawItems = Array.isArray(body?.items) ? body.items : [];
 
@@ -366,6 +368,7 @@ export const buildVerifiedCheckout = async (body: any): Promise<VerifiedCheckout
 };
 
 export const createPendingOrderFromCheckout = async (checkout: VerifiedCheckout, provider: CheckoutProvider) => {
+  if (ETSY_ONLY_MODE) throw new CheckoutValidationError(DIRECT_CHECKOUT_MESSAGE, 409);
   const orderNumber = createOrderNumber();
   const snapshot = {
     customer: checkout.customer,

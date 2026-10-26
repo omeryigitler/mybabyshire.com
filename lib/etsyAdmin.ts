@@ -1,3 +1,4 @@
+import { readEtsyTransitionReport } from './etsyTransition.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from './prisma.js';
 import { handleEtsyCatalogAdmin } from './etsyCatalogAdmin.js';
@@ -20,6 +21,7 @@ export async function handleEtsyAdmin(req: VercelRequest, res: VercelResponse, a
   }
 
   try {
+    if (req.method === 'GET' && action === 'transition-status') return res.status(200).json({ runs: await readEtsyTransitionReport() });
     if (action === 'site-preview') return handleSitePreview(req, res);
     if (action.startsWith('catalog-')) {
       const result = await handleEtsyCatalogAdmin(req, res, action);

@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE } from '../config/commerce';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -185,10 +186,11 @@ export const useStore = create<StoreState>()(
 
       cartItems: [],
       isCartOpen: false,
-      openCart: () => set({ isCartOpen: true }),
+      openCart: () => { if (!ETSY_ONLY_MODE) set({ isCartOpen: true }); },
       closeCart: () => set({ isCartOpen: false }),
 
       addToCart: (item) => {
+        if (ETSY_ONLY_MODE || item.product.etsyUrl) return;
         const newItem = { ...item, id: crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11) };
         set((state) => ({ cartItems: [...state.cartItems, newItem], isCartOpen: true }));
       },
@@ -209,7 +211,7 @@ export const useStore = create<StoreState>()(
       isPersonalizationModalOpen: false,
       selectedProduct: null,
       selectedVariant: null,
-      openPersonalizationModal: (product, variant = null) => set({ isPersonalizationModalOpen: true, selectedProduct: product, selectedVariant: variant }),
+      openPersonalizationModal: (product, variant = null) => { if (!ETSY_ONLY_MODE && !product.etsyUrl) set({ isPersonalizationModalOpen: true, selectedProduct: product, selectedVariant: variant }); },
       closePersonalizationModal: () => set({ isPersonalizationModalOpen: false, selectedProduct: null, selectedVariant: null }),
     }),
     {

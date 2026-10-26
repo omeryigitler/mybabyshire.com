@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, DIRECT_CHECKOUT_MESSAGE, ETSY_SHOP_URL } from '../src/config/commerce.js';
 import { Router, Request, Response, NextFunction } from "express";
 import { getEtsyLinks, getProductEtsyUrl } from '../lib/etsy.js';
 import jwt from "jsonwebtoken";
@@ -54,6 +55,16 @@ import {
 } from "../src/utils/carriers.js";
 
 const router = Router();
+router.use((req, res, next) => {
+  const path = req.path.replace(/\/+$/, '');
+  if (ETSY_ONLY_MODE && ['/checkout/create-payment', '/paypal/create-order', '/paypal-create-order', '/cart/sync'].includes(path)) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(409).json({ error: DIRECT_CHECKOUT_MESSAGE, code: 'ETSY_ONLY_CHECKOUT', shopUrl: ETSY_SHOP_URL });
+    return;
+  }
+  next();
+});
+
 const JWT_SECRET = getJwtSecret();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey

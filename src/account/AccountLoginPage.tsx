@@ -62,7 +62,7 @@ export default function AccountLoginPage() {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a5a63]">MY BABY SHIRE account</p>
               <h1 className="mt-5 text-4xl font-semibold leading-[1.06] tracking-[-0.035em]">Orders and delivery details in one place.</h1>
-              <p className="mt-4 max-w-sm text-sm leading-6 text-[#6d5a60]">Sign in with Google to view orders associated with your email and reuse saved shipping details at checkout.</p>
+              <p className="mt-4 max-w-sm text-sm leading-6 text-[#6d5a60]">Sign in with Google to view previous website orders associated with your email. New purchases and their tracking are handled on Etsy.</p>
             </div>
             <div className="space-y-2 text-sm text-[#514247]">
               <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Secure Google account access</p>

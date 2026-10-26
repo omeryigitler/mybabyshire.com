@@ -142,8 +142,10 @@ export default function TrackOrderPage() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#999]">Order status</p>
           <h1 className="mt-2 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Track your order</h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#707070] sm:text-base">Use the order reference or tracking number plus the order email or shipping ZIP code.</p>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#707070] sm:text-base">For previous website orders, use the order reference or tracking number plus the order email or shipping ZIP code.</p>
         </div>
+
+        <div className="mx-auto mt-6 max-w-3xl rounded-xl border border-[#e3e3e3] bg-white p-5 text-center"><h2 className="text-lg font-semibold">Purchased on Etsy?</h2><p className="mt-2 text-sm text-[#666]">Track your delivery or contact us about an Etsy order through Etsy Purchases &amp; reviews.</p><a href="https://www.etsy.com/your/purchases" target="_blank" rel="noopener noreferrer" className="commerce-focus mt-4 inline-flex rounded-lg bg-[#202020] px-5 py-3 text-sm font-semibold text-white">View your Etsy orders ↗</a></div>
 
         <form onSubmit={handleTrack} className="mx-auto mt-8 grid max-w-3xl gap-3 rounded-[12px] border border-[#e3e3e3] bg-white p-4 sm:p-5 lg:grid-cols-[1.1fr_.9fr_auto]">
           <input value={orderReference} onChange={(event) => setOrderReference(event.target.value)} className="commerce-focus min-h-12 min-w-0 rounded-[9px] border border-[#dedede] bg-white px-4 text-sm font-medium outline-none placeholder:text-[#aaa] focus:border-[#202020]" placeholder="Order reference or tracking number" />

@@ -1,3 +1,4 @@
+import { ETSY_ONLY_MODE, ETSY_SHOP_URL } from './config/commerce';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Check, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -113,7 +114,7 @@ export default function Storefront() {
       <CartDrawer />
       <PersonalizationModal />
 
-      <div className="bg-[#f8e9ed] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#4e3d42] sm:text-xs">Blank apparel & custom-ready essentials</div>
+      <div className="bg-[#f8e9ed] px-4 py-2 text-center text-[11px] font-semibold tracking-wide text-[#4e3d42] sm:text-xs">Shop our collection · Secure checkout on Etsy</div>
 
       <header className="sticky top-0 z-40 border-b border-[#e9e9e9] bg-white/95 backdrop-blur-lg">
         <div className="mx-auto grid min-h-[70px] max-w-[1560px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 sm:px-6 lg:min-h-[78px] lg:px-8">
@@ -123,7 +124,7 @@ export default function Storefront() {
           <div className="flex items-center justify-end gap-0.5 sm:gap-1">
             <button type="button" onClick={() => setIsSearchOpen(true)} className="commerce-focus inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Search"><Search className="h-5 w-5" /></button>
             <Link to="/account" className="commerce-focus hidden h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5] sm:inline-flex" aria-label="Account"><UserRound className="h-5 w-5" /></Link>
-            <button type="button" onClick={openCart} className="commerce-focus relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Cart"><ShoppingBag className="h-5 w-5" />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#202020] px-1 text-[9px] font-bold text-white">{cartCount}</span>}</button>
+            {!ETSY_ONLY_MODE && <button type="button" onClick={openCart} className="commerce-focus relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-[#f5f5f5]" aria-label="Cart"><ShoppingBag className="h-5 w-5" />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#202020] px-1 text-[9px] font-bold text-white">{cartCount}</span>}</button>}
           </div>
         </div>
       </header>
@@ -163,7 +164,7 @@ export default function Storefront() {
               <div className="mt-7 flex flex-wrap gap-2.5"><Link to="/collections/new-arrivals" className="commerce-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-[9px] bg-[#202020] px-5 text-sm font-semibold text-white hover:bg-[#383838]">Shop new <ArrowRight className="h-4 w-4" /></Link><Link to="/collections/all" className="commerce-focus inline-flex min-h-12 items-center justify-center rounded-[9px] border border-[#d5d5d5] bg-white px-5 text-sm font-semibold hover:border-[#aaa]">Shop all</Link></div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:pl-4">
-              {heroProducts.length > 0 ? heroProducts.map((product, index) => <Link key={product.id} to={`/products/${product.slug || product.id}`} className={`commerce-focus group relative overflow-hidden rounded-[14px] border border-white/80 bg-white shadow-sm ${index === 1 ? 'mt-10 sm:mt-16' : ''}`}><div className="aspect-[4/5] bg-[linear-gradient(150deg,#fff_0%,#f4f4f4_100%)] p-4 sm:p-6"><img src={product.imageUrl} alt={product.name} loading="eager" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.025]" /></div><div className="border-t border-[#eeeeee] bg-white p-3 sm:p-4"><p className="line-clamp-1 text-xs font-semibold sm:text-sm">{product.name}</p><p className="mt-1 text-xs text-[#777]">${product.price.toFixed(2)}</p></div></Link>) : <><div className="aspect-[4/5] rounded-[14px] bg-white/70" /><div className="mt-10 aspect-[4/5] rounded-[14px] bg-white/70 sm:mt-16" /></>}
+              {heroProducts.length > 0 ? heroProducts.map((product, index) => <Link key={product.id} to={`/products/${product.slug || product.id}`} className={`commerce-focus group relative overflow-hidden rounded-[14px] border border-white/80 bg-white shadow-sm ${index === 1 ? 'mt-10 sm:mt-16' : ''}`}><div className="aspect-[4/5] bg-[linear-gradient(150deg,#fff_0%,#f4f4f4_100%)] p-4 sm:p-6"><img src={product.imageUrl} alt={product.name} loading="eager" decoding="async" className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.025]" /></div><div className="border-t border-[#eeeeee] bg-white p-3 sm:p-4"><p className="line-clamp-1 text-xs font-semibold sm:text-sm">{product.name}</p><p className="mt-1 text-xs text-[#777]">{ETSY_ONLY_MODE ? product.etsyUrl ? 'See options and availability on Etsy' : 'View product details' : '$' + product.price.toFixed(2)}</p></div></Link>) : <><div className="aspect-[4/5] rounded-[14px] bg-white/70" /><div className="mt-10 aspect-[4/5] rounded-[14px] bg-white/70 sm:mt-16" /></>}
             </div>
           </div>
         </section>

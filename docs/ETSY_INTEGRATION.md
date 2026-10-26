@@ -129,3 +129,21 @@ shows both Etsy and direct-site purchase options. Imported Etsy data alone never
 becomes local inventory: create/link a native product first. Direct checkout still
 verifies local prices, variants and stock server-side. No payment credentials or
 shipping rates are activated by this release.
+
+## Owner-authorized permanent removal (26 October 2026)
+
+The owner subsequently requested permanent deletion of the exact 94 archived
+native products and 14 archived orders, including the four paid order records.
+`scripts/purge-legacy-commerce.mjs` runs after a successful production build,
+using the existing database connection. It checks the original archive report,
+record counts, cutoff and retained-order references before deleting anything.
+All deletions and the completion marker share one transaction. A repeat build is
+a no-op after completion; preview/local builds skip it. Unexpected counts or
+references roll back and fail the build. Etsy catalog rows and upstream Etsy
+listings are untouched. New records are outside the selection. Deleted records
+can no longer be restored through the archive UI. This removes site database
+records, not payment-provider records or shared media assets.
+
+Verified the exact SQL using PostgreSQL (PGlite): 94/14 deletion, dependent row
+cleanup, preservation of new records and both published/draft Etsy rows,
+idempotent rerun, count mismatch rollback and retained-order reference rollback.

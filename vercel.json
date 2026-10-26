@@ -1,6 +1,6 @@
 {
   "functions": { "api/products/**/*.ts": { "maxDuration": 120 }, "api/admin/**/*.ts": { "maxDuration": 120 } },
-  "buildCommand": "npx prisma generate && npx vite build && npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+  "buildCommand": "npx prisma generate && npx vite build && npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node scripts/purge-legacy-commerce.mjs",
   "headers": [
     {
       "source": "/(.*)",
